@@ -74,6 +74,7 @@ export const handleApiError = (
     )
   }
 
+  // eslint-disable-next-line no-console
   console.error('Unexpected error:', error)
   return createErrorResponse(
     'INTERNAL_ERROR',
