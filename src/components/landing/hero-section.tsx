@@ -5,9 +5,9 @@ import { Play } from 'lucide-react'
 
 import { AudioWavesBackground } from '@/components/landing/audio-waves-background'
 import { GridBackground } from '@/components/landing/grid-background'
+import { AnimatedTooltip } from '@/components/ui/animated-tooltip'
 import { Button } from '@/components/ui/button'
 import { STATS } from '@/lib/constants'
-import { AnimatedTooltip } from '@/src/components/ui/animated-tooltip'
 
 const musicians = [
   {

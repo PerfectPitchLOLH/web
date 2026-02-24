@@ -69,38 +69,35 @@
       transform: translate(calc(100cqw - 100%), 0);
     }
   }
-  --animate-wave-slow: wave-slow 40s ease-in-out infinite;
-  --animate-wave-medium: wave-medium 30s ease-in-out infinite;
-  --animate-wave-fast: wave-fast 20s ease-in-out infinite;
+  --animate-wave-slow: wave-slow 40s linear infinite;
+  --animate-wave-medium: wave-medium 30s linear infinite;
+  --animate-wave-fast: wave-fast 20s linear infinite;
 }
 
 @keyframes wave-slow {
-  0%,
-  100% {
+  0% {
     transform: translateX(0);
   }
-  50% {
-    transform: translateX(-25%);
+  100% {
+    transform: translateX(-1440px);
   }
 }
 
 @keyframes wave-medium {
-  0%,
-  100% {
+  0% {
     transform: translateX(0);
   }
-  50% {
-    transform: translateX(-20%);
+  100% {
+    transform: translateX(-1440px);
   }
 }
 
 @keyframes wave-fast {
-  0%,
-  100% {
+  0% {
     transform: translateX(0);
   }
-  50% {
-    transform: translateX(-15%);
+  100% {
+    transform: translateX(-1440px);
   }
 }
 

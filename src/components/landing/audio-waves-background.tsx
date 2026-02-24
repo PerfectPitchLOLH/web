@@ -8,8 +8,7 @@ export function AudioWavesBackground() {
   const blur = 30
   const opacity = 0.95
   const strokeWidth = 25
-  const speed = 8
-  const phaseShift = 339
+  const speed = 20
 
   const baseY = 350
   const wave2Y = baseY + verticalSpacing
@@ -50,30 +49,37 @@ export function AudioWavesBackground() {
 
         <g opacity={opacity} style={{ filter: `blur(${blur}px)` }}>
           <path
-            d={`M${-720},${baseY} Q${-360},${baseY - amplitude} 0,${baseY} T720,${baseY} T1440,${baseY} T2160,${baseY}`}
+            d={`M0,${baseY} Q360,${baseY - amplitude} 720,${baseY} T1440,${baseY} T2160,${baseY} T2880,${baseY} T3600,${baseY} T4320,${baseY}`}
             stroke="url(#wave1)"
             strokeWidth={strokeWidth}
             fill="none"
             strokeLinecap="round"
-            style={{ animation: 'wave-slow var(--speed-slow) linear infinite' }}
+            style={{
+              animation: 'wave-slow var(--speed-slow) linear infinite',
+              animationDelay: '0s',
+            }}
           />
           <path
-            d={`M${-720 + phaseShift},${wave2Y} Q${-360 + phaseShift},${wave2Y - amplitude} ${phaseShift},${wave2Y} T${720 + phaseShift},${wave2Y} T${1440 + phaseShift},${wave2Y} T${2160 + phaseShift},${wave2Y}`}
+            d={`M0,${wave2Y} Q360,${wave2Y - amplitude} 720,${wave2Y} T1440,${wave2Y} T2160,${wave2Y} T2880,${wave2Y} T3600,${wave2Y} T4320,${wave2Y}`}
             stroke="url(#wave2)"
             strokeWidth={strokeWidth}
             fill="none"
             strokeLinecap="round"
             style={{
               animation: 'wave-medium var(--speed-medium) linear infinite',
+              animationDelay: '-3s',
             }}
           />
           <path
-            d={`M${-720 + phaseShift * 2},${wave3Y} Q${-360 + phaseShift * 2},${wave3Y - amplitude} ${phaseShift * 2},${wave3Y} T${720 + phaseShift * 2},${wave3Y} T${1440 + phaseShift * 2},${wave3Y} T${2160 + phaseShift * 2},${wave3Y}`}
+            d={`M0,${wave3Y} Q360,${wave3Y - amplitude} 720,${wave3Y} T1440,${wave3Y} T2160,${wave3Y} T2880,${wave3Y} T3600,${wave3Y} T4320,${wave3Y}`}
             stroke="url(#wave3)"
             strokeWidth={strokeWidth}
             fill="none"
             strokeLinecap="round"
-            style={{ animation: 'wave-fast var(--speed-fast) linear infinite' }}
+            style={{
+              animation: 'wave-fast var(--speed-fast) linear infinite',
+              animationDelay: '-6s',
+            }}
           />
         </g>
       </svg>
