@@ -1,3 +1,4 @@
+import { FAQSection } from '@/components/landing/faq-section'
 import { FeaturesSection } from '@/components/landing/features-section'
 import { FinalCTA } from '@/components/landing/final-cta'
 import { Footer } from '@/components/landing/footer'
@@ -22,6 +23,7 @@ export default function Home() {
       <div id="pricing">
         <PricingSection />
       </div>
+      <FAQSection />
       <FinalCTA />
       <Footer />
     </div>

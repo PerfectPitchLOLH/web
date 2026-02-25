@@ -58,12 +58,14 @@ export function HeroSection() {
             Transform Any Song Into{' '}
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Sheet Music
-            </span>
+            </span>{' '}
+            in Seconds
           </h1>
 
           <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed">
-            AI-powered transcription that separates every instrument from
-            YouTube videos, audio files, or live recordings.
+            AI-powered music transcription that automatically separates every
+            instrument from YouTube videos, audio files, or live recordings. No
+            music theory required.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-6 sm:gap-10 justify-center items-center mb-8">
@@ -90,7 +92,8 @@ export function HeroSection() {
             </div>
             <p className="text-sm text-muted-foreground flex items-center gap-2">
               <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-              Join {STATS.musicians}+ musicians
+              Join {STATS.musicians}+ musicians who save 5+ hours per
+              transcription
             </p>
           </div>
         </motion.div>
