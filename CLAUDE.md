@@ -123,6 +123,84 @@ Components are copied to `src/components/ui/` and can be customized directly.
 - **Domain-Driven Design**: Server code organized by business domains
 - **Layered Architecture**: Controller → Service → Repository pattern
 
+## Naming Conventions
+
+Follow these strict naming conventions throughout the codebase:
+
+### PascalCase
+
+- **React Components**: `HeroSection`, `AudioWavesBackground`, `NotFound`
+- **Types & Interfaces**: `UserEntity`, `CreateUserDTO`, `ApiResponse<T>`
+- **Classes**: `UserRepository`, `UserService`, `UserController`
+- **Enums**: `UserRole`, `ErrorCode`
+
+```typescript
+export type UserEntity = Entity<User>
+export class UserService {}
+export function HeroSection() {}
+```
+
+### camelCase
+
+- **Variables**: `userName`, `isLoading`, `userData`
+- **Functions**: `createUser`, `handleSubmit`, `fetchData`
+- **Methods**: `findById`, `getUsers`, `updateProfile`
+- **Props**: `onClick`, `isDisabled`, `className`
+- **Hooks**: `useAuth`, `useUserData`, `useResponsiveWaveAmplitude`
+
+```typescript
+const userName = 'John'
+function createUser(data: CreateUserDTO) {}
+const { isLoading } = useUserData()
+```
+
+### SCREAMING_SNAKE_CASE
+
+- **Constants**: `HTTP_STATUS`, `API_BASE_URL`, `MAX_RETRY_COUNT`
+- **Environment Variables**: `DATABASE_URL`, `API_KEY`
+
+```typescript
+export const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  NOT_FOUND: 404,
+} as const
+
+export const MAX_FILE_SIZE = 1024 * 1024 * 10
+```
+
+### kebab-case
+
+- **CSS Classes**: `hero-section`, `audio-waves`, `not-found-page`
+- **File/Folder Names** (for route groups): `(landing)`, `(dashboard)`, `audio-to-sheet`
+
+### File Naming Conventions
+
+#### React Components
+
+- **PascalCase.tsx**: `HeroSection.tsx`, `NotFound.tsx`, `AudioWavesBackground.tsx`
+
+#### Server Files
+
+- **{domain}.{layer}.ts**: `user.types.ts`, `user.repository.ts`, `user.service.ts`
+- **kebab-case.ts** for utilities: `api.utils.ts`, `http.constants.ts`
+
+#### Route Files
+
+- **lowercase with dash**: `page.tsx`, `layout.tsx`, `not-found.tsx`, `route.ts`
+
+```
+✅ Good:
+src/components/landing/HeroSection.tsx
+src/server/domains/user/user.service.ts
+src/app/(dashboard)/audio-to-sheet/page.tsx
+
+❌ Bad:
+src/components/landing/hero-section.tsx
+src/server/domains/user/UserService.ts
+src/app/(dashboard)/AudioToSheet/page.tsx
+```
+
 ## Server-Side Architecture
 
 ### Architecture Pattern: Domain-Driven Design (DDD)
