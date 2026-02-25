@@ -3,8 +3,8 @@
 import { motion } from 'framer-motion'
 import { Play } from 'lucide-react'
 
-import { AudioWavesBackground } from '@/components/landing/audio-waves-background'
-import { GridBackground } from '@/components/landing/grid-background'
+import { AudioWavesBackground } from '@/components/landing/AudioWavesBackground'
+import { GridBackground } from '@/components/landing/GridBackground'
 import { AnimatedTooltip } from '@/components/ui/animated-tooltip'
 import { Button } from '@/components/ui/button'
 import { STATS } from '@/lib/constants'

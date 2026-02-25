@@ -2,10 +2,10 @@
 
 import { usePathname } from 'next/navigation'
 
-import { UserMenu } from '@/components/dashboard/topbar/user-menu'
+import { UserMenu } from '@/components/dashboard/topbar/userMenu'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 
-import { NotificationsPopover } from './notifications-popover'
+import { NotificationsPopover } from './notificationsPopover'
 
 const pageTitles: Record<string, string> = {
   '/dashboard': 'Heureux de te revoir.',

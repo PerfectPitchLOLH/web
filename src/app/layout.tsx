@@ -3,7 +3,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 
-import { ThemeProvider } from '@/components/providers/theme-provider'
+import { ThemeProvider } from '@/components/providers/themeProvider'
 import { JsonLdSchema } from '@/components/seo/json-ld-schema'
 import { TooltipProvider } from '@/components/ui/tooltip'
 

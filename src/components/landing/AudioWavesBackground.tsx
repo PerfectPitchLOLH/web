@@ -1,6 +1,6 @@
 'use client'
 
-import { useResponsiveWaveAmplitude } from '@/hooks/use-responsive-wave-amplitude'
+import { useResponsiveWaveAmplitude } from '@/hooks/useResponsiveWaveAmplitude'
 
 export function AudioWavesBackground() {
   const verticalSpacing = 23

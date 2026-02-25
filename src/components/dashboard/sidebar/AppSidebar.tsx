@@ -73,7 +73,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex items-center gap-2 px-2 py-2">
+            <div className="flex items-center gap-2 px-2 py-2 group-data-[collapsible=icon]:justify-center">
               <div className="flex aspect-square size-8 items-center justify-center">
                 <Image
                   src={

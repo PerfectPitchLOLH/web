@@ -1,12 +1,12 @@
 import { FAQSection } from '@/components/landing/faq-section'
-import { FeaturesSection } from '@/components/landing/features-section'
-import { FinalCTA } from '@/components/landing/final-cta'
-import { Footer } from '@/components/landing/footer'
-import { HeroSection } from '@/components/landing/hero-section'
-import { HowItWorks } from '@/components/landing/how-it-works'
-import { PricingSection } from '@/components/landing/pricing-section'
-import { ProblemSolution } from '@/components/landing/problem-solution'
-import { SocialProof } from '@/components/landing/social-proof'
+import { FeaturesSection } from '@/components/landing/FeaturesSection'
+import { FinalCTA } from '@/components/landing/FinalCta'
+import { Footer } from '@/components/landing/Footer'
+import { HeroSection } from '@/components/landing/HeroSection'
+import { HowItWorks } from '@/components/landing/HowItWorks'
+import { PricingSection } from '@/components/landing/PricingSection'
+import { ProblemSolution } from '@/components/landing/ProblemSolution'
+import { SocialProof } from '@/components/landing/SocialProof'
 
 export default function Home() {
   return (

@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
-import { NavbarCTA } from './navbar-cta'
-import { NavbarLanguageSelector } from './navbar-language-selector'
-import { NavbarLinks } from './navbar-links'
-import { NavbarLogo } from './navbar-logo'
-import { NavbarThemeToggle } from './navbar-theme-toggle'
+import { NavbarCTA } from './navbarCta'
+import { NavbarLanguageSelector } from './navbarLanguageSelector'
+import { NavbarLinks } from './navbarLinks'
+import { NavbarLogo } from './navbarLogo'
+import { NavbarThemeToggle } from './navbarThemeToggle'
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)

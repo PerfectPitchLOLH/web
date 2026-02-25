@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
-import { AppSidebar } from '@/components/dashboard/sidebar/app-sidebar'
-import { DashboardTopbar } from '@/components/dashboard/topbar/dashboard-topbar'
+import { AppSidebar } from '@/components/dashboard/sidebar/AppSidebar'
+import { DashboardTopbar } from '@/components/dashboard/topbar/DashboardTopbar'
 import { SidebarProvider } from '@/components/ui/sidebar'
 
 export const metadata: Metadata = {
