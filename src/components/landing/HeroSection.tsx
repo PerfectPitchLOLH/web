@@ -56,7 +56,7 @@ export function HeroSection() {
         >
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 tracking-tight">
             Transform Any Song Into{' '}
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary via-orange-500 to-yellow-500 bg-clip-text text-transparent">
               Sheet Music
             </span>{' '}
             in Seconds

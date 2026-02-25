@@ -1,26 +1,37 @@
 // @ts-check
 
-import { defineConfig, globalIgnores } from 'eslint/config'
-import nextVitals from 'eslint-config-next/core-web-vitals'
-import nextTs from 'eslint-config-next/typescript'
 import prettierConfig from 'eslint-config-prettier'
+import reactHooks from 'eslint-plugin-react-hooks'
 import simpleImportSort from 'eslint-plugin-simple-import-sort'
 import unusedImports from 'eslint-plugin-unused-imports'
+import tseslint from 'typescript-eslint'
 
-const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
-  globalIgnores([
-    '.next/**',
-    'out/**',
-    'build/**',
-    'next-env.d.ts',
-    'src/generated/**',
-    'src/components/ui/**',
-    'prisma/**',
-  ]),
+const eslintConfig = [
+  {
+    ignores: [
+      'node_modules/**',
+      '.next/**',
+      'out/**',
+      'build/**',
+      '.output/**',
+      'dist/**',
+      'next-env.d.ts',
+      'src/generated/**',
+      'src/components/ui/**',
+      '*.config.js',
+      '*.config.ts',
+      '*.config.mjs',
+      'tailwind.config.js',
+      'prettier.config.js',
+      'prisma/**',
+      'scripts/**',
+      'vitest.config.ts',
+    ],
+  },
+  ...tseslint.configs.recommended,
   {
     plugins: {
+      'react-hooks': reactHooks,
       'simple-import-sort': simpleImportSort,
       'unused-imports': unusedImports,
     },
@@ -46,10 +57,16 @@ const eslintConfig = defineConfig([
       ],
 
       '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+
       'prefer-const': 'warn',
+      'react-hooks/exhaustive-deps': 'warn',
     },
   },
   prettierConfig,
-])
+]
 
 export default eslintConfig

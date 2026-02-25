@@ -6,7 +6,14 @@ export type UserRole = 'admin' | 'user' | 'guest'
 
 export type UserEntity = PrismaUser
 
-export type CreateUserDTO = CreateDTO<PrismaUser>
+export type CreateUserDTO = Omit<
+  CreateDTO<PrismaUser>,
+  'password' | 'emailVerified' | 'image'
+> & {
+  password?: string | null
+  emailVerified?: Date | null
+  image?: string | null
+}
 
 export type UpdateUserDTO = UpdateDTO<PrismaUser>
 

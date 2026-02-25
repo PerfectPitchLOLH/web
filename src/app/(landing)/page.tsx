@@ -1,4 +1,4 @@
-import { FAQSection } from '@/components/landing/faq-section'
+import { FAQSection } from '@/components/landing/FaqSection'
 import { FeaturesSection } from '@/components/landing/FeaturesSection'
 import { FinalCTA } from '@/components/landing/FinalCta'
 import { Footer } from '@/components/landing/Footer'
