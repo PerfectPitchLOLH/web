@@ -13,8 +13,11 @@ import {
   Wallet,
 } from 'lucide-react'
 import Link from 'next/link'
+import { signOut, useSession } from 'next-auth/react'
 import { useTheme } from 'next-themes'
+import { memo, useCallback, useMemo } from 'react'
 
+import { UserMenuSkeleton } from '@/components/dashboard/skeletons/UserMenuSkeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,12 +29,45 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-export function UserMenu() {
+export const UserMenu = memo(function UserMenu() {
   const { theme, setTheme } = useTheme()
+  const { data: session, status } = useSession()
+
+  const userEmail = useMemo(
+    () => session?.user?.email ?? 'Loading...',
+    [session?.user?.email],
+  )
+
+  const userName = useMemo(
+    () => session?.user?.name ?? 'Mon compte',
+    [session?.user?.name],
+  )
+
+  const userImage = useMemo(
+    () => session?.user?.image ?? null,
+    [session?.user?.image],
+  )
+
+  const userInitial = useMemo(
+    () => session?.user?.name?.charAt(0).toUpperCase() ?? 'U',
+    [session?.user?.name],
+  )
+
+  const handleThemeToggle = useCallback(() => {
+    setTheme(theme === 'dark' ? 'light' : 'dark')
+  }, [theme, setTheme])
+
+  const handleSignOut = useCallback(async () => {
+    await signOut({ callbackUrl: '/auth/signin' })
+  }, [])
 
   const credits = {
     total: 1000,
     remaining: 750,
+  }
+
+  if (status === 'loading') {
+    return <UserMenuSkeleton />
   }
 
   return (
@@ -39,9 +75,13 @@ export function UserMenu() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative size-10 rounded-full p-0">
           <Avatar className="size-10">
-            <AvatarImage src="/avatar.png" alt="User" />
+            <AvatarImage src={userImage || undefined} alt={userName} />
             <AvatarFallback>
-              <UserCircle className="size-6" />
+              {userInitial ? (
+                <span className="text-sm font-medium">{userInitial}</span>
+              ) : (
+                <UserCircle className="size-6" />
+              )}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -49,9 +89,9 @@ export function UserMenu() {
       <DropdownMenuContent className="w-72" align="end">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Mon compte</p>
+            <p className="text-sm font-medium leading-none">{userName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              user@example.com
+              {userEmail}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -96,9 +136,7 @@ export function UserMenu() {
           </Link>
         </DropdownMenuItem>
 
-        <DropdownMenuItem
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-        >
+        <DropdownMenuItem onClick={handleThemeToggle}>
           {theme === 'dark' ? (
             <>
               <Sun className="mr-2 size-4" />
@@ -137,11 +175,11 @@ export function UserMenu() {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={handleSignOut}>
           <LogOut className="mr-2 size-4" />
           Se déconnecter
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
-}
+})

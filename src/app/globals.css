@@ -101,6 +101,12 @@
   }
 }
 
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 :root {
   --radius: 0.75rem;
   --background: #0a0a0a;

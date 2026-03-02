@@ -1,10 +1,21 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 import {
   ERROR_CODES,
   HTTP_STATUS,
 } from '@/server/shared/constants/http.constants'
-import { createSuccessResponse, handleApiError } from '@/server/shared/utils'
+import { requireAuth } from '@/server/shared/middleware'
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  handleApiError,
+} from '@/server/shared/utils'
+import {
+  checkRateLimit,
+  getClientIP,
+  getRateLimitIdentifier,
+  rateLimiters,
+} from '@/server/shared/utils'
 
 import {
   emailSchema,
@@ -19,6 +30,31 @@ export class AuthController {
 
   async signUp(request: NextRequest) {
     try {
+      const ip = getClientIP(request)
+      const identifier = getRateLimitIdentifier(ip)
+
+      const { success, reset } = await checkRateLimit(
+        rateLimiters.signUp,
+        identifier,
+      )
+
+      if (!success) {
+        return NextResponse.json(
+          createErrorResponse(
+            'TOO_MANY_REQUESTS',
+            'Too many signup attempts. Please try again later.',
+            { retryAfter: new Date(reset).toISOString() },
+            HTTP_STATUS.TOO_MANY_REQUESTS,
+          ),
+          {
+            status: HTTP_STATUS.TOO_MANY_REQUESTS,
+            headers: {
+              'Retry-After': Math.ceil((reset - Date.now()) / 1000).toString(),
+            },
+          },
+        )
+      }
+
       const body = await request.json()
       const validated = signUpSchema.parse(body)
       const user = await this.service.signUp(validated)
@@ -35,6 +71,32 @@ export class AuthController {
     try {
       const body = await request.json()
       const validated = signInSchema.parse(body)
+
+      const ip = getClientIP(request)
+      const identifier = getRateLimitIdentifier(ip, validated.email)
+
+      const { success, reset } = await checkRateLimit(
+        rateLimiters.signIn,
+        identifier,
+      )
+
+      if (!success) {
+        return NextResponse.json(
+          createErrorResponse(
+            'TOO_MANY_REQUESTS',
+            'Too many signin attempts. Please try again later.',
+            { retryAfter: new Date(reset).toISOString() },
+            HTTP_STATUS.TOO_MANY_REQUESTS,
+          ),
+          {
+            status: HTTP_STATUS.TOO_MANY_REQUESTS,
+            headers: {
+              'Retry-After': Math.ceil((reset - Date.now()) / 1000).toString(),
+            },
+          },
+        )
+      }
+
       const user = await this.service.signIn(validated)
       return createSuccessResponse(user)
     } catch (error) {
@@ -67,6 +129,32 @@ export class AuthController {
     try {
       const body = await request.json()
       const { email } = emailSchema.parse(body)
+
+      const ip = getClientIP(request)
+      const identifier = getRateLimitIdentifier(ip, email)
+
+      const { success, reset } = await checkRateLimit(
+        rateLimiters.passwordReset,
+        identifier,
+      )
+
+      if (!success) {
+        return NextResponse.json(
+          createErrorResponse(
+            'TOO_MANY_REQUESTS',
+            'Too many password reset attempts. Please try again later.',
+            { retryAfter: new Date(reset).toISOString() },
+            HTTP_STATUS.TOO_MANY_REQUESTS,
+          ),
+          {
+            status: HTTP_STATUS.TOO_MANY_REQUESTS,
+            headers: {
+              'Retry-After': Math.ceil((reset - Date.now()) / 1000).toString(),
+            },
+          },
+        )
+      }
+
       await this.service.requestPasswordReset(email)
       return createSuccessResponse({
         message: 'If email exists, reset link sent',
@@ -82,6 +170,44 @@ export class AuthController {
       const { token, password } = resetPasswordSchema.parse(body)
       await this.service.resetPassword(token, password)
       return createSuccessResponse({ message: 'Password reset successfully' })
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
+  async resendVerificationEmail(request: NextRequest) {
+    try {
+      const session = await requireAuth()
+
+      const ip = getClientIP(request)
+      const identifier = getRateLimitIdentifier(ip, session.user.email)
+
+      const { success, reset } = await checkRateLimit(
+        rateLimiters.verificationEmail,
+        identifier,
+      )
+
+      if (!success) {
+        return NextResponse.json(
+          createErrorResponse(
+            'TOO_MANY_REQUESTS',
+            'Too many verification email requests. Please try again later.',
+            { retryAfter: new Date(reset).toISOString() },
+            HTTP_STATUS.TOO_MANY_REQUESTS,
+          ),
+          {
+            status: HTTP_STATUS.TOO_MANY_REQUESTS,
+            headers: {
+              'Retry-After': Math.ceil((reset - Date.now()) / 1000).toString(),
+            },
+          },
+        )
+      }
+
+      await this.service.resendVerificationEmail(session.user.email)
+      return createSuccessResponse({
+        message: 'Verification email sent successfully',
+      })
     } catch (error) {
       return handleApiError(error)
     }

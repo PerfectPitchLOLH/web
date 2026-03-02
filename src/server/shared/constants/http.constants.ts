@@ -8,6 +8,7 @@ export const HTTP_STATUS = {
   NOT_FOUND: 404,
   CONFLICT: 409,
   UNPROCESSABLE_ENTITY: 422,
+  TOO_MANY_REQUESTS: 429,
   INTERNAL_SERVER_ERROR: 500,
 } as const
 
@@ -17,6 +18,7 @@ export const ERROR_CODES = {
   UNAUTHORIZED: 'UNAUTHORIZED',
   FORBIDDEN: 'FORBIDDEN',
   CONFLICT: 'CONFLICT',
+  TOO_MANY_REQUESTS: 'TOO_MANY_REQUESTS',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const
 
@@ -26,5 +28,6 @@ export const ERROR_MESSAGES = {
   UNAUTHORIZED: 'Unauthorized access',
   FORBIDDEN: 'Access forbidden',
   CONFLICT: 'Resource already exists',
+  TOO_MANY_REQUESTS: 'Too many requests',
   INTERNAL_ERROR: 'Internal server error',
 } as const

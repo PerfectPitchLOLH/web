@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { ZodError } from 'zod'
 
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
+import { validateApiAuth } from '@/server/shared/middleware'
 import {
   createErrorResponse,
   createSuccessResponse,
@@ -20,6 +21,9 @@ export class UserController {
   constructor(private service: UserService) {}
 
   async getUsers(request: NextRequest) {
+    const { session, response } = await validateApiAuth(request)
+    if (response) return response
+
     try {
       const { searchParams } = request.nextUrl
 
@@ -61,6 +65,9 @@ export class UserController {
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
   ) {
+    const { session, response } = await validateApiAuth(request)
+    if (response) return response
+
     try {
       const { id } = await params
       const validatedId = userIdSchema.parse(id)
@@ -80,6 +87,9 @@ export class UserController {
   }
 
   async createUser(request: NextRequest) {
+    const { session, response } = await validateApiAuth(request)
+    if (response) return response
+
     try {
       const body = await request.json()
       const validated = createUserSchema.parse(body)
@@ -102,6 +112,9 @@ export class UserController {
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
   ) {
+    const { session, response } = await validateApiAuth(request)
+    if (response) return response
+
     try {
       const { id } = await params
       const validatedId = userIdSchema.parse(id)
@@ -126,11 +139,14 @@ export class UserController {
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
   ) {
+    const { session, response } = await validateApiAuth(request)
+    if (response) return response
+
     try {
       const { id } = await params
       const validatedId = userIdSchema.parse(id)
       await this.service.deleteUser(validatedId)
-      return createSuccessResponse(null, HTTP_STATUS.NO_CONTENT)
+      return createSuccessResponse({ deleted: true }, HTTP_STATUS.OK)
     } catch (error) {
       if (error instanceof ZodError) {
         return createErrorResponse(

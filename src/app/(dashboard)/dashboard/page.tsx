@@ -1,9 +1,16 @@
-export default function DashboardPage() {
+import { auth } from '@/server/lib/auth'
+
+export default async function DashboardPage() {
+  const session = await auth()
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-lg border bg-card p-6">
-          <h3 className="font-semibold">Bienvenue sur Notavex</h3>
+          <h3 className="font-semibold">
+            Bienvenue
+            {session?.user?.name ? `, ${session.user.name}` : ' sur Notavex'}
+          </h3>
           <p className="mt-2 text-sm text-muted-foreground">
             Votre espace de travail pour la séparation de stems et la production
             musicale

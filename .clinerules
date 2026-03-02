@@ -1,0 +1,108 @@
+# Agent Rules for Notavex Web App
+
+## Available Agents
+
+### feature-architect
+**Purpose**: Orchestrer la création complète de fonctionnalités end-to-end avec architecture DDD, performance optimale, et UX/UI exceptionnelle.
+
+**Capabilities**:
+- Architecture backend domain-driven (TDD)
+- Frontend ultra-performant avec cache strategies et skeletons
+- UX/UI soignée avec shadcn/ui
+- Approche Test-Driven Development
+- Questions structurées pour clarifier les besoins
+- Audit sécurité et performance
+
+**When to use**:
+- Créer une nouvelle fonctionnalité complète
+- Ajouter un CRUD avec interface
+- Développer une feature complexe avec backend + frontend
+- Besoin d'architecture robuste et performante
+
+**How to invoke**:
+```bash
+# Via Task tool
+Task(subagent_type="feature-architect", prompt="Create a notes management feature with CRUD operations")
+```
+
+**Sub-commands available**:
+- `/new-domain-tdd {domain}` - Créer nouveau domain avec TDD
+- `/security-audit` - Audit de sécurité
+
+**Process**:
+1. **Découverte**: Questions structurées (backend, frontend, UX/UI, performance)
+2. **Architecture**: Design backend (DDD) + frontend (cache, skeletons)
+3. **Backend TDD**: Tests → Implementation → Refactor
+4. **Frontend Performance**: Cache strategies, suspense, skeletons
+5. **UX/UI Polish**: Animations, responsive, accessibilité
+6. **Integration**: Tests E2E, audit sécurité, performance
+7. **Documentation**: Code review checklist, metrics
+
+**Performance guarantees**:
+- Core Web Vitals: LCP < 2.5s, FID < 100ms, CLS < 0.1
+- Skeleton pour chaque composant
+- Cache strategy documentée
+- Optimistic updates pour mutations
+- Mobile-first responsive design
+
+**Tools available**: All tools (Read, Write, Edit, Bash, Glob, Grep, Task, AskUserQuestion, TodoWrite)
+
+---
+
+## Agent Configuration
+
+```json
+{
+  "agents": {
+    "feature-architect": {
+      "description": "Full-stack feature development with DDD, TDD, performance optimization, and UX/UI excellence",
+      "tools": ["*"],
+      "model": "sonnet",
+      "proactive": true
+    }
+  }
+}
+```
+
+---
+
+## Usage Examples
+
+### Example 1: Simple CRUD Feature
+```
+User: "I need to add user profile management"
+
+Agent:
+1. Asks questions about requirements
+2. Proposes UX/UI options
+3. Creates user domain with TDD
+4. Implements frontend with cache + skeletons
+5. Adds animations and polish
+6. Runs security audit
+7. Delivers complete feature
+```
+
+### Example 2: Complex Feature
+```
+User: "Create a project collaboration system with real-time updates"
+
+Agent:
+1. Discovers requirements (entities, permissions, real-time needs)
+2. Designs architecture (domains, relationships, WebSocket strategy)
+3. Proposes UX/UI (layout, interactions, notifications)
+4. Implements backend domains (project, collaboration, notifications)
+5. Creates frontend with React Query + Optimistic UI
+6. Adds real-time updates
+7. Performance optimization
+8. Security audit
+9. Complete documentation
+```
+
+---
+
+## Notes
+- Agent uses TodoWrite to track progress
+- Agent uses AskUserQuestion for clarifications
+- Agent always creates skeletons for components
+- Agent documents cache strategies
+- Agent follows CLAUDE.md conventions (PascalCase, camelCase, etc.)

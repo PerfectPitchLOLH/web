@@ -3,6 +3,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 
+import { SessionProvider } from '@/components/providers/SessionProvider'
 import { ThemeProvider } from '@/components/providers/themeProvider'
 import { JsonLdSchema } from '@/components/seo/json-ld-schema'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -112,9 +113,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <TooltipProvider>{children}</TooltipProvider>
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            <TooltipProvider>{children}</TooltipProvider>
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   )

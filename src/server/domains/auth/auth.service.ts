@@ -173,4 +173,31 @@ export class AuthService {
     await this.repository.updatePassword(user.id, hashedPassword)
     await this.repository.deleteVerificationToken(token)
   }
+
+  async resendVerificationEmail(email: string): Promise<void> {
+    const user = await this.repository.findUserByEmail(email)
+
+    if (!user) {
+      throw new ApiError('NOT_FOUND', HTTP_STATUS.NOT_FOUND, 'User not found')
+    }
+
+    if (user.emailVerified) {
+      throw new ApiError(
+        'CONFLICT',
+        HTTP_STATUS.CONFLICT,
+        'Email already verified',
+      )
+    }
+
+    const verificationToken = generateSecureToken()
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000)
+
+    await this.repository.createVerificationToken(
+      email,
+      verificationToken,
+      expires,
+    )
+
+    await sendVerificationEmail(email, verificationToken)
+  }
 }

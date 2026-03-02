@@ -7,6 +7,34 @@ import { ApiError } from '@/server/shared/utils'
 import { AuthController } from '../auth.controller'
 import { AuthService } from '../auth.service'
 
+vi.mock('@/server/lib/auth', () => ({
+  auth: vi.fn().mockResolvedValue(null),
+}))
+
+vi.mock('@/server/shared/middleware', () => ({
+  requireAuth: vi.fn().mockResolvedValue({
+    user: { id: '1', email: 'test@test.com', role: 'user' },
+  }),
+  validateApiAuth: vi.fn().mockResolvedValue({
+    session: { user: { id: '1', email: 'test@test.com', role: 'user' } },
+    response: null,
+  }),
+}))
+
+vi.mock('@/server/shared/utils/rate-limit.utils', () => ({
+  checkRateLimit: vi
+    .fn()
+    .mockResolvedValue({ success: true, reset: Date.now() + 60000 }),
+  rateLimiters: {
+    signUp: {},
+    signIn: {},
+    passwordReset: {},
+    verificationEmail: {},
+  },
+  getRateLimitIdentifier: vi.fn().mockReturnValue('test-identifier'),
+  getClientIP: vi.fn().mockReturnValue('127.0.0.1'),
+}))
+
 describe('AuthController', () => {
   let authController: AuthController
   let mockService: AuthService
