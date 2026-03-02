@@ -61,6 +61,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             name: user.name,
             image: user.image,
             role: user.role,
+            emailVerified: user.emailVerified,
           }
         } catch {
           return null

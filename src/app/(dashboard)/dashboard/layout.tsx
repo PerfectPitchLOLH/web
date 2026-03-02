@@ -1,28 +1,24 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 
-import { AppSidebar } from '@/components/dashboard/sidebar/AppSidebar'
-import { DashboardTopbar } from '@/components/dashboard/topbar/DashboardTopbar'
-import { SidebarProvider } from '@/components/ui/sidebar'
+import { DashboardShell } from '@/components/dashboard/DashboardShell'
+import { auth } from '@/server/lib/auth'
 
 export const metadata: Metadata = {
   title: 'Dashboard - Notavex',
   description: 'Votre espace de travail musical',
 }
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <AppSidebar />
-        <div className="flex flex-1 flex-col">
-          <DashboardTopbar />
-          <main className="flex-1">{children}</main>
-        </div>
-      </div>
-    </SidebarProvider>
-  )
+  const session = await auth()
+
+  if (!session?.user) {
+    redirect('/auth/signin')
+  }
+
+  return <DashboardShell session={session}>{children}</DashboardShell>
 }
