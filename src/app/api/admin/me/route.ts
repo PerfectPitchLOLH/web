@@ -47,7 +47,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching current user:', error)
     return createErrorResponse(
-      'INTERNAL_SERVER_ERROR',
+      'INTERNAL_ERROR',
       'Failed to fetch user',
       null,
       HTTP_STATUS.INTERNAL_SERVER_ERROR,

@@ -14,8 +14,16 @@ export const deleteUserSchema = z.object({
 })
 
 export const userManagementFiltersSchema = z.object({
-  role: z.enum(['admin', 'user']).nullable().optional(),
-  search: z.string().nullable().optional(),
+  role: z
+    .enum(['admin', 'user'])
+    .nullable()
+    .transform((val) => val || undefined)
+    .optional(),
+  search: z
+    .string()
+    .nullable()
+    .transform((val) => val || undefined)
+    .optional(),
   emailVerified: z
     .string()
     .nullable()
@@ -28,8 +36,16 @@ export const userManagementFiltersSchema = z.object({
 })
 
 export const auditLogFiltersSchema = z.object({
-  userId: z.string().nullable().optional(),
-  action: z.string().nullable().optional(),
+  userId: z
+    .string()
+    .nullable()
+    .transform((val) => val || undefined)
+    .optional(),
+  action: z
+    .string()
+    .nullable()
+    .transform((val) => val || undefined)
+    .optional(),
   startDate: z
     .string()
     .nullable()
