@@ -19,6 +19,7 @@ export const ERROR_CODES = {
   FORBIDDEN: 'FORBIDDEN',
   CONFLICT: 'CONFLICT',
   TOO_MANY_REQUESTS: 'TOO_MANY_REQUESTS',
+  RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const
 
@@ -29,5 +30,6 @@ export const ERROR_MESSAGES = {
   FORBIDDEN: 'Access forbidden',
   CONFLICT: 'Resource already exists',
   TOO_MANY_REQUESTS: 'Too many requests',
+  RATE_LIMIT_EXCEEDED: 'Rate limit exceeded',
   INTERNAL_ERROR: 'Internal server error',
 } as const

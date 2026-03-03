@@ -15,7 +15,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prepare": "husky",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "create-admin": "npx tsx scripts/create-admin.ts",
+    "test-rate-limit": "npx tsx scripts/test-rate-limit.ts"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

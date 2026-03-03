@@ -2,7 +2,7 @@ import type { User as PrismaUser } from '@prisma/client'
 
 import type { CreateDTO, UpdateDTO } from '@/server/shared/types'
 
-export type UserRole = 'admin' | 'user' | 'guest'
+export type UserRole = 'admin' | 'user'
 
 export type UserEntity = PrismaUser
 

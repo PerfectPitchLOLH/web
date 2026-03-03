@@ -6,6 +6,7 @@ import {
   LogOut,
   Moon,
   Settings,
+  Shield,
   Sparkles,
   Sun,
   UserCircle,
@@ -51,6 +52,11 @@ export const UserMenu = memo(function UserMenu() {
   const userInitial = useMemo(
     () => session?.user?.name?.charAt(0).toUpperCase() ?? 'U',
     [session?.user?.name],
+  )
+
+  const isAdmin = useMemo(
+    () => session?.user?.role === 'admin',
+    [session?.user?.role],
   )
 
   const handleThemeToggle = useCallback(() => {
@@ -121,6 +127,18 @@ export const UserMenu = memo(function UserMenu() {
         </div>
 
         <DropdownMenuSeparator />
+
+        {isAdmin && (
+          <>
+            <DropdownMenuItem asChild>
+              <Link href="/admin">
+                <Shield className="mr-2 size-4 text-red-500" />
+                <span className="font-semibold text-red-500">Admin Panel</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
 
         <DropdownMenuItem asChild>
           <Link href="/dashboard/settings">

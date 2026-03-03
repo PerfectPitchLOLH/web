@@ -11,6 +11,7 @@ export type AuditEventType =
   | 'AUTH_RATE_LIMIT_EXCEEDED'
   | 'API_UNAUTHORIZED_ACCESS'
   | 'API_FORBIDDEN_ACCESS'
+  | 'ADMIN_UNAUTHORIZED_ACCESS'
 
 export type AuditLogEntry = {
   timestamp: string
@@ -188,6 +189,22 @@ class AuditLogger {
       userId,
       ip,
       details: { path, method },
+      success: false,
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  logUnauthorizedAdminAccess(
+    userId: string,
+    userName: string,
+    path: string,
+    ip: string | null,
+  ): void {
+    this.log({
+      event: 'ADMIN_UNAUTHORIZED_ACCESS',
+      userId,
+      ip,
+      details: { userName, path },
       success: false,
       timestamp: new Date().toISOString(),
     })
