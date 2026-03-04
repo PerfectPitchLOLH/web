@@ -93,7 +93,7 @@ export class UserController {
     try {
       const body = await request.json()
       const validated = createUserSchema.parse(body)
-      const user = await this.service.createUser(validated)
+      const user = await this.service.createUser(validated as any)
       return createSuccessResponse(user, HTTP_STATUS.CREATED)
     } catch (error) {
       if (error instanceof ZodError) {

@@ -1,4 +1,5 @@
 import {
+  Eye,
   MoreVertical,
   Shield,
   Trash2,
@@ -73,6 +74,15 @@ export function UserActionsDropdown({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem asChild>
+          <a href={`/api/impersonation/start-redirect?targetUserId=${user.id}`}>
+            <Eye className="mr-2 size-4" />
+            Voir comme cet utilisateur
+          </a>
+        </DropdownMenuItem>
+
         <DropdownMenuSeparator />
 
         <DropdownMenuSub>

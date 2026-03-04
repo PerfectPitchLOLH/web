@@ -7,6 +7,12 @@ declare module 'next-auth' {
       role: string
       emailVerified: Date | null
     } & DefaultSession['user']
+    impersonation?: {
+      isActive: boolean
+      adminId: string
+      adminEmail: string
+      sessionId: string
+    }
   }
 
   interface User {
@@ -20,5 +26,11 @@ declare module 'next-auth/jwt' {
     id: string
     role: string
     emailVerified: Date | null
+    impersonation?: {
+      isActive: boolean
+      adminId: string
+      adminEmail: string
+      sessionId: string
+    }
   }
 }

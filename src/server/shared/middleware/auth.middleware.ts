@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import type { Session } from 'next-auth'
 
 import { auth } from '@/server/lib/auth'
+import { db } from '@/server/lib/database'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { auditLogger } from '@/server/shared/utils'
 import { createErrorResponse } from '@/server/shared/utils/api.utils'
@@ -16,19 +17,50 @@ export type AuthSession = Session & {
   }
 }
 
-export async function getSession(): Promise<AuthSession | null> {
-  const session = await auth()
-  return session as AuthSession | null
-}
-
 export async function requireAuth(): Promise<AuthSession> {
-  const session = await getSession()
+  const session = await auth()
 
   if (!session?.user) {
     throw new Error('UNAUTHORIZED')
   }
 
-  return session
+  return session as AuthSession
+}
+
+export async function requireAdminAuth(): Promise<AuthSession> {
+  const session = await auth()
+
+  if (!session?.user) {
+    throw new Error('UNAUTHORIZED')
+  }
+
+  const adminId = session.impersonation?.adminId ?? session.user.id
+
+  const admin = await db.user.findUnique({
+    where: { id: adminId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      emailVerified: true,
+    },
+  })
+
+  if (!admin || admin.role !== 'admin') {
+    throw new Error('FORBIDDEN')
+  }
+
+  return {
+    ...session,
+    user: {
+      id: admin.id,
+      email: admin.email,
+      name: admin.name,
+      role: admin.role,
+      emailVerified: admin.emailVerified,
+    },
+  }
 }
 
 export async function validateApiAuth(
@@ -40,7 +72,7 @@ export async function validateApiAuth(
   try {
     const session = await requireAuth()
     return { session }
-  } catch (error) {
+  } catch {
     const ip = getClientIP(request)
     const { pathname } = request.nextUrl
 

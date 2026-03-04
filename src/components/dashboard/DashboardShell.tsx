@@ -2,6 +2,7 @@
 
 import type { Session } from 'next-auth'
 
+import { ImpersonationBanner } from '@/components/admin/impersonation'
 import { EmailVerificationBanner } from '@/components/dashboard/EmailVerificationBanner'
 import { AppSidebar } from '@/components/dashboard/sidebar/AppSidebar'
 import { DashboardTopbar } from '@/components/dashboard/topbar/DashboardTopbar'
@@ -17,6 +18,7 @@ export function DashboardShell({ children, session }: DashboardShellProps) {
   return (
     <SessionProvider session={session}>
       <SidebarProvider>
+        <ImpersonationBanner />
         <div className="flex min-h-screen w-full">
           <AppSidebar />
           <div className="flex flex-1 flex-col">

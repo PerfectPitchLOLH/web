@@ -80,6 +80,8 @@ export type AuditLogResult = {
   totalPages: number
 }
 
+import type { IMPERSONATION_ACTIONS } from '../impersonation/impersonation.constants'
+
 export type AdminAction =
   | 'user_role_updated'
   | 'user_suspended'
@@ -87,3 +89,4 @@ export type AdminAction =
   | 'user_deleted'
   | 'settings_updated'
   | 'system_config_changed'
+  | (typeof IMPERSONATION_ACTIONS)[keyof typeof IMPERSONATION_ACTIONS]

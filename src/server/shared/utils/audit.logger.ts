@@ -12,6 +12,11 @@ export type AuditEventType =
   | 'API_UNAUTHORIZED_ACCESS'
   | 'API_FORBIDDEN_ACCESS'
   | 'ADMIN_UNAUTHORIZED_ACCESS'
+  | 'IMPERSONATION_START'
+  | 'IMPERSONATION_END'
+  | 'IMPERSONATION_ACTION'
+  | 'IMPERSONATION_UNAUTHORIZED'
+  | 'IMPERSONATION_RATE_LIMIT'
 
 export type AuditLogEntry = {
   timestamp: string
@@ -206,6 +211,99 @@ class AuditLogger {
       ip,
       details: { userName, path },
       success: false,
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  logImpersonationStart(
+    adminId: string,
+    adminEmail: string,
+    targetUserId: string,
+    targetEmail: string,
+    ip: string | null,
+    userAgent: string | null,
+  ): void {
+    this.log({
+      event: 'IMPERSONATION_START',
+      userId: adminId,
+      email: adminEmail,
+      ip,
+      userAgent,
+      details: { targetUserId, targetEmail },
+      success: true,
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  logImpersonationEnd(
+    adminId: string,
+    adminEmail: string,
+    targetUserId: string,
+    targetEmail: string,
+    ip: string | null,
+  ): void {
+    this.log({
+      event: 'IMPERSONATION_END',
+      userId: adminId,
+      email: adminEmail,
+      ip,
+      details: { targetUserId, targetEmail },
+      success: true,
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  logImpersonationUnauthorized(
+    userId: string,
+    targetUserId: string,
+    reason: string,
+    ip: string | null,
+  ): void {
+    this.log({
+      event: 'IMPERSONATION_UNAUTHORIZED',
+      userId,
+      ip,
+      details: { targetUserId, reason },
+      success: false,
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  logImpersonationRateLimit(
+    identifier: string,
+    endpoint: string,
+    ip: string | null,
+  ): void {
+    this.log({
+      event: 'IMPERSONATION_RATE_LIMIT',
+      ip,
+      details: { identifier, endpoint },
+      success: false,
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  logImpersonationAction(
+    adminId: string,
+    targetUserId: string,
+    action: string,
+    method: string,
+    path: string,
+    statusCode: number | null,
+    ip: string | null,
+  ): void {
+    this.log({
+      event: 'IMPERSONATION_ACTION',
+      userId: adminId,
+      ip,
+      details: {
+        targetUserId,
+        action,
+        method,
+        path,
+        statusCode,
+      },
+      success: statusCode ? statusCode < 400 : true,
       timestamp: new Date().toISOString(),
     })
   }

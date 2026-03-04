@@ -27,8 +27,10 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts Account[]
-  sessions Session[]
+  accounts               Account[]
+  sessions               Session[]
+  adminImpersonations    ImpersonationSession[] @relation("AdminImpersonations")
+  impersonatedSessions   ImpersonationSession[] @relation("ImpersonatedUsers")
 
   @@map("users")
 }
@@ -87,4 +89,43 @@ model AuditLog {
   @@index([action])
   @@index([timestamp])
   @@map("audit_logs")
+}
+
+model ImpersonationSession {
+  id           String              @id @default(cuid())
+  adminId      String
+  admin        User                @relation("AdminImpersonations", fields: [adminId], references: [id], onDelete: Cascade)
+  targetUserId String
+  targetUser   User                @relation("ImpersonatedUsers", fields: [targetUserId], references: [id], onDelete: Cascade)
+  startedAt    DateTime            @default(now())
+  endedAt      DateTime?
+  ip           String?
+  userAgent    String?
+  isActive     Boolean             @default(true)
+  logs         ImpersonationLog[]
+
+  @@index([adminId, isActive])
+  @@index([targetUserId])
+  @@map("impersonation_sessions")
+}
+
+model ImpersonationLog {
+  id                     String               @id @default(cuid())
+  impersonationSessionId String
+  session                ImpersonationSession @relation(fields: [impersonationSessionId], references: [id], onDelete: Cascade)
+  action                 String
+  method                 String
+  path                   String
+  statusCode             Int?
+  requestBody            String?
+  responseBody           String?
+  ip                     String?
+  userAgent              String?
+  duration               Int?
+  timestamp              DateTime             @default(now())
+
+  @@index([impersonationSessionId])
+  @@index([timestamp])
+  @@index([action])
+  @@map("impersonation_logs")
 }
