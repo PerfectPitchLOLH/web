@@ -17,7 +17,7 @@ export const EmailVerificationBanner = memo(function EmailVerificationBanner() {
 
   const shouldShow = useMemo(
     () => session?.user && !session.user.emailVerified,
-    [session?.user, session?.user?.emailVerified],
+    [session?.user],
   )
 
   const handleResendVerification = useCallback(async () => {
@@ -60,17 +60,17 @@ export const EmailVerificationBanner = memo(function EmailVerificationBanner() {
   }
 
   return (
-    <div className="w-full border-b bg-yellow-50 dark:bg-yellow-950/20">
+    <div className="w-full">
       <div className="container mx-auto px-4 py-3">
         <Alert
           variant="default"
-          className="border-yellow-200 bg-transparent dark:border-yellow-800"
+          className="border-yellow-200 bg-transparent dark:border-yellow-600"
         >
-          <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
-          <AlertTitle className="text-yellow-800 dark:text-yellow-200">
+          <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+          <AlertTitle className="text-yellow-800 dark:text-yellow-400">
             Email non vérifié
           </AlertTitle>
-          <AlertDescription className="flex flex-col gap-3 text-yellow-700 dark:text-yellow-300 sm:flex-row sm:items-center sm:justify-between">
+          <AlertDescription className="flex flex-col gap-3 text-yellow-700 dark:text-yellow-400 sm:flex-row sm:items-center sm:justify-between">
             <span>
               Veuillez vérifier votre email pour accéder à toutes les
               fonctionnalités.

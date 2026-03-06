@@ -1,3 +1,5 @@
+import { CreditBalanceCard } from '@/components/dashboard/credits/CreditBalanceCard'
+import { EmailVerificationBanner } from '@/components/dashboard/EmailVerificationBanner'
 import { auth } from '@/server/lib/auth'
 
 export default async function DashboardPage() {
@@ -5,7 +7,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+      <EmailVerificationBanner />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <CreditBalanceCard />
+
         <div className="rounded-lg border bg-card p-6">
           <h3 className="font-semibold">
             Bienvenue

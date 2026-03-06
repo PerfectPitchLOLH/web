@@ -3,6 +3,7 @@
 import {
   CreditCard,
   FileText,
+  History,
   LogOut,
   Moon,
   Settings,
@@ -18,6 +19,7 @@ import { signOut, useSession } from 'next-auth/react'
 import { useTheme } from 'next-themes'
 import { memo, useCallback, useMemo } from 'react'
 
+import { CircularProgressAvatar } from '@/components/dashboard/credits/CircularProgressAvatar'
 import { UserMenuSkeleton } from '@/components/dashboard/skeletons/UserMenuSkeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -72,6 +74,8 @@ export const UserMenu = memo(function UserMenu() {
     remaining: 750,
   }
 
+  const creditsPercentage = (credits.remaining / credits.total) * 100
+
   if (status === 'loading') {
     return <UserMenuSkeleton />
   }
@@ -80,16 +84,18 @@ export const UserMenu = memo(function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative size-10 rounded-full p-0">
-          <Avatar className="size-10">
-            <AvatarImage src={userImage || undefined} alt={userName} />
-            <AvatarFallback>
-              {userInitial ? (
-                <span className="text-sm font-medium">{userInitial}</span>
-              ) : (
-                <UserCircle className="size-6" />
-              )}
-            </AvatarFallback>
-          </Avatar>
+          <CircularProgressAvatar percentage={creditsPercentage}>
+            <Avatar className="size-10">
+              <AvatarImage src={userImage || undefined} alt={userName} />
+              <AvatarFallback>
+                {userInitial ? (
+                  <span className="text-sm font-medium">{userInitial}</span>
+                ) : (
+                  <UserCircle className="size-6" />
+                )}
+              </AvatarFallback>
+            </Avatar>
+          </CircularProgressAvatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-72" align="end">
@@ -108,14 +114,18 @@ export const UserMenu = memo(function UserMenu() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Wallet className="size-4 text-amber-500" />
-                <span className="text-sm font-medium">Solde de crédits</span>
+                <span className="text-sm font-medium">Solde</span>
               </div>
             </div>
-            <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-2xl font-bold">{credits.remaining}</span>
-              <span className="text-sm text-muted-foreground">
-                / {credits.total}
-              </span>
+            <div className="mt-2 flex flex-col items-baseline gap-1">
+              <div className="flex items-center justify-between w-full">
+                <span className="">Total</span>
+                <span>{credits.total} crédits</span>
+              </div>
+              <div className="flex items-center justify-between w-full">
+                <span>Restant</span>
+                <span>{credits.remaining}</span>
+              </div>
             </div>
             <Button size="sm" className="mt-2 w-full" variant="outline" asChild>
               <Link href="/dashboard/upgrade">
@@ -172,6 +182,13 @@ export const UserMenu = memo(function UserMenu() {
           <Link href="/dashboard/payments">
             <Wallet className="mr-2 size-4" />
             Paiements
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/credits/history">
+            <History className="mr-2 size-4" />
+            Historique des crédits
           </Link>
         </DropdownMenuItem>
 
