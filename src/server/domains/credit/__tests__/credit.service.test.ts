@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
@@ -10,10 +11,10 @@ vi.mock('../credit.repository')
 
 describe('CreditService', () => {
   let service: CreditService
-  let mockRepository: vi.Mocked<CreditRepository>
+  let mockRepository: Mocked<CreditRepository>
 
   beforeEach(() => {
-    mockRepository = new CreditRepository() as vi.Mocked<CreditRepository>
+    mockRepository = new CreditRepository() as Mocked<CreditRepository>
     service = new CreditService(mockRepository)
     vi.clearAllMocks()
   })
@@ -123,9 +124,7 @@ describe('CreditService', () => {
         createdAt: new Date(),
       })
 
-      const result = await service.purchaseBundle('user-1', {
-        bundleId: 'medium',
-      })
+      const result = await service.purchaseBundle('user-1', 'medium')
 
       expect(result.purchasedMinutes).toBe(25)
       expect(mockRepository.incrementPurchasedMinutes).toHaveBeenCalledWith(
@@ -148,7 +147,7 @@ describe('CreditService', () => {
       mockRepository.getUserCredits = vi.fn().mockResolvedValue(mockCredits)
 
       await expect(
-        service.purchaseBundle('user-1', { bundleId: 'invalid' }),
+        service.purchaseBundle('user-1', 'invalid' as any),
       ).rejects.toThrow(ApiError)
     })
 
@@ -181,7 +180,7 @@ describe('CreditService', () => {
         createdAt: new Date(),
       })
 
-      await service.purchaseBundle('user-1', { bundleId: 'small' })
+      await service.purchaseBundle('user-1', 'small')
 
       expect(mockRepository.createOrUpdateUserCredits).toHaveBeenCalled()
     })
@@ -365,8 +364,8 @@ describe('CreditService', () => {
       })
 
       expect(result.transactions).toHaveLength(1)
-      expect(result.pagination.total).toBe(1)
-      expect(result.pagination.totalPages).toBe(1)
+      expect(result.total).toBe(1)
+      expect(result.totalPages).toBe(1)
     })
   })
 })

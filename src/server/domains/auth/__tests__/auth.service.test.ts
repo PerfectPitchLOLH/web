@@ -25,6 +25,24 @@ import {
   verifyPassword,
 } from '@/server/shared/utils/password.utils'
 
+const createMockUser = (overrides: any = {}) => ({
+  id: '1',
+  email: 'test@test.com',
+  name: 'Test User',
+  password: 'hashed',
+  role: 'user',
+  isRootAdmin: false,
+  emailVerified: null,
+  image: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  status: 'active',
+  suspendedAt: null,
+  deletedAt: null,
+  stripeCustomerId: null,
+  ...overrides,
+})
+
 describe('AuthService', () => {
   let authService: AuthService
   let mockRepository: AuthRepository
@@ -52,17 +70,13 @@ describe('AuthService', () => {
     }
 
     it('should create new user successfully', async () => {
-      const mockUser = {
+      const mockUser = createMockUser({
         id: '1',
         email: signUpData.email,
         name: signUpData.name,
         role: 'user',
         password: 'hashed',
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.findUserByEmail).mockResolvedValue(null)
       vi.mocked(hashPassword).mockResolvedValue('hashed_password')
@@ -89,17 +103,13 @@ describe('AuthService', () => {
     })
 
     it('should throw error if email already exists', async () => {
-      const existingUser = {
+      const existingUser = createMockUser({
         id: '1',
         email: signUpData.email,
         name: 'Existing User',
         role: 'user',
         password: 'hashed',
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.findUserByEmail).mockResolvedValue(existingUser)
 
@@ -110,17 +120,13 @@ describe('AuthService', () => {
     })
 
     it('should throw ApiError with CONFLICT status', async () => {
-      const existingUser = {
+      const existingUser = createMockUser({
         id: '1',
         email: signUpData.email,
         name: 'Existing User',
         role: 'user',
         password: 'hashed',
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.findUserByEmail).mockResolvedValue(existingUser)
 
@@ -141,17 +147,13 @@ describe('AuthService', () => {
     }
 
     it('should sign in user successfully', async () => {
-      const mockUser = {
+      const mockUser = createMockUser({
         id: '1',
         email: signInData.email,
         name: 'Test User',
-        password: 'hashed_password',
         role: 'user',
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+        password: 'hashed_password',
+      })
 
       vi.mocked(mockRepository.findUserByEmail).mockResolvedValue(mockUser)
       vi.mocked(verifyPassword).mockResolvedValue(true)
@@ -179,17 +181,12 @@ describe('AuthService', () => {
     })
 
     it('should throw error if user has no password (OAuth user)', async () => {
-      const oauthUser = {
+      const oauthUser = createMockUser({
         id: '1',
         email: signInData.email,
         name: 'Test User',
-        password: null,
         role: 'user',
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.findUserByEmail).mockResolvedValue(oauthUser)
 
@@ -200,17 +197,13 @@ describe('AuthService', () => {
     })
 
     it('should throw error if password is invalid', async () => {
-      const mockUser = {
+      const mockUser = createMockUser({
         id: '1',
         email: signInData.email,
         name: 'Test User',
-        password: 'hashed_password',
         role: 'user',
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+        password: 'hashed_password',
+      })
 
       vi.mocked(mockRepository.findUserByEmail).mockResolvedValue(mockUser)
       vi.mocked(verifyPassword).mockResolvedValue(false)
@@ -244,17 +237,13 @@ describe('AuthService', () => {
         expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
       }
 
-      const mockUser = {
+      const mockUser = createMockUser({
         id: '1',
         email: 'test@test.com',
         name: 'Test User',
-        password: 'hashed',
         role: 'user',
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+        password: 'hashed',
+      })
 
       vi.mocked(mockRepository.findVerificationToken).mockResolvedValue(
         mockToken,
@@ -328,17 +317,12 @@ describe('AuthService', () => {
     const email = 'test@test.com'
 
     it('should create reset token and send email', async () => {
-      const mockUser = {
+      const mockUser = createMockUser({
         id: '1',
-        email,
         name: 'Test User',
-        password: 'hashed',
         role: 'user',
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+        password: 'hashed',
+      })
 
       vi.mocked(mockRepository.findUserByEmail).mockResolvedValue(mockUser)
       vi.mocked(mockRepository.createVerificationToken).mockResolvedValue(
@@ -379,17 +363,13 @@ describe('AuthService', () => {
         expires: new Date(Date.now() + 60 * 60 * 1000),
       }
 
-      const mockUser = {
+      const mockUser = createMockUser({
         id: '1',
         email: 'test@test.com',
         name: 'Test User',
-        password: 'old_hashed',
         role: 'user',
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+        password: 'old_hashed',
+      })
 
       vi.mocked(mockRepository.findVerificationToken).mockResolvedValue(
         mockToken,

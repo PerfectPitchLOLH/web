@@ -16,6 +16,24 @@ vi.mock('@/server/shared/middleware', () => ({
   }),
 }))
 
+const createMockUser = (overrides: any = {}) => ({
+  id: '1',
+  email: 'test@test.com',
+  name: 'Test User',
+  password: null,
+  role: 'user',
+  isRootAdmin: false,
+  emailVerified: null,
+  image: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  status: 'active',
+  suspendedAt: null,
+  deletedAt: null,
+  stripeCustomerId: null,
+  ...overrides,
+})
+
 describe('UserController', () => {
   let controller: UserController
   let mockService: UserService
@@ -37,28 +55,18 @@ describe('UserController', () => {
     it('should return users list with default pagination', async () => {
       const mockData = {
         items: [
-          {
+          createMockUser({
             id: 'user1',
             email: 'user1@test.com',
             name: 'User One',
             role: 'user',
-            password: null,
-            emailVerified: null,
-            image: null,
-            createdAt: new Date('2026-01-01T00:00:00.000Z'),
-            updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-          },
-          {
+          }),
+          createMockUser({
             id: 'user2',
             email: 'user2@test.com',
             name: 'User Two',
             role: 'admin',
-            password: null,
-            emailVerified: null,
-            image: null,
-            createdAt: new Date('2026-01-01T00:00:00.000Z'),
-            updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-          },
+          }),
         ],
         pagination: {
           page: 1,
@@ -98,17 +106,12 @@ describe('UserController', () => {
     it('should return users with query parameters', async () => {
       const mockData = {
         items: [
-          {
+          createMockUser({
             id: 'admin1',
             email: 'admin@test.com',
             name: 'Admin User',
             role: 'admin',
-            password: null,
-            emailVerified: null,
-            image: null,
-            createdAt: new Date('2026-01-01T00:00:00.000Z'),
-            updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-          },
+          }),
         ],
         pagination: {
           page: 2,
@@ -181,17 +184,12 @@ describe('UserController', () => {
 
   describe('getUserById', () => {
     it('should return user by id', async () => {
-      const mockUser = {
+      const mockUser = createMockUser({
         id: 'cm9abc123xyz',
         email: 'test@test.com',
         name: 'Test User',
         role: 'user',
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date('2026-01-01T00:00:00.000Z'),
-        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-      }
+      })
 
       vi.mocked(mockService.getUserById).mockResolvedValue(mockUser)
 
@@ -255,15 +253,10 @@ describe('UserController', () => {
         role: 'user' as const,
       }
 
-      const mockCreated = {
+      const mockCreated = createMockUser({
         id: 'cm9newuser123',
         ...createData,
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date('2026-01-01T00:00:00.000Z'),
-        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-      }
+      })
 
       vi.mocked(mockService.createUser).mockResolvedValue(mockCreated)
 
@@ -375,17 +368,12 @@ describe('UserController', () => {
   describe('updateUser', () => {
     it('should update user', async () => {
       const updateData = { name: 'Updated Name' }
-      const mockUpdated = {
+      const mockUpdated = createMockUser({
         id: 'cm9user123xyz',
         email: 'test@test.com',
         name: 'Updated Name',
         role: 'user',
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date('2026-01-01T00:00:00.000Z'),
-        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-      }
+      })
 
       vi.mocked(mockService.updateUser).mockResolvedValue(mockUpdated)
 

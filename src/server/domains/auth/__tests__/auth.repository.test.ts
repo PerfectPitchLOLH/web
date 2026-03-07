@@ -4,6 +4,24 @@ import { db } from '@/server/lib/database'
 
 import { AuthRepository } from '../auth.repository'
 
+const createMockUser = (overrides: any = {}) => ({
+  id: '1',
+  email: 'test@test.com',
+  name: 'Test User',
+  password: 'hashed',
+  role: 'user',
+  isRootAdmin: false,
+  emailVerified: null,
+  image: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  status: 'active',
+  suspendedAt: null,
+  deletedAt: null,
+  stripeCustomerId: null,
+  ...overrides,
+})
+
 vi.mock('@/server/lib/database', () => ({
   db: {
     user: {
@@ -29,17 +47,7 @@ describe('AuthRepository', () => {
 
   describe('findUserByEmail', () => {
     it('should find user by email', async () => {
-      const mockUser = {
-        id: '1',
-        email: 'test@test.com',
-        name: 'Test User',
-        password: 'hashed',
-        role: 'user',
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      const mockUser = createMockUser()
 
       vi.mocked(db.user.findUnique).mockResolvedValue(mockUser)
 
@@ -69,17 +77,13 @@ describe('AuthRepository', () => {
         hashedPassword: 'hashed_password',
       }
 
-      const mockCreatedUser = {
+      const mockCreatedUser = createMockUser({
         id: '2',
         email: userData.email,
         name: userData.name,
         password: userData.hashedPassword,
         role: 'user',
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(db.user.create).mockResolvedValue(mockCreatedUser)
 
@@ -102,17 +106,13 @@ describe('AuthRepository', () => {
       const userId = '1'
       const newHashedPassword = 'new_hashed_password'
 
-      const mockUpdatedUser = {
+      const mockUpdatedUser = createMockUser({
         id: userId,
         email: 'test@test.com',
         name: 'Test User',
         password: newHashedPassword,
         role: 'user',
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(db.user.update).mockResolvedValue(mockUpdatedUser)
 
@@ -131,17 +131,14 @@ describe('AuthRepository', () => {
       const userId = '1'
       const now = new Date()
 
-      const mockVerifiedUser = {
+      const mockVerifiedUser = createMockUser({
         id: userId,
         email: 'test@test.com',
         name: 'Test User',
         password: 'hashed',
         role: 'user',
         emailVerified: now,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(db.user.update).mockResolvedValue(mockVerifiedUser)
 

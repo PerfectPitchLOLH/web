@@ -71,6 +71,7 @@ describe('ImpersonationService - Security Tests', () => {
         status: 'active',
         suspendedAt: null,
         deletedAt: null,
+        stripeCustomerId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -103,6 +104,7 @@ describe('ImpersonationService - Security Tests', () => {
         status: 'active',
         suspendedAt: null,
         deletedAt: null,
+        stripeCustomerId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -133,6 +135,7 @@ describe('ImpersonationService - Security Tests', () => {
         status: 'active',
         suspendedAt: null,
         deletedAt: null,
+        stripeCustomerId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -149,6 +152,7 @@ describe('ImpersonationService - Security Tests', () => {
         status: 'active',
         suspendedAt: null,
         deletedAt: null,
+        stripeCustomerId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -179,6 +183,7 @@ describe('ImpersonationService - Security Tests', () => {
         status: 'active',
         suspendedAt: null,
         deletedAt: null,
+        stripeCustomerId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -209,6 +214,7 @@ describe('ImpersonationService - Security Tests', () => {
         status: 'active',
         suspendedAt: null,
         deletedAt: null,
+        stripeCustomerId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -225,6 +231,7 @@ describe('ImpersonationService - Security Tests', () => {
         status: 'active',
         suspendedAt: null,
         deletedAt: null,
+        stripeCustomerId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -297,6 +304,17 @@ describe('ImpersonationService - Security Tests', () => {
         startedAt: new Date(),
         endedAt: new Date(),
         isActive: false,
+        admin: {
+          id: 'admin123',
+          name: 'Admin',
+          email: 'admin@test.com',
+        },
+        targetUser: {
+          id: 'user123',
+          name: 'Target User',
+          email: 'target@test.com',
+          role: 'user',
+        },
       }
 
       vi.mocked(mockImpersonationRepo.findById).mockResolvedValue(
@@ -335,6 +353,7 @@ describe('ImpersonationService - Security Tests', () => {
           id: 'user123',
           name: 'Target User',
           email: 'user@test.com',
+          role: 'user',
         },
       }
 

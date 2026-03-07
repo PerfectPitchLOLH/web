@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { UserRepository } from '../user.repository'
+import { createMockUser } from './test-utils'
 
 vi.mock('@/server/lib/database', () => ({
   db: {
@@ -28,28 +29,18 @@ describe('UserRepository', () => {
   describe('findAll', () => {
     it('should return all users without filters', async () => {
       const mockUsers = [
-        {
+        createMockUser({
           id: 'user1',
           email: 'user1@test.com',
           name: 'User One',
           role: 'user',
-          password: null,
-          emailVerified: null,
-          image: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
+        }),
+        createMockUser({
           id: 'user2',
           email: 'user2@test.com',
           name: 'User Two',
           role: 'admin',
-          password: null,
-          emailVerified: null,
-          image: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
+        }),
       ]
 
       vi.mocked(db.user.findMany).mockResolvedValue(mockUsers)
@@ -67,17 +58,12 @@ describe('UserRepository', () => {
 
     it('should filter users by role', async () => {
       const mockAdmins = [
-        {
+        createMockUser({
           id: 'admin1',
           email: 'admin@test.com',
           name: 'Admin User',
           role: 'admin',
-          password: null,
-          emailVerified: null,
-          image: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
+        }),
       ]
 
       vi.mocked(db.user.findMany).mockResolvedValue(mockAdmins)
@@ -95,17 +81,12 @@ describe('UserRepository', () => {
 
     it('should filter users by search term', async () => {
       const mockUsers = [
-        {
+        createMockUser({
           id: 'user1',
           email: 'john@test.com',
           name: 'John Doe',
           role: 'user',
-          password: null,
-          emailVerified: null,
-          image: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
+        }),
       ]
 
       vi.mocked(db.user.findMany).mockResolvedValue(mockUsers)
@@ -128,17 +109,12 @@ describe('UserRepository', () => {
 
     it('should apply pagination', async () => {
       const mockUsers = [
-        {
+        createMockUser({
           id: 'user3',
           email: 'user3@test.com',
           name: 'User Three',
           role: 'user',
-          password: null,
-          emailVerified: null,
-          image: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
+        }),
       ]
 
       vi.mocked(db.user.findMany).mockResolvedValue(mockUsers)
@@ -156,17 +132,12 @@ describe('UserRepository', () => {
 
     it('should combine filters and pagination', async () => {
       const mockUsers = [
-        {
+        createMockUser({
           id: 'admin1',
           email: 'admin@test.com',
           name: 'Admin User',
           role: 'admin',
-          password: null,
-          emailVerified: null,
-          image: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
+        }),
       ]
 
       vi.mocked(db.user.findMany).mockResolvedValue(mockUsers)
@@ -194,17 +165,12 @@ describe('UserRepository', () => {
 
   describe('findById', () => {
     it('should return user by id', async () => {
-      const mockUser = {
+      const mockUser = createMockUser({
         id: 'user123',
         email: 'test@test.com',
         name: 'Test User',
         role: 'user',
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(db.user.findUnique).mockResolvedValue(mockUser)
 
@@ -230,17 +196,12 @@ describe('UserRepository', () => {
 
   describe('findByEmail', () => {
     it('should return user by email', async () => {
-      const mockUser = {
+      const mockUser = createMockUser({
         id: 'user123',
         email: 'test@test.com',
         name: 'Test User',
         role: 'user',
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(db.user.findUnique).mockResolvedValue(mockUser)
 
@@ -272,15 +233,10 @@ describe('UserRepository', () => {
         role: 'user' as const,
       }
 
-      const mockCreated = {
+      const mockCreated = createMockUser({
         id: 'newuser123',
         ...createData,
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(db.user.create).mockResolvedValue(mockCreated)
 
@@ -302,12 +258,10 @@ describe('UserRepository', () => {
         image: 'https://example.com/avatar.jpg',
       }
 
-      const mockCreated = {
+      const mockCreated = createMockUser({
         id: 'newuser123',
         ...createData,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(db.user.create).mockResolvedValue(mockCreated)
 
@@ -323,17 +277,12 @@ describe('UserRepository', () => {
   describe('update', () => {
     it('should update user', async () => {
       const updateData = { name: 'Updated Name' }
-      const mockUpdated = {
+      const mockUpdated = createMockUser({
         id: 'user123',
         email: 'test@test.com',
         name: 'Updated Name',
         role: 'user',
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(db.user.update).mockResolvedValue(mockUpdated)
 
@@ -353,15 +302,10 @@ describe('UserRepository', () => {
         role: 'admin' as const,
       }
 
-      const mockUpdated = {
+      const mockUpdated = createMockUser({
         id: 'user123',
         ...updateData,
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(db.user.update).mockResolvedValue(mockUpdated)
 
@@ -377,17 +321,12 @@ describe('UserRepository', () => {
 
   describe('delete', () => {
     it('should delete user', async () => {
-      const mockDeleted = {
+      const mockDeleted = createMockUser({
         id: 'user123',
         email: 'test@test.com',
         name: 'Test User',
         role: 'user',
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(db.user.delete).mockResolvedValue(mockDeleted)
 

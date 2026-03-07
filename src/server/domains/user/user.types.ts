@@ -8,11 +8,23 @@ export type UserEntity = PrismaUser
 
 export type CreateUserDTO = Omit<
   CreateDTO<PrismaUser>,
-  'password' | 'emailVerified' | 'image'
+  | 'password'
+  | 'emailVerified'
+  | 'image'
+  | 'isRootAdmin'
+  | 'status'
+  | 'suspendedAt'
+  | 'deletedAt'
+  | 'stripeCustomerId'
 > & {
   password?: string | null
   emailVerified?: Date | null
   image?: string | null
+  isRootAdmin?: boolean
+  status?: string
+  suspendedAt?: Date | null
+  deletedAt?: Date | null
+  stripeCustomerId?: string | null
 }
 
 export type UpdateUserDTO = UpdateDTO<PrismaUser>

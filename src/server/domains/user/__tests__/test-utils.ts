@@ -1,0 +1,17 @@
+export const createMockUser = (overrides: any = {}) => ({
+  id: '1',
+  email: 'test@test.com',
+  name: 'Test User',
+  password: null,
+  role: 'user',
+  isRootAdmin: false,
+  emailVerified: null,
+  image: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  status: 'active',
+  suspendedAt: null,
+  deletedAt: null,
+  stripeCustomerId: null,
+  ...overrides,
+})

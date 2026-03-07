@@ -107,7 +107,7 @@ describe('CreditRepository', () => {
       }
 
       const mockTransaction = {
-        id: 1,
+        id: '1',
         ...transactionData,
         metadata: null,
         createdAt: new Date(),
@@ -141,8 +141,13 @@ describe('CreditRepository', () => {
       }
 
       const mockTransaction = {
-        id: 1,
-        ...transactionData,
+        id: '1',
+        userId: transactionData.userId,
+        type: transactionData.type,
+        amount: transactionData.amount,
+        balanceAfter: transactionData.balanceAfter,
+        description: transactionData.description,
+        metadata: (transactionData.metadata ?? null) as any,
         createdAt: new Date(),
       }
 
@@ -162,7 +167,7 @@ describe('CreditRepository', () => {
     it("devrait retourner l'historique paginé", async () => {
       const mockTransactions = [
         {
-          id: 1,
+          id: '1',
           userId: 'user-1',
           type: 'purchase',
           amount: 15,

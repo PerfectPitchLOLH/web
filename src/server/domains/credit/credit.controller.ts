@@ -6,16 +6,64 @@ import {
   handleApiError,
 } from '@/server/shared/utils/api.utils'
 
+import type { PaymentService } from '../payment/payment.service'
+import { CREDIT_BUNDLES } from './credit.constants'
 import type { CreditService } from './credit.service'
 import type { CreditHistoryParams, PurchaseBundleRequest } from './credit.types'
 
 export class CreditController {
-  constructor(private service: CreditService) {}
+  constructor(
+    private service: CreditService,
+    private paymentService?: PaymentService,
+  ) {}
 
   async getUserCredits(userId: string) {
     try {
       const credits = await this.service.getUserCreditsBalance(userId)
       return createSuccessResponse(credits)
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
+  async createBundlePurchaseIntent(
+    userId: string,
+    email: string,
+    request: NextRequest,
+  ) {
+    try {
+      if (!this.paymentService) {
+        return handleApiError(new Error('Payment service not configured'))
+      }
+
+      const body = (await request.json()) as PurchaseBundleRequest
+      const bundle =
+        CREDIT_BUNDLES[
+          body.bundleId.toUpperCase() as keyof typeof CREDIT_BUNDLES
+        ]
+
+      if (!bundle) {
+        return createSuccessResponse(
+          { error: 'Bundle invalide' },
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
+
+      const paymentIntent = await this.paymentService.createPaymentIntent(
+        userId,
+        email,
+        {
+          amount: bundle.price,
+          currency: 'eur',
+          metadata: {
+            bundleId: bundle.id,
+            bundleName: bundle.name,
+            minutes: bundle.minutes.toString(),
+          },
+        },
+      )
+
+      return createSuccessResponse(paymentIntent, HTTP_STATUS.CREATED)
     } catch (error) {
       return handleApiError(error)
     }

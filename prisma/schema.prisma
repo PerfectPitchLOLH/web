@@ -20,12 +20,16 @@ model User {
   deletedAt            DateTime?
   status               String                 @default("active")
   suspendedAt          DateTime?
+  stripeCustomerId     String?                @unique
   accounts             Account[]
   creditTransactions   CreditTransaction[]
   adminImpersonations  ImpersonationSession[] @relation("AdminImpersonations")
   impersonatedSessions ImpersonationSession[] @relation("ImpersonatedUsers")
   sessions             Session[]
   userCredits          UserCredits?
+  customer             Customer?
+  subscriptions        Subscription[]
+  invoices             Invoice[]
 
   @@map("users")
 }
@@ -152,4 +156,81 @@ model CreditTransaction {
   @@index([type])
   @@index([createdAt])
   @@map("credit_transactions")
+}
+
+model Customer {
+  userId               String    @id
+  stripeCustomerId     String    @unique
+  email                String
+  name                 String?
+  defaultPaymentMethod String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([stripeCustomerId])
+  @@map("customers")
+}
+
+model SubscriptionPlan {
+  id                   String         @id @default(cuid())
+  stripeProductId      String         @unique
+  stripePriceId        String         @unique
+  name                 String
+  description          String?
+  monthlyPrice         Float
+  yearlyPrice          Float?
+  transcriptionMinutes Int
+  features             Json
+  isActive             Boolean        @default(true)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  subscriptions        Subscription[]
+
+  @@index([isActive])
+  @@map("subscription_plans")
+}
+
+model Subscription {
+  id                     String           @id @default(cuid())
+  userId                 String
+  planId                 String
+  stripeSubscriptionId   String           @unique
+  stripeCustomerId       String
+  status                 String
+  currentPeriodStart     DateTime
+  currentPeriodEnd       DateTime
+  cancelAtPeriodEnd      Boolean          @default(false)
+  canceledAt             DateTime?
+  trialStart             DateTime?
+  trialEnd               DateTime?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  user                   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                   SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([stripeSubscriptionId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+model Invoice {
+  id               String   @id @default(cuid())
+  userId           String
+  stripeInvoiceId  String   @unique
+  amount           Float
+  currency         String   @default("eur")
+  status           String
+  hostedInvoiceUrl String?
+  invoicePdf       String?
+  description      String?
+  createdAt        DateTime @default(now())
+  paidAt           DateTime?
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("invoices")
 }

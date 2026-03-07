@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import type { Mocked } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
@@ -11,10 +12,10 @@ vi.mock('../credit.service')
 
 describe('CreditController', () => {
   let controller: CreditController
-  let mockService: vi.Mocked<CreditService>
+  let mockService: Mocked<CreditService>
 
   beforeEach(() => {
-    mockService = new CreditService({} as any) as vi.Mocked<CreditService>
+    mockService = new CreditService({} as any) as Mocked<CreditService>
     controller = new CreditController(mockService)
     vi.clearAllMocks()
   })

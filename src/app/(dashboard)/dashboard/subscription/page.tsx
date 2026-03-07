@@ -6,6 +6,7 @@ import {
   Clock,
   Edit,
   Layers,
+  Loader2,
   Music,
   Sparkles,
 } from 'lucide-react'
@@ -15,6 +16,7 @@ import { AdditionalCreditsSection } from '@/components/credits/AdditionalCredits
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useSubscription } from '@/hooks/useSubscription'
 import { cn } from '@/lib/utils'
 
 type BillingCycle = 'monthly' | 'yearly'
@@ -83,10 +85,14 @@ function PricingCard({
   tier,
   billingCycle,
   index,
+  onSubscribe,
+  loading,
 }: {
   tier: PricingTier
   billingCycle: BillingCycle
   index: number
+  onSubscribe: (tier: string, cycle: BillingCycle) => void
+  loading: boolean
 }) {
   const price = tier.price[billingCycle]
 
@@ -146,8 +152,17 @@ function PricingCard({
           size="lg"
           variant={tier.popular ? 'default' : 'outline'}
           className="w-full mb-8 group-hover:scale-105 transition-transform"
+          onClick={() => onSubscribe(tier.name.toLowerCase(), billingCycle)}
+          disabled={loading}
         >
-          Commencer avec {tier.name}
+          {loading ? (
+            <>
+              <Loader2 className="size-4 mr-2 animate-spin" />
+              Chargement...
+            </>
+          ) : (
+            `Commencer avec ${tier.name}`
+          )}
         </Button>
 
         <div className="space-y-4">
@@ -351,6 +366,42 @@ function CellValue({
 
 export default function SubscriptionPage() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly')
+  const { createCheckoutSession } = useSubscription()
+  const [loading, setLoading] = useState(false)
+
+  const handleSubscribe = async (tierName: string, cycle: BillingCycle) => {
+    setLoading(true)
+    try {
+      const priceIdMap: Record<string, Record<string, string>> = {
+        junior: {
+          monthly: process.env.NEXT_PUBLIC_STRIPE_JUNIOR_MONTHLY_PRICE_ID || '',
+          yearly: process.env.NEXT_PUBLIC_STRIPE_JUNIOR_YEARLY_PRICE_ID || '',
+        },
+        advanced: {
+          monthly:
+            process.env.NEXT_PUBLIC_STRIPE_ADVANCED_MONTHLY_PRICE_ID || '',
+          yearly: process.env.NEXT_PUBLIC_STRIPE_ADVANCED_YEARLY_PRICE_ID || '',
+        },
+        pro: {
+          monthly: process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID || '',
+          yearly: process.env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PRICE_ID || '',
+        },
+      }
+
+      const priceId = priceIdMap[tierName]?.[cycle]
+
+      if (!priceId) {
+        console.error('Price ID not found for:', tierName, cycle)
+        return
+      }
+
+      await createCheckoutSession(priceId)
+    } catch (error) {
+      console.error('Subscription error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen py-12 px-4">
@@ -400,6 +451,8 @@ export default function SubscriptionPage() {
               tier={tier}
               billingCycle={billingCycle}
               index={index}
+              onSubscribe={handleSubscribe}
+              loading={loading}
             />
           ))}
         </div>

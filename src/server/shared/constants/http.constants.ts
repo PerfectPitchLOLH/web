@@ -26,6 +26,13 @@ export const ERROR_CODES = {
   INVALID_BUNDLE: 'INVALID_BUNDLE',
   USER_CREDITS_NOT_FOUND: 'USER_CREDITS_NOT_FOUND',
   INVALID_AMOUNT: 'INVALID_AMOUNT',
+  INVALID_PLAN: 'INVALID_PLAN',
+  SUBSCRIPTION_EXISTS: 'SUBSCRIPTION_EXISTS',
+  CHECKOUT_SESSION_FAILED: 'CHECKOUT_SESSION_FAILED',
+  CUSTOMER_NOT_FOUND: 'CUSTOMER_NOT_FOUND',
+  PLAN_NOT_FOUND: 'PLAN_NOT_FOUND',
+  USER_ID_MISSING: 'USER_ID_MISSING',
+  PAYMENT_INTENT_FAILED: 'PAYMENT_INTENT_FAILED',
 } as const
 
 export const ERROR_MESSAGES = {
@@ -41,4 +48,11 @@ export const ERROR_MESSAGES = {
   INVALID_BUNDLE: 'Invalid bundle ID',
   USER_CREDITS_NOT_FOUND: 'User credits not found',
   INVALID_AMOUNT: 'Invalid amount',
+  INVALID_PLAN: 'Invalid subscription plan',
+  SUBSCRIPTION_EXISTS: 'Subscription already exists',
+  CHECKOUT_SESSION_FAILED: 'Checkout session creation failed',
+  CUSTOMER_NOT_FOUND: 'Customer not found',
+  PLAN_NOT_FOUND: 'Plan not found',
+  USER_ID_MISSING: 'User ID is missing',
+  PAYMENT_INTENT_FAILED: 'Payment intent creation failed',
 } as const

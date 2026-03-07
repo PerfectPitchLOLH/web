@@ -5,6 +5,7 @@ import { ApiError } from '@/server/shared/utils'
 
 import { UserRepository } from '../user.repository'
 import { UserService } from '../user.service'
+import { createMockUser } from './test-utils'
 
 describe('UserService', () => {
   let service: UserService
@@ -28,28 +29,17 @@ describe('UserService', () => {
   describe('getUsers', () => {
     it('should return paginated users with default pagination', async () => {
       const mockUsers = [
-        {
+        createMockUser({
           id: 'user1',
           email: 'user1@test.com',
           name: 'User One',
-          role: 'user',
-          password: null,
-          emailVerified: null,
-          image: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
+        }),
+        createMockUser({
           id: 'user2',
           email: 'user2@test.com',
           name: 'User Two',
           role: 'admin',
-          password: null,
-          emailVerified: null,
-          image: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
+        }),
       ]
 
       vi.mocked(mockRepository.findAll).mockResolvedValue(mockUsers)
@@ -75,17 +65,12 @@ describe('UserService', () => {
 
     it('should return paginated users with custom pagination', async () => {
       const mockUsers = [
-        {
+        createMockUser({
           id: 'user3',
           email: 'user3@test.com',
           name: 'User Three',
           role: 'user',
-          password: null,
-          emailVerified: null,
-          image: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
+        }),
       ]
 
       vi.mocked(mockRepository.findAll).mockResolvedValue(mockUsers)
@@ -111,17 +96,12 @@ describe('UserService', () => {
 
     it('should return paginated users with filters', async () => {
       const mockAdmins = [
-        {
+        createMockUser({
           id: 'admin1',
           email: 'admin@test.com',
           name: 'Admin User',
           role: 'admin',
-          password: null,
-          emailVerified: null,
-          image: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
+        }),
       ]
 
       vi.mocked(mockRepository.findAll).mockResolvedValue(mockAdmins)
@@ -184,17 +164,12 @@ describe('UserService', () => {
 
   describe('getUserById', () => {
     it('should return user by id', async () => {
-      const mockUser = {
+      const mockUser = createMockUser({
         id: 'user123',
         email: 'test@test.com',
         name: 'Test User',
         role: 'user',
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.findById).mockResolvedValue(mockUser)
 
@@ -230,15 +205,10 @@ describe('UserService', () => {
         role: 'user' as const,
       }
 
-      const mockCreated = {
+      const mockCreated = createMockUser({
         id: 'newuser123',
         ...createData,
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.findByEmail).mockResolvedValue(null)
       vi.mocked(mockRepository.create).mockResolvedValue(mockCreated)
@@ -259,17 +229,12 @@ describe('UserService', () => {
         role: 'user' as const,
       }
 
-      const existingUser = {
+      const existingUser = createMockUser({
         id: 'existing123',
         email: 'existing@test.com',
         name: 'Existing User',
         role: 'user',
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.findByEmail).mockResolvedValue(existingUser)
 
@@ -293,17 +258,12 @@ describe('UserService', () => {
   describe('updateUser', () => {
     it('should update existing user', async () => {
       const updateData = { name: 'Updated Name' }
-      const existingUser = {
+      const existingUser = createMockUser({
         id: 'user123',
         email: 'test@test.com',
         name: 'Old Name',
         role: 'user',
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
       const mockUpdated = { ...existingUser, name: 'Updated Name' }
 
       vi.mocked(mockRepository.findById).mockResolvedValue(existingUser)
@@ -341,17 +301,12 @@ describe('UserService', () => {
 
     it('should update user with same email', async () => {
       const updateData = { email: 'test@test.com', name: 'Updated Name' }
-      const existingUser = {
+      const existingUser = createMockUser({
         id: 'user123',
         email: 'test@test.com',
         name: 'Old Name',
         role: 'user',
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
       const mockUpdated = { ...existingUser, name: 'Updated Name' }
 
       vi.mocked(mockRepository.findById).mockResolvedValue(existingUser)
@@ -365,28 +320,18 @@ describe('UserService', () => {
 
     it('should throw CONFLICT if new email is already taken', async () => {
       const updateData = { email: 'taken@test.com' }
-      const existingUser = {
+      const existingUser = createMockUser({
         id: 'user123',
         email: 'old@test.com',
         name: 'User',
         role: 'user',
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-      const otherUser = {
+      })
+      const otherUser = createMockUser({
         id: 'other123',
         email: 'taken@test.com',
         name: 'Other User',
         role: 'user',
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.findById).mockResolvedValue(existingUser)
       vi.mocked(mockRepository.findByEmail).mockResolvedValue(otherUser)
@@ -411,17 +356,12 @@ describe('UserService', () => {
 
     it('should throw INTERNAL_ERROR if update fails', async () => {
       const updateData = { name: 'Updated Name' }
-      const existingUser = {
+      const existingUser = createMockUser({
         id: 'user123',
         email: 'test@test.com',
         name: 'Old Name',
         role: 'user',
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.findById).mockResolvedValue(existingUser)
       vi.mocked(mockRepository.update).mockResolvedValue(null)
@@ -447,17 +387,12 @@ describe('UserService', () => {
 
   describe('deleteUser', () => {
     it('should delete user', async () => {
-      const existingUser = {
+      const existingUser = createMockUser({
         id: 'user123',
         email: 'test@test.com',
         name: 'Test User',
         role: 'user',
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.findById).mockResolvedValue(existingUser)
       vi.mocked(mockRepository.delete).mockResolvedValue(true)
@@ -488,17 +423,12 @@ describe('UserService', () => {
     })
 
     it('should throw INTERNAL_ERROR if delete fails', async () => {
-      const existingUser = {
+      const existingUser = createMockUser({
         id: 'user123',
         email: 'test@test.com',
         name: 'Test User',
         role: 'user',
-        password: null,
-        emailVerified: null,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.findById).mockResolvedValue(existingUser)
       vi.mocked(mockRepository.delete).mockResolvedValue(false)
