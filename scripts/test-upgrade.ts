@@ -29,7 +29,9 @@ async function testUpgrade() {
   console.log(
     `Stripe API - Current Price ID: ${stripeSub.items.data[0]?.price.id}`,
   )
-  console.log(`Stripe API - Plan amount: ${stripeSub.plan.amount / 100}€`)
+  console.log(
+    `Stripe API - Plan amount: ${(stripeSub.items.data[0]?.price.unit_amount ?? 0) / 100}€`,
+  )
 
   await subscriptionService.handleSubscriptionUpdated(stripeSubId)
 

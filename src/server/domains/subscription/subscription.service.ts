@@ -240,7 +240,7 @@ export class SubscriptionService {
     }
 
     const newPriceId = stripeSubscription.items.data[0]?.price.id
-    let newPlanId: number | undefined
+    let newPlanId: string | undefined
 
     if (oldPriceId && newPriceId && oldPriceId !== newPriceId) {
       const oldPlan = await this.repository.findPlanByStripePriceId(oldPriceId)
