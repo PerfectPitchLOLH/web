@@ -8,7 +8,6 @@ import {
   Moon,
   Settings,
   Shield,
-  Sparkles,
   Sun,
   UserCircle,
   Users,
@@ -21,6 +20,8 @@ import { memo, useCallback, useMemo } from 'react'
 
 import { CircularProgressAvatar } from '@/components/dashboard/credits/CircularProgressAvatar'
 import { UserMenuSkeleton } from '@/components/dashboard/skeletons/UserMenuSkeleton'
+import { UserMenuLabel } from '@/components/dashboard/topbar/UserMenuLabel'
+import { WalletDropdownCard } from '@/components/dashboard/topbar/WalletDropdownCard'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,10 +32,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useCredits } from '@/hooks/useCredits'
 
 export const UserMenu = memo(function UserMenu() {
   const { theme, setTheme } = useTheme()
   const { data: session, status } = useSession()
+  const { credits } = useCredits()
 
   const userEmail = useMemo(
     () => session?.user?.email ?? 'Loading...',
@@ -61,6 +64,12 @@ export const UserMenu = memo(function UserMenu() {
     [session?.user?.role],
   )
 
+  const creditsPercentage = useMemo(() => {
+    if (!credits) return 75
+    const total = credits.totalCredits
+    return total > 0 ? (credits.remainingCredits / total) * 100 : 0
+  }, [credits])
+
   const handleThemeToggle = useCallback(() => {
     setTheme(theme === 'dark' ? 'light' : 'dark')
   }, [theme, setTheme])
@@ -68,13 +77,6 @@ export const UserMenu = memo(function UserMenu() {
   const handleSignOut = useCallback(async () => {
     await signOut({ callbackUrl: '/auth/signin' })
   }, [])
-
-  const credits = {
-    total: 1000,
-    remaining: 750,
-  }
-
-  const creditsPercentage = (credits.remaining / credits.total) * 100
 
   if (status === 'loading') {
     return <UserMenuSkeleton />
@@ -100,40 +102,12 @@ export const UserMenu = memo(function UserMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-72" align="end">
         <DropdownMenuLabel>
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{userName}</p>
-            <p className="text-xs leading-none text-muted-foreground">
-              {userEmail}
-            </p>
-          </div>
+          <UserMenuLabel name={userName} email={userEmail} />
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
         <div className="px-2 py-3">
-          <div className="rounded-lg bg-muted p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Wallet className="size-4 text-amber-500" />
-                <span className="text-sm font-medium">Solde</span>
-              </div>
-            </div>
-            <div className="mt-2 flex flex-col items-baseline gap-1">
-              <div className="flex items-center justify-between w-full">
-                <span className="">Total</span>
-                <span>{credits.total} crédits</span>
-              </div>
-              <div className="flex items-center justify-between w-full">
-                <span>Restant</span>
-                <span>{credits.remaining}</span>
-              </div>
-            </div>
-            <Button size="sm" className="mt-2 w-full" variant="outline" asChild>
-              <Link href="/dashboard/upgrade">
-                <Sparkles className="mr-2 size-4" />
-                Acheter des crédits
-              </Link>
-            </Button>
-          </div>
+          <WalletDropdownCard />
         </div>
 
         <DropdownMenuSeparator />

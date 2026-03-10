@@ -419,9 +419,6 @@ export default function SubscriptionPage() {
 
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12 space-y-4">
-          <Badge variant="outline" className="mb-4">
-            Tarification simple et transparente
-          </Badge>
           <h1 className="text-5xl font-bold tracking-tight">
             Choisissez votre plan
           </h1>
@@ -458,7 +455,9 @@ export default function SubscriptionPage() {
 
         <ComparisonTable />
 
-        <AdditionalCreditsSection />
+        <div id="credits">
+          <AdditionalCreditsSection />
+        </div>
 
         <div className="mt-20 text-center">
           <div className="inline-block p-8 rounded-2xl border border-border bg-card/50 backdrop-blur">

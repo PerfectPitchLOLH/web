@@ -2,36 +2,13 @@
 
 import { Calendar, TrendingUp, Wallet } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { useCredits } from '@/hooks/useCredits'
 import { cn } from '@/lib/utils'
 
-type CreditBalance = {
-  monthlyCredits: number
-  bonusCredits: number
-  totalCredits: number
-  usedThisMonth: number
-  remainingCredits: number
-  lastMonthlyRefill: string | null
-  alerts: {
-    lowBalance: boolean
-    outOfCredits: boolean
-  }
-}
-
 export function CreditBalanceCard() {
-  const [credits, setCredits] = useState<CreditBalance | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetch('/api/credits')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) setCredits(data.data)
-      })
-      .finally(() => setLoading(false))
-  }, [])
+  const { credits, loading } = useCredits()
 
   if (loading) {
     return (
