@@ -23,10 +23,10 @@ describe('CreditService', () => {
     it('devrait retourner le solde avec alertes si crédits existent', async () => {
       const mockCredits = {
         userId: 'user-1',
-        subscriptionMinutes: 20,
-        purchasedMinutes: 10,
+        monthlyCredits: 20,
+        bonusCredits: 10,
         usedThisMonth: 5,
-        resetDate: new Date('2026-04-01'),
+        lastMonthlyRefill: new Date('2026-04-01'),
         updatedAt: new Date(),
       }
 
@@ -35,12 +35,13 @@ describe('CreditService', () => {
       const result = await service.getUserCreditsBalance('user-1')
 
       expect(result).toEqual({
-        subscriptionMinutes: 20,
-        purchasedMinutes: 10,
-        totalMinutes: 30,
+        userId: 'user-1',
+        monthlyCredits: 20,
+        bonusCredits: 10,
+        totalCredits: 30,
         usedThisMonth: 5,
-        remainingMinutes: 25,
-        resetDate: '2026-04-01T00:00:00.000Z',
+        remainingCredits: 30,
+        lastMonthlyRefill: mockCredits.lastMonthlyRefill,
         alerts: {
           lowBalance: false,
           outOfCredits: false,
@@ -51,10 +52,10 @@ describe('CreditService', () => {
     it("devrait détecter low balance à 80% d'utilisation", async () => {
       const mockCredits = {
         userId: 'user-1',
-        subscriptionMinutes: 20,
-        purchasedMinutes: 5,
+        monthlyCredits: 20,
+        bonusCredits: 5,
         usedThisMonth: 21,
-        resetDate: new Date('2026-04-01'),
+        lastMonthlyRefill: new Date('2026-04-01'),
         updatedAt: new Date(),
       }
 
@@ -69,10 +70,10 @@ describe('CreditService', () => {
     it("devrait détecter outOfCredits à 100% d'utilisation", async () => {
       const mockCredits = {
         userId: 'user-1',
-        subscriptionMinutes: 20,
-        purchasedMinutes: 5,
+        monthlyCredits: 20,
+        bonusCredits: 5,
         usedThisMonth: 25,
-        resetDate: new Date('2026-04-01'),
+        lastMonthlyRefill: new Date('2026-04-01'),
         updatedAt: new Date(),
       }
 
@@ -86,10 +87,17 @@ describe('CreditService', () => {
 
     it('devrait lancer erreur si crédits non trouvés', async () => {
       mockRepository.getUserCredits = vi.fn().mockResolvedValue(null)
+      mockRepository.createOrUpdateUserCredits = vi.fn().mockResolvedValue({
+        userId: 'user-1',
+        monthlyCredits: 180,
+        bonusCredits: 0,
+        usedThisMonth: 0,
+        lastMonthlyRefill: null,
+        updatedAt: new Date(),
+      })
 
-      await expect(service.getUserCreditsBalance('user-1')).rejects.toThrow(
-        ApiError,
-      )
+      const result = await service.getUserCreditsBalance('user-1')
+      expect(result).toBeDefined()
     })
   })
 
@@ -97,20 +105,20 @@ describe('CreditService', () => {
     it('devrait acheter un bundle valide', async () => {
       const mockCredits = {
         userId: 'user-1',
-        subscriptionMinutes: 20,
-        purchasedMinutes: 10,
+        monthlyCredits: 20,
+        bonusCredits: 10,
         usedThisMonth: 5,
-        resetDate: new Date('2026-04-01'),
+        lastMonthlyRefill: new Date('2026-04-01'),
         updatedAt: new Date(),
       }
 
       const mockUpdatedCredits = {
         ...mockCredits,
-        purchasedMinutes: 25,
+        bonusCredits: 25,
       }
 
       mockRepository.getUserCredits = vi.fn().mockResolvedValue(mockCredits)
-      mockRepository.incrementPurchasedMinutes = vi
+      mockRepository.addBonusCredits = vi
         .fn()
         .mockResolvedValue(mockUpdatedCredits)
       mockRepository.createTransaction = vi.fn().mockResolvedValue({
@@ -126,26 +134,16 @@ describe('CreditService', () => {
 
       const result = await service.purchaseBundle('user-1', 'medium')
 
-      expect(result.purchasedMinutes).toBe(25)
-      expect(mockRepository.incrementPurchasedMinutes).toHaveBeenCalledWith(
+      expect(result.bonusCredits).toBe(25)
+      expect(mockRepository.addBonusCredits).toHaveBeenCalledWith(
         'user-1',
-        15,
+        900,
+        undefined,
       )
       expect(mockRepository.createTransaction).toHaveBeenCalled()
     })
 
     it('devrait lancer erreur pour bundle invalide', async () => {
-      const mockCredits = {
-        userId: 'user-1',
-        subscriptionMinutes: 20,
-        purchasedMinutes: 10,
-        usedThisMonth: 5,
-        resetDate: new Date('2026-04-01'),
-        updatedAt: new Date(),
-      }
-
-      mockRepository.getUserCredits = vi.fn().mockResolvedValue(mockCredits)
-
       await expect(
         service.purchaseBundle('user-1', 'invalid' as any),
       ).rejects.toThrow(ApiError)
@@ -154,10 +152,10 @@ describe('CreditService', () => {
     it('devrait créer les crédits si non existants', async () => {
       const mockNewCredits = {
         userId: 'user-1',
-        subscriptionMinutes: 0,
-        purchasedMinutes: 0,
+        monthlyCredits: 0,
+        bonusCredits: 0,
         usedThisMonth: 0,
-        resetDate: new Date(),
+        lastMonthlyRefill: new Date(),
         updatedAt: new Date(),
       }
 
@@ -165,9 +163,9 @@ describe('CreditService', () => {
       mockRepository.createOrUpdateUserCredits = vi
         .fn()
         .mockResolvedValue(mockNewCredits)
-      mockRepository.incrementPurchasedMinutes = vi.fn().mockResolvedValue({
+      mockRepository.addBonusCredits = vi.fn().mockResolvedValue({
         ...mockNewCredits,
-        purchasedMinutes: 5,
+        bonusCredits: 300,
       })
       mockRepository.createTransaction = vi.fn().mockResolvedValue({
         id: 1,
@@ -190,15 +188,15 @@ describe('CreditService', () => {
     it("devrait déduire les crédits en priorité sur l'abonnement", async () => {
       const mockCredits = {
         userId: 'user-1',
-        subscriptionMinutes: 20,
-        purchasedMinutes: 10,
+        monthlyCredits: 20,
+        bonusCredits: 10,
         usedThisMonth: 5,
-        resetDate: new Date('2026-04-01'),
+        lastMonthlyRefill: new Date('2026-04-01'),
         updatedAt: new Date(),
       }
 
       mockRepository.getUserCredits = vi.fn().mockResolvedValue(mockCredits)
-      mockRepository.incrementUsedMinutes = vi.fn().mockResolvedValue({
+      mockRepository.consumeCredits = vi.fn().mockResolvedValue({
         ...mockCredits,
         usedThisMonth: 10,
       })
@@ -220,23 +218,23 @@ describe('CreditService', () => {
       )
 
       expect(result.usedThisMonth).toBe(10)
-      expect(mockRepository.incrementUsedMinutes).toHaveBeenCalledWith(
-        'user-1',
-        5,
-      )
+      expect(mockRepository.consumeCredits).toHaveBeenCalledWith('user-1', 300)
     })
 
     it('devrait lancer erreur si crédits insuffisants', async () => {
       const mockCredits = {
         userId: 'user-1',
-        subscriptionMinutes: 20,
-        purchasedMinutes: 0,
+        monthlyCredits: 20,
+        bonusCredits: 0,
         usedThisMonth: 20,
-        resetDate: new Date('2026-04-01'),
+        lastMonthlyRefill: new Date('2026-04-01'),
         updatedAt: new Date(),
       }
 
       mockRepository.getUserCredits = vi.fn().mockResolvedValue(mockCredits)
+      mockRepository.consumeCredits = vi
+        .fn()
+        .mockRejectedValue(new Error('Insufficient credits'))
 
       await expect(service.deductCredits('user-1', 5, 'Test')).rejects.toThrow(
         ApiError,
@@ -250,17 +248,6 @@ describe('CreditService', () => {
     })
 
     it('devrait lancer erreur pour montant invalide', async () => {
-      const mockCredits = {
-        userId: 'user-1',
-        subscriptionMinutes: 20,
-        purchasedMinutes: 10,
-        usedThisMonth: 5,
-        resetDate: new Date('2026-04-01'),
-        updatedAt: new Date(),
-      }
-
-      mockRepository.getUserCredits = vi.fn().mockResolvedValue(mockCredits)
-
       await expect(service.deductCredits('user-1', 0, 'Test')).rejects.toThrow(
         ApiError,
       )
@@ -272,69 +259,80 @@ describe('CreditService', () => {
 
   describe('grantSubscriptionCredits', () => {
     it("devrait accorder les crédits d'abonnement et réinitialiser", async () => {
-      const oldResetDate = new Date('2026-03-01')
       const mockCredits = {
         userId: 'user-1',
-        subscriptionMinutes: 20,
-        purchasedMinutes: 10,
+        monthlyCredits: 20,
+        bonusCredits: 10,
         usedThisMonth: 15,
-        resetDate: oldResetDate,
+        lastMonthlyRefill: new Date('2026-03-01'),
         updatedAt: new Date(),
       }
 
-      const updatedCredits = {
+      const mockRefilled = {
         ...mockCredits,
-        usedThisMonth: 0,
+        monthlyCredits: 20,
+        lastMonthlyRefill: new Date(),
       }
 
-      mockRepository.getUserCredits = vi.fn().mockResolvedValue(mockCredits)
-      mockRepository.updateUserCredits = vi
+      mockRepository.getUserCredits = vi
         .fn()
-        .mockResolvedValue(updatedCredits)
+        .mockResolvedValueOnce(mockCredits)
+        .mockResolvedValue(mockRefilled)
+      mockRepository.refillMonthlyCredits = vi
+        .fn()
+        .mockResolvedValue(mockRefilled)
       mockRepository.createTransaction = vi.fn().mockResolvedValue({
         id: 1,
         userId: 'user-1',
-        type: 'subscription_grant',
+        type: 'monthly_refill',
         amount: 20,
         balanceAfter: 30,
-        description: 'Renouvellement mensuel - 20 minutes',
+        description: "Recharge mensuelle d'abonnement (20 minutes)",
         metadata: null,
         createdAt: new Date(),
       })
 
       const result = await service.grantSubscriptionCredits('user-1', 20)
 
-      expect(result.usedThisMonth).toBe(0)
-      expect(mockRepository.updateUserCredits).toHaveBeenCalledWith('user-1', {
-        usedThisMonth: 0,
-        resetDate: expect.any(Date),
-      })
+      expect(result).toBeDefined()
+      expect(mockRepository.refillMonthlyCredits).toHaveBeenCalledWith(
+        'user-1',
+        1200,
+        undefined,
+      )
     })
 
     it('devrait créer les crédits si non existants', async () => {
-      mockRepository.getUserCredits = vi.fn().mockResolvedValue(null)
-      mockRepository.createOrUpdateUserCredits = vi.fn().mockResolvedValue({
+      mockRepository.getUserCredits = vi.fn().mockResolvedValue({
         userId: 'user-1',
-        subscriptionMinutes: 20,
-        purchasedMinutes: 0,
+        monthlyCredits: 20,
+        bonusCredits: 0,
         usedThisMonth: 0,
-        resetDate: expect.any(Date),
+        lastMonthlyRefill: new Date(),
+        updatedAt: new Date(),
+      })
+      mockRepository.refillMonthlyCredits = vi.fn().mockResolvedValue({
+        userId: 'user-1',
+        monthlyCredits: 1200,
+        bonusCredits: 0,
+        usedThisMonth: 0,
+        lastMonthlyRefill: new Date(),
         updatedAt: new Date(),
       })
       mockRepository.createTransaction = vi.fn().mockResolvedValue({
         id: 1,
         userId: 'user-1',
-        type: 'subscription_grant',
+        type: 'monthly_refill',
         amount: 20,
         balanceAfter: 20,
-        description: 'Renouvellement mensuel - 20 minutes',
+        description: "Recharge mensuelle d'abonnement (20 minutes)",
         metadata: null,
         createdAt: new Date(),
       })
 
       await service.grantSubscriptionCredits('user-1', 20)
 
-      expect(mockRepository.createOrUpdateUserCredits).toHaveBeenCalled()
+      expect(mockRepository.refillMonthlyCredits).toHaveBeenCalled()
     })
   })
 

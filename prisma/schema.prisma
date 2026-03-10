@@ -129,13 +129,14 @@ model ImpersonationLog {
 }
 
 model UserCredits {
-  userId              String   @id
-  subscriptionMinutes Int      @default(0)
-  purchasedMinutes    Int      @default(0)
-  usedThisMonth       Int      @default(0)
-  resetDate           DateTime
-  updatedAt           DateTime @updatedAt
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String    @id
+  monthlyCredits    Int       @default(180)
+  bonusCredits      Int       @default(0)
+  usedThisMonth     Int       @default(0)
+  lastMonthlyRefill DateTime?
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditRefills     CreditRefill[]
 
   @@index([userId])
   @@map("user_credits")
@@ -156,6 +157,26 @@ model CreditTransaction {
   @@index([type])
   @@index([createdAt])
   @@map("credit_transactions")
+}
+
+enum CreditType {
+  MONTHLY
+  BONUS
+}
+
+model CreditRefill {
+  id              String      @id @default(cuid())
+  userCreditsId   String
+  stripeInvoiceId String      @unique
+  amount          Int
+  type            CreditType
+  reason          String?
+  createdAt       DateTime    @default(now())
+  userCredits     UserCredits @relation(fields: [userCreditsId], references: [userId], onDelete: Cascade)
+
+  @@index([userCreditsId])
+  @@index([stripeInvoiceId])
+  @@map("credit_refills")
 }
 
 model Customer {
@@ -181,7 +202,6 @@ model SubscriptionPlan {
   monthlyPrice         Float
   yearlyPrice          Float?
   transcriptionMinutes Int
-  features             Json
   isActive             Boolean        @default(true)
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
@@ -233,4 +253,21 @@ model Invoice {
   @@index([status])
   @@index([createdAt])
   @@map("invoices")
+}
+
+model WebhookEvent {
+  id              String    @id @default(cuid())
+  stripeEventId   String    @unique
+  eventType       String
+  payload         Json
+  processed       Boolean   @default(false)
+  processedAt     DateTime?
+  error           String?
+  retryCount      Int       @default(0)
+  createdAt       DateTime  @default(now())
+
+  @@index([stripeEventId])
+  @@index([processed])
+  @@index([createdAt])
+  @@map("webhook_events")
 }

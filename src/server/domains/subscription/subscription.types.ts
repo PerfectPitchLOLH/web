@@ -10,7 +10,7 @@ export type SubscriptionStatus =
   | 'trialing'
   | 'unpaid'
 
-export type SubscriptionPlanTier = 'junior' | 'advanced' | 'pro'
+export type SubscriptionPlanTier = 'junior' | 'basic' | 'pro'
 
 export type BillingInterval = 'month' | 'year'
 
@@ -116,3 +116,15 @@ export type UserSubscriptionInfo = {
   subscription: SubscriptionWithPlan | null
   invoices: InvoiceEntity[]
 }
+
+export type WebhookEvent = {
+  stripeEventId: string
+  eventType: string
+  payload: Record<string, unknown>
+  processed: boolean
+  processedAt: Date | null
+  error: string | null
+  retryCount: number
+}
+
+export type WebhookEventEntity = Entity<WebhookEvent>

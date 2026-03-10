@@ -3,7 +3,10 @@ import { db } from '@/server/lib/database'
 import { PAGINATION_DEFAULTS } from './credit.constants'
 import type {
   CreateCreditTransactionDTO,
+  CreditBalance,
   CreditHistoryParams,
+  CreditRefill,
+  CreditRefillDTO,
   CreditTransactionEntity,
   UserCredits,
 } from './credit.types'
@@ -17,6 +20,24 @@ export class CreditRepository {
     return credits
   }
 
+  async getCreditBalance(userId: string): Promise<CreditBalance | null> {
+    const credits = await db.userCredits.findUnique({
+      where: { userId },
+      select: {
+        monthlyCredits: true,
+        bonusCredits: true,
+      },
+    })
+
+    if (!credits) return null
+
+    return {
+      monthlyCredits: credits.monthlyCredits,
+      bonusCredits: credits.bonusCredits,
+      totalCredits: credits.monthlyCredits + credits.bonusCredits,
+    }
+  }
+
   async createOrUpdateUserCredits(
     userId: string,
     data: Partial<Omit<UserCredits, 'userId' | 'updatedAt'>>,
@@ -26,14 +47,156 @@ export class CreditRepository {
       update: data,
       create: {
         userId,
-        subscriptionMinutes: data.subscriptionMinutes ?? 0,
-        purchasedMinutes: data.purchasedMinutes ?? 0,
+        monthlyCredits: data.monthlyCredits ?? 180,
+        bonusCredits: data.bonusCredits ?? 0,
         usedThisMonth: data.usedThisMonth ?? 0,
-        resetDate: data.resetDate ?? new Date(),
+        lastMonthlyRefill: data.lastMonthlyRefill ?? null,
       },
     })
 
     return credits
+  }
+
+  async refillMonthlyCredits(
+    userId: string,
+    amount: number,
+    invoiceId?: string,
+  ): Promise<UserCredits> {
+    if (invoiceId && (await this.checkRefillExists(invoiceId))) {
+      const existingCredits = await this.getUserCredits(userId)
+      if (!existingCredits) {
+        throw new Error(`User credits not found for userId: ${userId}`)
+      }
+      return existingCredits
+    }
+
+    const credits = await db.userCredits.upsert({
+      where: { userId },
+      update: {
+        monthlyCredits: amount,
+        usedThisMonth: 0,
+        lastMonthlyRefill: new Date(),
+      },
+      create: {
+        userId,
+        monthlyCredits: amount,
+        bonusCredits: 0,
+        usedThisMonth: 0,
+        lastMonthlyRefill: new Date(),
+      },
+    })
+
+    if (invoiceId) {
+      await this.createRefillRecord({
+        userCreditsId: userId,
+        stripeInvoiceId: invoiceId,
+        amount,
+        type: 'MONTHLY',
+        reason: 'subscription_refill',
+      })
+    }
+
+    return credits
+  }
+
+  async addBonusCredits(
+    userId: string,
+    amount: number,
+    invoiceId?: string,
+  ): Promise<UserCredits> {
+    if (invoiceId && (await this.checkRefillExists(invoiceId))) {
+      const existingCredits = await this.getUserCredits(userId)
+      if (!existingCredits) {
+        throw new Error(`User credits not found for userId: ${userId}`)
+      }
+      return existingCredits
+    }
+
+    const existingCredits = await db.userCredits.findUnique({
+      where: { userId },
+    })
+
+    const credits = await db.userCredits.upsert({
+      where: { userId },
+      update: {
+        bonusCredits: {
+          increment: amount,
+        },
+      },
+      create: {
+        userId,
+        monthlyCredits: 0,
+        bonusCredits: amount,
+        usedThisMonth: 0,
+        lastMonthlyRefill: null,
+      },
+    })
+
+    if (invoiceId) {
+      await this.createRefillRecord({
+        userCreditsId: userId,
+        stripeInvoiceId: invoiceId,
+        amount,
+        type: 'BONUS',
+        reason: 'package_purchase',
+      })
+    }
+
+    return credits
+  }
+
+  async consumeCredits(userId: string, seconds: number): Promise<UserCredits> {
+    const credits = await this.getUserCredits(userId)
+    if (!credits) {
+      throw new Error(`User credits not found for userId: ${userId}`)
+    }
+
+    const totalAvailable = credits.monthlyCredits + credits.bonusCredits
+    if (totalAvailable < seconds) {
+      throw new Error('Insufficient credits')
+    }
+
+    let remainingToConsume = seconds
+    let newMonthlyCredits = credits.monthlyCredits
+    let newBonusCredits = credits.bonusCredits
+
+    if (credits.monthlyCredits >= remainingToConsume) {
+      newMonthlyCredits = credits.monthlyCredits - remainingToConsume
+    } else {
+      remainingToConsume -= credits.monthlyCredits
+      newMonthlyCredits = 0
+      newBonusCredits = credits.bonusCredits - remainingToConsume
+    }
+
+    return await db.userCredits.update({
+      where: { userId },
+      data: {
+        monthlyCredits: newMonthlyCredits,
+        bonusCredits: newBonusCredits,
+        usedThisMonth: {
+          increment: seconds,
+        },
+      },
+    })
+  }
+
+  async checkRefillExists(invoiceId: string): Promise<boolean> {
+    const existing = await db.creditRefill.findUnique({
+      where: { stripeInvoiceId: invoiceId },
+    })
+    return !!existing
+  }
+
+  async createRefillRecord(data: CreditRefillDTO): Promise<CreditRefill> {
+    return await db.creditRefill.create({
+      data: {
+        userCreditsId: data.userCreditsId,
+        stripeInvoiceId: data.stripeInvoiceId,
+        amount: data.amount,
+        type: data.type,
+        reason: data.reason ?? null,
+      },
+    })
   }
 
   async createTransaction(
@@ -97,15 +260,15 @@ export class CreditRepository {
     return credits
   }
 
-  async incrementPurchasedMinutes(
+  async incrementBonusCredits(
     userId: string,
-    minutes: number,
+    seconds: number,
   ): Promise<UserCredits> {
     const credits = await db.userCredits.update({
       where: { userId },
       data: {
-        purchasedMinutes: {
-          increment: minutes,
+        bonusCredits: {
+          increment: seconds,
         },
       },
     })
@@ -115,14 +278,34 @@ export class CreditRepository {
 
   async incrementUsedMinutes(
     userId: string,
-    minutes: number,
+    seconds: number,
   ): Promise<UserCredits> {
     const credits = await db.userCredits.update({
       where: { userId },
       data: {
         usedThisMonth: {
-          increment: minutes,
+          increment: seconds,
         },
+      },
+    })
+
+    return credits
+  }
+
+  async findUsersNeedingMonthlyRefill(): Promise<UserCredits[]> {
+    const oneMonthAgo = new Date()
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
+
+    const credits = await db.userCredits.findMany({
+      where: {
+        OR: [
+          { lastMonthlyRefill: null },
+          {
+            lastMonthlyRefill: {
+              lte: oneMonthAgo,
+            },
+          },
+        ],
       },
     })
 

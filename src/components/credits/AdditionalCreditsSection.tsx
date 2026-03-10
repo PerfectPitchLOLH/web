@@ -13,6 +13,7 @@ const CREDIT_BUNDLES = [
     minutes: 5,
     price: 4.99,
     pricePerMinute: 0.998,
+    priceId: process.env.NEXT_PUBLIC_STRIPE_CREDITS_SMALL_PRICE_ID || '',
   },
   {
     id: 'medium' as const,
@@ -21,15 +22,17 @@ const CREDIT_BUNDLES = [
     price: 12.99,
     pricePerMinute: 0.866,
     discountPercent: 13,
+    priceId: process.env.NEXT_PUBLIC_STRIPE_CREDITS_MEDIUM_PRICE_ID || '',
   },
   {
-    id: 'large' as const,
+    id: 'big' as const,
     name: 'Grand',
     minutes: 30,
     price: 22.99,
     pricePerMinute: 0.766,
     discountPercent: 23,
     bestValue: true,
+    priceId: process.env.NEXT_PUBLIC_STRIPE_CREDITS_BIG_PRICE_ID || '',
   },
 ]
 
@@ -66,7 +69,8 @@ export function AdditionalCreditsSection() {
         </h2>
 
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Achetez des minutes à la demande sans changer d'abonnement.
+          Achetez des <strong className="text-foreground">Crédits Bonus</strong>{' '}
+          persistants sans changer d'abonnement.
           <br />
           Parfait pour les mois où vous transcrivez plus que d'habitude.
         </p>
@@ -84,11 +88,11 @@ export function AdditionalCreditsSection() {
       </div>
 
       <div className="mt-12 text-center">
-        <div className="inline-flex items-center gap-2 rounded-lg bg-muted/50 px-6 py-4 backdrop-blur-sm border border-border/50">
-          <Sparkles className="size-5 text-amber-500" />
+        <div className="inline-flex items-center gap-2 rounded-lg bg-green-500/10 px-6 py-4 backdrop-blur-sm border border-green-500/20">
+          <Sparkles className="size-5 text-green-500" />
           <p className="text-sm font-medium">
-            Les minutes achetées n'expirent jamais et s'ajoutent à votre forfait
-            mensuel
+            Les <strong>Crédits Bonus</strong> n'expirent jamais et ne sont pas
+            écrasés lors du renouvellement mensuel
           </p>
         </div>
       </div>

@@ -33,10 +33,10 @@ describe('CreditRepository', () => {
     it('devrait retourner les crédits utilisateur existants', async () => {
       const mockCredits = {
         userId: 'user-1',
-        subscriptionMinutes: 20,
-        purchasedMinutes: 10,
+        monthlyCredits: 20,
+        bonusCredits: 10,
         usedThisMonth: 5,
-        resetDate: new Date('2026-04-01'),
+        lastMonthlyRefill: new Date('2026-04-01'),
         updatedAt: new Date(),
       }
 
@@ -61,36 +61,36 @@ describe('CreditRepository', () => {
 
   describe('createOrUpdateUserCredits', () => {
     it('devrait créer de nouveaux crédits utilisateur', async () => {
-      const resetDate = new Date('2026-04-01')
+      const lastMonthlyRefill = new Date('2026-04-01')
       const mockCredits = {
         userId: 'user-1',
-        subscriptionMinutes: 20,
-        purchasedMinutes: 0,
+        monthlyCredits: 20,
+        bonusCredits: 0,
         usedThisMonth: 0,
-        resetDate,
+        lastMonthlyRefill,
         updatedAt: new Date(),
       }
 
       vi.mocked(db.userCredits.upsert).mockResolvedValue(mockCredits)
 
       const result = await repository.createOrUpdateUserCredits('user-1', {
-        subscriptionMinutes: 20,
-        resetDate,
+        monthlyCredits: 20,
+        lastMonthlyRefill,
       })
 
       expect(result).toEqual(mockCredits)
       expect(db.userCredits.upsert).toHaveBeenCalledWith({
         where: { userId: 'user-1' },
         update: {
-          subscriptionMinutes: 20,
-          resetDate,
+          monthlyCredits: 20,
+          lastMonthlyRefill,
         },
         create: {
           userId: 'user-1',
-          subscriptionMinutes: 20,
-          purchasedMinutes: 0,
+          monthlyCredits: 20,
+          bonusCredits: 0,
           usedThisMonth: 0,
-          resetDate,
+          lastMonthlyRefill,
         },
       })
     })
@@ -220,25 +220,25 @@ describe('CreditRepository', () => {
     })
   })
 
-  describe('incrementPurchasedMinutes', () => {
+  describe('incrementBonusCredits', () => {
     it('devrait incrémenter les minutes achetées', async () => {
       const mockUpdated = {
         userId: 'user-1',
-        subscriptionMinutes: 20,
-        purchasedMinutes: 25,
+        monthlyCredits: 20,
+        bonusCredits: 25,
         usedThisMonth: 5,
-        resetDate: new Date(),
+        lastMonthlyRefill: new Date(),
         updatedAt: new Date(),
       }
 
       vi.mocked(db.userCredits.update).mockResolvedValue(mockUpdated)
 
-      const result = await repository.incrementPurchasedMinutes('user-1', 15)
+      const result = await repository.incrementBonusCredits('user-1', 15)
 
       expect(result).toEqual(mockUpdated)
       expect(db.userCredits.update).toHaveBeenCalledWith({
         where: { userId: 'user-1' },
-        data: { purchasedMinutes: { increment: 15 } },
+        data: { bonusCredits: { increment: 15 } },
       })
     })
   })
@@ -247,10 +247,10 @@ describe('CreditRepository', () => {
     it('devrait incrémenter les minutes utilisées', async () => {
       const mockUpdated = {
         userId: 'user-1',
-        subscriptionMinutes: 20,
-        purchasedMinutes: 10,
+        monthlyCredits: 20,
+        bonusCredits: 10,
         usedThisMonth: 10,
-        resetDate: new Date(),
+        lastMonthlyRefill: new Date(),
         updatedAt: new Date(),
       }
 

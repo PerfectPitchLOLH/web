@@ -1,3 +1,4 @@
+import { db } from '@/server/lib/database'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
@@ -21,33 +22,30 @@ export class CreditService {
     let credits = await this.repository.getUserCredits(userId)
 
     if (!credits) {
-      const nextMonth = new Date()
-      nextMonth.setMonth(nextMonth.getMonth() + 1)
-
       credits = await this.repository.createOrUpdateUserCredits(userId, {
-        subscriptionMinutes: 0,
-        purchasedMinutes: 0,
+        monthlyCredits: 180,
+        bonusCredits: 0,
         usedThisMonth: 0,
-        resetDate: nextMonth,
+        lastMonthlyRefill: null,
       })
     }
 
-    const totalMinutes = credits.subscriptionMinutes + credits.purchasedMinutes
-    const remainingMinutes = Math.max(0, totalMinutes - credits.usedThisMonth)
+    const totalCredits = credits.monthlyCredits + credits.bonusCredits
+    const remainingCredits = totalCredits
     const usagePercent =
-      totalMinutes > 0 ? (credits.usedThisMonth / totalMinutes) * 100 : 0
+      totalCredits > 0 ? (credits.usedThisMonth / totalCredits) * 100 : 0
 
     return {
       userId: credits.userId,
-      subscriptionMinutes: credits.subscriptionMinutes,
-      purchasedMinutes: credits.purchasedMinutes,
-      totalMinutes,
+      monthlyCredits: credits.monthlyCredits,
+      bonusCredits: credits.bonusCredits,
+      totalCredits,
       usedThisMonth: credits.usedThisMonth,
-      remainingMinutes,
-      resetDate: credits.resetDate,
+      remainingCredits,
+      lastMonthlyRefill: credits.lastMonthlyRefill,
       alerts: {
         lowBalance: usagePercent >= CREDIT_THRESHOLDS.WARNING_PERCENT,
-        outOfCredits: remainingMinutes <= 0,
+        outOfCredits: remainingCredits <= 0,
       },
     }
   }
@@ -55,6 +53,7 @@ export class CreditService {
   async purchaseBundle(
     userId: string,
     bundleId: CreditBundleId,
+    invoiceId?: string,
   ): Promise<UserCreditsBalance> {
     const bundle = CREDIT_BUNDLES_ARRAY.find((b) => b.id === bundleId)
 
@@ -63,6 +62,21 @@ export class CreditService {
         'INVALID_BUNDLE',
         HTTP_STATUS.BAD_REQUEST,
         'Bundle ID invalide',
+      )
+    }
+
+    const activeSubscription = await db.subscription.findFirst({
+      where: {
+        userId,
+        status: { in: ['active', 'trialing'] },
+      },
+    })
+
+    if (!activeSubscription) {
+      throw new ApiError(
+        'NO_ACTIVE_SUBSCRIPTION',
+        HTTP_STATUS.PAYMENT_REQUIRED,
+        'Un abonnement actif est requis pour acheter des crédits supplémentaires',
       )
     }
 
@@ -76,21 +90,22 @@ export class CreditService {
       )
     }
 
-    const updatedCredits = await this.repository.incrementPurchasedMinutes(
+    const seconds = bundle.minutes * 60
+
+    const updatedCredits = await this.repository.addBonusCredits(
       userId,
-      bundle.minutes,
+      seconds,
+      invoiceId,
     )
 
     const newBalance =
-      updatedCredits.subscriptionMinutes +
-      updatedCredits.purchasedMinutes -
-      updatedCredits.usedThisMonth
+      updatedCredits.monthlyCredits + updatedCredits.bonusCredits
 
     await this.repository.createTransaction({
       userId,
       type: CREDIT_TRANSACTION_TYPES.PURCHASE,
       amount: bundle.minutes,
-      balanceAfter: newBalance,
+      balanceAfter: Math.floor(newBalance / 60),
       description: `Achat de ${bundle.minutes} minutes (${bundle.name})`,
       metadata: {
         bundleId: bundle.id,
@@ -115,32 +130,75 @@ export class CreditService {
       )
     }
 
-    const balance = await this.getUserCreditsBalance(userId)
+    const seconds = minutes * 60
 
-    if (balance.remainingMinutes < minutes) {
+    try {
+      const updatedCredits = await this.repository.consumeCredits(
+        userId,
+        seconds,
+      )
+
+      const newBalance =
+        updatedCredits.monthlyCredits + updatedCredits.bonusCredits
+
+      await this.repository.createTransaction({
+        userId,
+        type: CREDIT_TRANSACTION_TYPES.USAGE,
+        amount: -minutes,
+        balanceAfter: Math.floor(newBalance / 60),
+        description,
+      })
+
+      return this.getUserCreditsBalance(userId)
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Insufficient credits') {
+        const currentCredits = await this.repository.getUserCredits(userId)
+        const totalAvailable =
+          ((currentCredits?.monthlyCredits ?? 0) +
+            (currentCredits?.bonusCredits ?? 0)) /
+          60
+
+        throw new ApiError(
+          'INSUFFICIENT_CREDITS',
+          HTTP_STATUS.PAYMENT_REQUIRED,
+          `Crédits insuffisants. Disponible: ${totalAvailable.toFixed(1)} min, requis: ${minutes} min`,
+        )
+      }
+      throw error
+    }
+  }
+
+  async refillMonthlyCredits(
+    userId: string,
+    minutes: number,
+    invoiceId?: string,
+  ): Promise<UserCreditsBalance> {
+    const seconds = minutes * 60
+
+    await this.repository.refillMonthlyCredits(userId, seconds, invoiceId)
+
+    const updatedCredits = await this.repository.getUserCredits(userId)
+
+    if (!updatedCredits) {
       throw new ApiError(
-        'INSUFFICIENT_CREDITS',
-        HTTP_STATUS.PAYMENT_REQUIRED,
-        'Crédits insuffisants',
+        'CREDITS_NOT_FOUND',
+        HTTP_STATUS.NOT_FOUND,
+        'Crédits utilisateur introuvables',
       )
     }
 
-    const updatedCredits = await this.repository.incrementUsedMinutes(
-      userId,
-      minutes,
-    )
-
     const newBalance =
-      updatedCredits.subscriptionMinutes +
-      updatedCredits.purchasedMinutes -
-      updatedCredits.usedThisMonth
+      updatedCredits.monthlyCredits + updatedCredits.bonusCredits
 
     await this.repository.createTransaction({
       userId,
-      type: CREDIT_TRANSACTION_TYPES.USAGE,
-      amount: -minutes,
-      balanceAfter: newBalance,
-      description,
+      type: 'monthly_refill',
+      amount: minutes,
+      balanceAfter: Math.floor(newBalance / 60),
+      description: `Recharge mensuelle d'abonnement (${minutes} minutes)`,
+      metadata: {
+        invoiceId,
+      },
     })
 
     return this.getUserCreditsBalance(userId)
@@ -150,33 +208,62 @@ export class CreditService {
     userId: string,
     minutes: number,
   ): Promise<UserCreditsBalance> {
+    return this.refillMonthlyCredits(userId, minutes)
+  }
+
+  async handlePlanChange(
+    userId: string,
+    oldPlanMinutes: number,
+    newPlanMinutes: number,
+    stripeCustomerId: string,
+  ): Promise<void> {
     const currentCredits = await this.repository.getUserCredits(userId)
 
-    const nextMonth = new Date()
-    nextMonth.setMonth(nextMonth.getMonth() + 1)
+    if (!currentCredits) {
+      throw new ApiError(
+        'CREDITS_NOT_FOUND',
+        HTTP_STATUS.NOT_FOUND,
+        'Crédits utilisateur introuvables',
+      )
+    }
 
-    const updatedCredits = await this.repository.createOrUpdateUserCredits(
-      userId,
-      {
-        subscriptionMinutes: minutes,
-        usedThisMonth: 0,
-        resetDate: nextMonth,
-        purchasedMinutes: currentCredits?.purchasedMinutes ?? 0,
-      },
-    )
+    const creditsRemaining = currentCredits.monthlyCredits / 60
+    const creditsTotal = oldPlanMinutes
 
-    const newBalance =
-      updatedCredits.subscriptionMinutes + updatedCredits.purchasedMinutes
+    if (creditsTotal === 0) {
+      await this.refillMonthlyCredits(userId, newPlanMinutes)
+      return
+    }
 
-    await this.repository.createTransaction({
-      userId,
-      type: CREDIT_TRANSACTION_TYPES.SUBSCRIPTION_GRANT,
-      amount: minutes,
-      balanceAfter: newBalance,
-      description: `Crédit mensuel d'abonnement (${minutes} minutes)`,
-    })
+    const unusedValue = (creditsRemaining / creditsTotal) * oldPlanMinutes * 10
 
-    return this.getUserCreditsBalance(userId)
+    const creditAmount = Math.round(unusedValue * 100)
+
+    if (creditAmount > 0) {
+      const { stripe } = await import('@/server/lib/stripe')
+
+      await stripe.customers.createBalanceTransaction(stripeCustomerId, {
+        amount: -creditAmount,
+        currency: 'eur',
+        description: `Crédit pour ${creditsRemaining.toFixed(1)} crédits non utilisés de l'ancien plan`,
+      })
+
+      await this.repository.createTransaction({
+        userId,
+        type: 'proration_adjustment',
+        amount: 0,
+        balanceAfter: newPlanMinutes,
+        description: `Ajustement de proration : ${(creditAmount / 100).toFixed(2)}€ crédité`,
+        metadata: {
+          oldPlanMinutes,
+          newPlanMinutes,
+          creditsRemaining,
+          creditAmount: creditAmount / 100,
+        },
+      })
+    }
+
+    await this.refillMonthlyCredits(userId, newPlanMinutes)
   }
 
   async getTransactionHistory(
@@ -203,5 +290,47 @@ export class CreditService {
 
   getBundles() {
     return CREDIT_BUNDLES_ARRAY
+  }
+
+  async batchRefillMonthlyCredits(
+    userIds: string[],
+  ): Promise<{ success: number; failed: number; errors: string[] }> {
+    let success = 0
+    let failed = 0
+    const errors: string[] = []
+
+    for (const userId of userIds) {
+      try {
+        const subscription = await db.subscription.findFirst({
+          where: {
+            userId,
+            status: { in: ['active', 'trialing'] },
+          },
+          include: {
+            plan: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        })
+
+        if (subscription) {
+          await this.refillMonthlyCredits(
+            userId,
+            subscription.plan.transcriptionMinutes,
+          )
+          success++
+        } else {
+          failed++
+        }
+      } catch (error) {
+        failed++
+        errors.push(
+          `User ${userId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        )
+      }
+    }
+
+    return { success, failed, errors }
   }
 }

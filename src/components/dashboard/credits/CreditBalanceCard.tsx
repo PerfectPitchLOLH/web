@@ -8,12 +8,12 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 type CreditBalance = {
-  subscriptionMinutes: number
-  purchasedMinutes: number
-  totalMinutes: number
+  monthlyCredits: number
+  bonusCredits: number
+  totalCredits: number
   usedThisMonth: number
-  remainingMinutes: number
-  resetDate: string
+  remainingCredits: number
+  lastMonthlyRefill: string | null
   alerts: {
     lowBalance: boolean
     outOfCredits: boolean
@@ -25,20 +25,12 @@ export function CreditBalanceCard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const mockData: CreditBalance = {
-      subscriptionMinutes: 20,
-      purchasedMinutes: 10,
-      totalMinutes: 30,
-      usedThisMonth: 15,
-      remainingMinutes: 15,
-      resetDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-      alerts: {
-        lowBalance: false,
-        outOfCredits: false,
-      },
-    }
-    setCredits(mockData)
-    setLoading(false)
+    fetch('/api/credits')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setCredits(data.data)
+      })
+      .finally(() => setLoading(false))
   }, [])
 
   if (loading) {
@@ -53,7 +45,13 @@ export function CreditBalanceCard() {
 
   if (!credits) return null
 
-  const usagePercent = (credits.usedThisMonth / credits.totalMinutes) * 100
+  const monthlyMinutes = Math.floor(credits.monthlyCredits / 60)
+  const bonusMinutes = Math.floor(credits.bonusCredits / 60)
+  const totalMinutes = Math.floor(credits.totalCredits / 60)
+  const remainingMinutes = Math.floor(credits.remainingCredits / 60)
+  const usedMinutes = Math.floor(credits.usedThisMonth / 60)
+
+  const usagePercent = totalMinutes > 0 ? (usedMinutes / totalMinutes) * 100 : 0
   const remainingPercent = 100 - usagePercent
 
   const getProgressColor = () => {
@@ -62,13 +60,24 @@ export function CreditBalanceCard() {
     return 'bg-red-500'
   }
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Non défini'
     const date = new Date(dateString)
     return date.toLocaleDateString('fr-FR', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
     })
+  }
+
+  const getNextRefillDate = () => {
+    if (!credits.lastMonthlyRefill) {
+      return 'Prochain renouvellement'
+    }
+    const lastRefill = new Date(credits.lastMonthlyRefill)
+    const nextRefill = new Date(lastRefill)
+    nextRefill.setMonth(nextRefill.getMonth() + 1)
+    return nextRefill
   }
 
   return (
@@ -90,8 +99,7 @@ export function CreditBalanceCard() {
           <div>
             <h3 className="font-semibold text-lg">Minutes de transcription</h3>
             <p className="text-sm text-muted-foreground">
-              {credits.remainingMinutes} / {credits.totalMinutes} minutes
-              restantes
+              {remainingMinutes} / {totalMinutes} minutes restantes
             </p>
           </div>
         </div>
@@ -117,24 +125,31 @@ export function CreditBalanceCard() {
         <div className="rounded-lg bg-muted/50 p-3">
           <div className="flex items-center gap-2 mb-1">
             <TrendingUp className="size-3.5 text-primary" />
-            <span className="text-xs text-muted-foreground">Abonnement</span>
+            <span className="text-xs text-muted-foreground">Mensuels</span>
           </div>
-          <p className="font-semibold">{credits.subscriptionMinutes} min</p>
+          <p className="font-semibold">{monthlyMinutes} min</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Renouvelés chaque mois
+          </p>
         </div>
 
         <div className="rounded-lg bg-muted/50 p-3">
           <div className="flex items-center gap-2 mb-1">
-            <Wallet className="size-3.5 text-amber-500" />
-            <span className="text-xs text-muted-foreground">Achetées</span>
+            <Wallet className="size-3.5 text-green-500" />
+            <span className="text-xs text-muted-foreground">Bonus</span>
           </div>
-          <p className="font-semibold">{credits.purchasedMinutes} min</p>
+          <p className="font-semibold">{bonusMinutes} min</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Persistants</p>
         </div>
       </div>
 
       <div className="flex items-center justify-between mb-4 text-sm">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Calendar className="size-4" />
-          <span>Renouvellement : {formatDate(credits.resetDate)}</span>
+          <span>
+            Prochain renouvellement :{' '}
+            {formatDate(getNextRefillDate().toString())}
+          </span>
         </div>
       </div>
 

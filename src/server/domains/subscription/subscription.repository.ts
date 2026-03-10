@@ -1,4 +1,5 @@
 import { db } from '@/server/lib/database'
+import type { CreateDTO } from '@/server/shared/types'
 
 import type {
   CreateCustomerDTO,
@@ -11,6 +12,8 @@ import type {
   SubscriptionStatus,
   SubscriptionWithPlan,
   UpdateSubscriptionDTO,
+  WebhookEvent,
+  WebhookEventEntity,
 } from './subscription.types'
 
 export class SubscriptionRepository {
@@ -30,6 +33,24 @@ export class SubscriptionRepository {
     })
 
     return subscription as SubscriptionEntity | null
+  }
+
+  async findActiveSubscriptionsByUserId(
+    userId: string,
+  ): Promise<SubscriptionEntity[]> {
+    const subscriptions = await db.subscription.findMany({
+      where: {
+        userId,
+        status: {
+          in: ['active', 'trialing'],
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    })
+
+    return subscriptions as SubscriptionEntity[]
   }
 
   async findSubscriptionWithPlan(
@@ -227,5 +248,54 @@ export class SubscriptionRepository {
     })
 
     return subscription as SubscriptionEntity
+  }
+
+  async findWebhookEventByStripeId(
+    stripeEventId: string,
+  ): Promise<WebhookEventEntity | null> {
+    const event = await db.webhookEvent.findUnique({
+      where: { stripeEventId },
+    })
+
+    return event as WebhookEventEntity | null
+  }
+
+  async createWebhookEvent(
+    data: CreateDTO<WebhookEvent>,
+  ): Promise<WebhookEventEntity> {
+    const event = await db.webhookEvent.create({
+      data: { ...data, payload: data.payload as any },
+    })
+
+    return event as WebhookEventEntity
+  }
+
+  async markWebhookEventProcessed(
+    stripeEventId: string,
+    error?: string,
+  ): Promise<void> {
+    await db.webhookEvent.update({
+      where: { stripeEventId },
+      data: {
+        processed: true,
+        processedAt: new Date(),
+        error,
+        retryCount: error ? { increment: 1 } : undefined,
+      },
+    })
+  }
+
+  async deleteOldWebhookEvents(olderThanHours: number): Promise<number> {
+    const cutoffDate = new Date()
+    cutoffDate.setHours(cutoffDate.getHours() - olderThanHours)
+
+    const result = await db.webhookEvent.deleteMany({
+      where: {
+        createdAt: { lt: cutoffDate },
+        processed: true,
+      },
+    })
+
+    return result.count
   }
 }

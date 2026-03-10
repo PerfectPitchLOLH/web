@@ -1,6 +1,10 @@
+import type { CreditType as PrismaCreditType } from '@prisma/client'
+
 import type { CreateDTO, Entity } from '@/server/shared/types'
 
-export type CreditBundleId = 'small' | 'medium' | 'large'
+export type CreditType = PrismaCreditType
+
+export type CreditBundleId = 'small' | 'medium' | 'large' | 'big'
 
 export type CreditBundle = {
   id: CreditBundleId
@@ -17,6 +21,8 @@ export type CreditTransactionType =
   | 'subscription_grant'
   | 'usage'
   | 'bonus'
+  | 'monthly_refill'
+  | 'proration_adjustment'
 
 export type CreditTransaction = {
   id: string
@@ -31,25 +37,49 @@ export type CreditTransaction = {
 
 export type UserCredits = {
   userId: string
-  subscriptionMinutes: number
-  purchasedMinutes: number
+  monthlyCredits: number
+  bonusCredits: number
   usedThisMonth: number
-  resetDate: Date
+  lastMonthlyRefill: Date | null
   updatedAt: Date
 }
 
 export type UserCreditsBalance = {
   userId: string
-  subscriptionMinutes: number
-  purchasedMinutes: number
-  totalMinutes: number
+  monthlyCredits: number
+  bonusCredits: number
+  totalCredits: number
   usedThisMonth: number
-  remainingMinutes: number
-  resetDate: Date
+  remainingCredits: number
+  lastMonthlyRefill: Date | null
   alerts: {
     lowBalance: boolean
     outOfCredits: boolean
   }
+}
+
+export type CreditBalance = {
+  monthlyCredits: number
+  bonusCredits: number
+  totalCredits: number
+}
+
+export type CreditRefill = {
+  id: string
+  userCreditsId: string
+  stripeInvoiceId: string
+  amount: number
+  type: CreditType
+  reason: string | null
+  createdAt: Date
+}
+
+export type CreditRefillDTO = {
+  userCreditsId: string
+  stripeInvoiceId: string
+  amount: number
+  type: CreditType
+  reason?: string
 }
 
 export type CreditTransactionEntity = Entity<CreditTransaction>

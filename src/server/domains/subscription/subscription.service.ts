@@ -2,7 +2,6 @@ import { stripe } from '@/server/lib/stripe'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
-import { CREDIT_TRANSACTION_TYPES } from '../credit/credit.constants'
 import type { CreditService } from '../credit/credit.service'
 import { SUBSCRIPTION_STATUS } from './subscription.constants'
 import type { SubscriptionRepository } from './subscription.repository'
@@ -37,15 +36,29 @@ export class SubscriptionService {
     email: string,
     request: CreateCheckoutSessionRequest,
   ): Promise<CreateCheckoutSessionResponse> {
+    console.log(
+      '[SubscriptionService] Looking up plan for price ID:',
+      request.priceId,
+    )
     const plan = await this.repository.findPlanByStripePriceId(request.priceId)
 
     if (!plan) {
+      console.error(
+        '[SubscriptionService] Plan not found for price ID:',
+        request.priceId,
+      )
       throw new ApiError(
         'INVALID_PLAN',
         HTTP_STATUS.BAD_REQUEST,
         'Plan invalide',
       )
     }
+
+    console.log('[SubscriptionService] Found plan:', {
+      id: plan.id,
+      name: plan.name,
+      priceId: plan.stripePriceId,
+    })
 
     const existingSubscription =
       await this.repository.findSubscriptionByUserId(userId)
@@ -153,15 +166,25 @@ export class SubscriptionService {
       )
     }
 
-    const userId = stripeSubscription.metadata.userId
+    let userId = stripeSubscription.metadata.userId
 
     if (!userId) {
-      throw new ApiError(
-        'USER_ID_MISSING',
-        HTTP_STATUS.BAD_REQUEST,
-        'User ID manquant',
+      const customer = await this.repository.findCustomerByStripeId(
+        stripeSubscription.customer as string,
       )
+
+      if (!customer) {
+        throw new ApiError(
+          'CUSTOMER_NOT_FOUND',
+          HTTP_STATUS.NOT_FOUND,
+          'Client non trouvé',
+        )
+      }
+
+      userId = customer.userId
     }
+
+    const firstItem = stripeSubscription.items.data[0]
 
     const subscription = await this.repository.createSubscription({
       userId,
@@ -170,11 +193,9 @@ export class SubscriptionService {
       stripeCustomerId: stripeSubscription.customer as string,
       status: stripeSubscription.status as SubscriptionStatus,
       currentPeriodStart: new Date(
-        (stripeSubscription as any).current_period_start * 1000,
+        (firstItem as any).current_period_start * 1000,
       ),
-      currentPeriodEnd: new Date(
-        (stripeSubscription as any).current_period_end * 1000,
-      ),
+      currentPeriodEnd: new Date((firstItem as any).current_period_end * 1000),
       cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
       canceledAt: stripeSubscription.canceled_at
         ? new Date(stripeSubscription.canceled_at * 1000)
@@ -187,9 +208,15 @@ export class SubscriptionService {
         : null,
     })
 
-    await this.creditService.grantSubscriptionCredits(
+    const latestInvoice =
+      typeof stripeSubscription.latest_invoice === 'string'
+        ? stripeSubscription.latest_invoice
+        : stripeSubscription.latest_invoice?.id
+
+    await this.creditService.refillMonthlyCredits(
       userId,
       plan.transcriptionMinutes,
+      latestInvoice,
     )
 
     return subscription
@@ -201,15 +228,47 @@ export class SubscriptionService {
     const stripeSubscription =
       await stripe.subscriptions.retrieve(stripeSubscriptionId)
 
+    const existingSubscription =
+      await this.repository.findSubscriptionByStripeId(stripeSubscriptionId)
+
+    let oldPriceId: string | null = null
+    if (existingSubscription) {
+      const oldPlan = await this.repository.findPlanById(
+        existingSubscription.planId,
+      )
+      oldPriceId = oldPlan?.stripePriceId ?? null
+    }
+
+    const newPriceId = stripeSubscription.items.data[0]?.price.id
+    let newPlanId: number | undefined
+
+    if (oldPriceId && newPriceId && oldPriceId !== newPriceId) {
+      const oldPlan = await this.repository.findPlanByStripePriceId(oldPriceId)
+      const newPlan = await this.repository.findPlanByStripePriceId(newPriceId)
+
+      if (oldPlan && newPlan && existingSubscription) {
+        newPlanId = newPlan.id
+        await this.creditService.handlePlanChange(
+          existingSubscription.userId,
+          oldPlan.transcriptionMinutes,
+          newPlan.transcriptionMinutes,
+          stripeSubscription.customer as string,
+        )
+      }
+    }
+
+    const firstItem = stripeSubscription.items.data[0]
+
     const subscription = await this.repository.updateSubscription(
       stripeSubscriptionId,
       {
+        ...(newPlanId && { planId: newPlanId }),
         status: stripeSubscription.status as SubscriptionStatus,
         currentPeriodStart: new Date(
-          (stripeSubscription as any).current_period_start * 1000,
+          (firstItem as any).current_period_start * 1000,
         ),
         currentPeriodEnd: new Date(
-          (stripeSubscription as any).current_period_end * 1000,
+          (firstItem as any).current_period_end * 1000,
         ),
         cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
         canceledAt: stripeSubscription.canceled_at
@@ -233,7 +292,21 @@ export class SubscriptionService {
     )
 
     if (subscription) {
-      await this.creditService.grantSubscriptionCredits(subscription.userId, 0)
+      const otherActiveSubscriptions =
+        await this.repository.findActiveSubscriptionsByUserId(
+          subscription.userId,
+        )
+
+      const hasOtherActiveSubscription = otherActiveSubscriptions.some(
+        (sub) => sub.id !== subscription.id,
+      )
+
+      if (!hasOtherActiveSubscription) {
+        await this.creditService.grantSubscriptionCredits(
+          subscription.userId,
+          0,
+        )
+      }
     }
 
     return subscription
@@ -267,17 +340,27 @@ export class SubscriptionService {
         paidAt: new Date(),
       })
     } else {
-      await this.repository.createInvoice({
-        userId: customer.userId,
-        stripeInvoiceId,
-        amount: stripeInvoice.amount_paid / 100,
-        currency: stripeInvoice.currency,
-        status: stripeInvoice.status ?? 'paid',
-        hostedInvoiceUrl: stripeInvoice.hosted_invoice_url ?? null,
-        invoicePdf: stripeInvoice.invoice_pdf ?? null,
-        description: stripeInvoice.description ?? null,
-        paidAt: new Date(),
-      })
+      try {
+        await this.repository.createInvoice({
+          userId: customer.userId,
+          stripeInvoiceId,
+          amount: stripeInvoice.amount_paid / 100,
+          currency: stripeInvoice.currency,
+          status: stripeInvoice.status ?? 'paid',
+          hostedInvoiceUrl: stripeInvoice.hosted_invoice_url ?? null,
+          invoicePdf: stripeInvoice.invoice_pdf ?? null,
+          description: stripeInvoice.description ?? null,
+          paidAt: new Date(),
+        })
+      } catch (error: any) {
+        if (error.code === 'P2002') {
+          console.log(
+            `[Invoice] Invoice ${stripeInvoiceId} already created by another request, continuing`,
+          )
+        } else {
+          throw error
+        }
+      }
     }
 
     const invoiceSubscription = (stripeInvoice as any).subscription
@@ -286,12 +369,34 @@ export class SubscriptionService {
         await this.repository.findSubscriptionByStripeId(invoiceSubscription)
 
       if (subscription) {
-        const plan = await this.repository.findPlanById(subscription.planId)
+        const isFirstInvoice =
+          stripeInvoice.billing_reason === 'subscription_create'
 
-        if (plan) {
-          await this.creditService.grantSubscriptionCredits(
-            subscription.userId,
-            plan.transcriptionMinutes,
+        if (!isFirstInvoice) {
+          const plan = await this.repository.findPlanById(subscription.planId)
+
+          if (plan) {
+            await this.creditService.refillMonthlyCredits(
+              subscription.userId,
+              plan.transcriptionMinutes,
+              stripeInvoiceId,
+            )
+          }
+        }
+      }
+    } else {
+      const lines = stripeInvoice.lines.data
+      const packageLine = lines.find((line) =>
+        line.description?.toLowerCase().includes('crédit'),
+      )
+
+      if (packageLine) {
+        const linePrice = (packageLine as any).price
+        if (linePrice?.metadata?.bundleId) {
+          await this.creditService.purchaseBundle(
+            customer.userId,
+            linePrice.metadata.bundleId as any,
+            stripeInvoiceId,
           )
         }
       }
@@ -323,13 +428,7 @@ export class SubscriptionService {
   }
 
   async grantWelcomeCredits(userId: string, email: string): Promise<void> {
-    const WELCOME_CREDITS = 3
-
     await this.creditService.getUserCreditsBalance(userId)
-
-    const creditBalance = await this.creditService.getUserCreditsBalance(userId)
-
-    const currentPurchased = creditBalance.purchasedMinutes
 
     await this.repository.createOrUpdateCustomer({
       userId,
@@ -337,22 +436,6 @@ export class SubscriptionService {
       email,
       name: null,
       defaultPaymentMethod: null,
-    })
-
-    const creditRepo = (this.creditService as any).repository
-    await creditRepo.incrementPurchasedMinutes(userId, WELCOME_CREDITS)
-
-    const newBalance = currentPurchased + WELCOME_CREDITS
-
-    await creditRepo.createTransaction({
-      userId,
-      type: CREDIT_TRANSACTION_TYPES.BONUS,
-      amount: WELCOME_CREDITS,
-      balanceAfter: newBalance,
-      description: `Crédits de bienvenue (${WELCOME_CREDITS} minutes gratuites)`,
-      metadata: {
-        type: 'welcome_bonus',
-      },
     })
   }
 }

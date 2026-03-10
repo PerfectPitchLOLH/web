@@ -22,7 +22,7 @@ export const BILLING_INTERVALS: Record<string, BillingInterval> = {
 
 export const PLAN_TIERS: Record<string, SubscriptionPlanTier> = {
   JUNIOR: 'junior',
-  ADVANCED: 'advanced',
+  BASIC: 'basic',
   PRO: 'pro',
 } as const
 
@@ -35,7 +35,7 @@ export const PLAN_FEATURES: Record<SubscriptionPlanTier, SubscriptionFeatures> =
       sheetEditor: false,
       polyphony: false,
     },
-    advanced: {
+    basic: {
       transcriptionMinutes: 20,
       fallingNotes: true,
       historyDays: 90,
@@ -56,7 +56,7 @@ export const PLAN_PRICING = {
     monthly: 9.99,
     yearly: 99.99,
   },
-  advanced: {
+  basic: {
     monthly: 14.99,
     yearly: 149.99,
   },

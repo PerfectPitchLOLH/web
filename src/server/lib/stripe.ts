@@ -15,9 +15,14 @@ export const STRIPE_CONFIG = {
   priceIds: {
     juniorMonthly: process.env.STRIPE_JUNIOR_MONTHLY_PRICE_ID ?? '',
     juniorYearly: process.env.STRIPE_JUNIOR_YEARLY_PRICE_ID ?? '',
-    advancedMonthly: process.env.STRIPE_ADVANCED_MONTHLY_PRICE_ID ?? '',
-    advancedYearly: process.env.STRIPE_ADVANCED_YEARLY_PRICE_ID ?? '',
+    basicMonthly: process.env.STRIPE_BASIC_MONTHLY_PRICE_ID ?? '',
+    basicYearly: process.env.STRIPE_BASIC_YEARLY_PRICE_ID ?? '',
     proMonthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID ?? '',
     proYearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID ?? '',
+  },
+  creditPriceIds: {
+    small: process.env.STRIPE_CREDITS_SMALL_PRICE_ID ?? '',
+    medium: process.env.STRIPE_CREDITS_MEDIUM_PRICE_ID ?? '',
+    big: process.env.STRIPE_CREDITS_BIG_PRICE_ID ?? '',
   },
 } as const

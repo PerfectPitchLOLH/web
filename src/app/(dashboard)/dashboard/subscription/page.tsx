@@ -53,7 +53,7 @@ const pricingTiers: PricingTier[] = [
     },
   },
   {
-    name: 'Advanced',
+    name: 'Basic',
     price: { monthly: 14.99, yearly: 149.99 },
     description: 'Idéal pour les musiciens réguliers',
     highlight: 'Plus populaire',
@@ -275,7 +275,7 @@ function ComparisonTable() {
                 >
                   Populaire
                 </Badge>
-                Advanced
+                Basic
               </th>
               <th className="text-center p-4 pt-8 font-semibold">Pro</th>
             </tr>
@@ -285,31 +285,31 @@ function ComparisonTable() {
               {
                 feature: 'Minutes de transcription',
                 junior: '10 min/mois',
-                advanced: '20 min/mois',
+                basic: '20 min/mois',
                 pro: '50 min/mois',
               },
               {
                 feature: 'Touches qui tombent du ciel',
                 junior: true,
-                advanced: true,
+                basic: true,
                 pro: true,
               },
               {
                 feature: 'Historique des partitions',
                 junior: '30 jours',
-                advanced: '90 jours',
+                basic: '90 jours',
                 pro: 'Illimité',
               },
               {
                 feature: 'Éditeur de partition',
                 junior: false,
-                advanced: false,
+                basic: false,
                 pro: true,
               },
               {
                 feature: 'Support polyphonie',
                 junior: false,
-                advanced: false,
+                basic: false,
                 pro: true,
               },
             ].map((row, i) => (
@@ -322,7 +322,7 @@ function ComparisonTable() {
                   <CellValue value={row.junior} />
                 </td>
                 <td className="text-center p-4 bg-primary/5">
-                  <CellValue value={row.advanced} highlight />
+                  <CellValue value={row.basic} highlight />
                 </td>
                 <td className="text-center p-4">
                   <CellValue value={row.pro} />
@@ -377,10 +377,9 @@ export default function SubscriptionPage() {
           monthly: process.env.NEXT_PUBLIC_STRIPE_JUNIOR_MONTHLY_PRICE_ID || '',
           yearly: process.env.NEXT_PUBLIC_STRIPE_JUNIOR_YEARLY_PRICE_ID || '',
         },
-        advanced: {
-          monthly:
-            process.env.NEXT_PUBLIC_STRIPE_ADVANCED_MONTHLY_PRICE_ID || '',
-          yearly: process.env.NEXT_PUBLIC_STRIPE_ADVANCED_YEARLY_PRICE_ID || '',
+        basic: {
+          monthly: process.env.NEXT_PUBLIC_STRIPE_BASIC_MONTHLY_PRICE_ID || '',
+          yearly: process.env.NEXT_PUBLIC_STRIPE_BASIC_YEARLY_PRICE_ID || '',
         },
         pro: {
           monthly: process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID || '',

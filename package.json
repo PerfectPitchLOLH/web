@@ -16,8 +16,7 @@
     "test:watch": "vitest",
     "prepare": "husky",
     "postinstall": "prisma generate",
-    "create-admin": "npx tsx scripts/create-admin.ts",
-    "test-rate-limit": "npx tsx scripts/test-rate-limit.ts"
+    "stripe:listen": "stripe listen --forward-to localhost:3000/api/webhooks/stripe"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

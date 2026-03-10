@@ -14,16 +14,22 @@ Notavex web application built with Next.js 16, React 19, TypeScript, Tailwind CS
 - **Styling**: Tailwind CSS v4 with @tailwindcss/postcss
 - **UI Components**: shadcn/ui (New York style, Neutral color, Lucide icons)
 - **Containerization**: Docker with multi-stage builds
+- **Payments**: Stripe (TEST mode for dev, LIVE mode for prod)
 
 ## Development Commands
 
 ### Local Development (without Docker)
 
 ```bash
-npm run dev       # Start development server on http://localhost:3000
-npm run build     # Build production bundle (creates .next/standalone)
-npm start         # Start production server (requires build first)
-npm run lint      # Run ESLint
+npm run dev          # Start development server on http://localhost:3000
+npm run build        # Build production bundle (creates .next/standalone)
+npm start            # Start production server (requires build first)
+npm run check        # Full quality check: format + lint + type-check (use this before committing)
+npm run lint:fix     # Auto-fix ESLint issues (import order, unused imports...)
+npm run format       # Auto-format with Prettier
+npm run type-check   # TypeScript type checking only
+npm test             # Run all tests once
+npm run test:watch   # Run tests in watch mode
 ```
 
 ### Docker Development (recommended)
@@ -35,6 +41,16 @@ docker compose down                     # Stop and remove container
 docker compose logs -f web-dev          # View dev container logs
 docker compose restart web-dev          # Restart dev container
 ```
+
+**Adding new dependencies:**
+When you add a new package to `package.json`, the container automatically detects and installs it on startup.
+Simply restart the container:
+
+```bash
+docker compose restart web-dev
+```
+
+The entrypoint script (`docker-entrypoint.sh`) runs `npm install` on every container start, ensuring dependencies are always up to date.
 
 ### Docker Production
 
@@ -486,6 +502,7 @@ export * from './product.types'
   - `.:/app` - Source code sync
   - `/app/node_modules` - Preserve installed packages
   - `/app/.next` - Preserve build cache
+- **Auto-dependency installer**: Entrypoint script (`docker-entrypoint.sh`) runs `npm install` on startup to sync dependencies
 - Runs `npm run dev` with hot module replacement
 - Exposed on port 3000
 
@@ -501,13 +518,30 @@ export * from './product.types'
 
 ## Environment Variables
 
-Create `.env.local` for local development (not committed to git):
+Le projet utilise **deux environnements distincts** :
 
-```
-# Add your environment variables here
-```
+- **`.env`** - Développement (clés TEST Stripe, localhost)
+- **`.env.production`** - Production (clés LIVE Stripe, domaine production)
 
-Docker production requires passing environment variables via docker-compose.yml or docker run -e flags.
+**Configuration Stripe** :
+
+Pour configurer Stripe, consultez le guide complet : [STRIPE_SETUP.md](./STRIPE_SETUP.md)
+
+Points clés :
+
+- Mode TEST pour dev : Utilisez `sk_test_...` et créez des produits TEST
+- Mode LIVE pour prod : Utilisez `sk_live_...` avec vos produits existants
+- 9 Price IDs à configurer (6 abonnements + 3 packages de crédits)
+
+**Script d'aide** :
+
+```bash
+# Afficher les instructions pour configurer l'environnement TEST
+./scripts/setup-stripe-env.sh test
+
+# Afficher les instructions pour configurer l'environnement LIVE
+./scripts/setup-stripe-env.sh live
+```
 
 ## Styling with Tailwind v4
 

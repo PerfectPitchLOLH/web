@@ -2,8 +2,12 @@ import { NextRequest } from 'next/server'
 import Stripe from 'stripe'
 
 import { creditService } from '@/server/domains/credit'
-import { subscriptionService } from '@/server/domains/subscription'
+import {
+  subscriptionRepository,
+  subscriptionService,
+} from '@/server/domains/subscription'
 import { STRIPE_WEBHOOK_EVENTS } from '@/server/domains/subscription/subscription.constants'
+import { db } from '@/server/lib/database'
 import { stripe, STRIPE_CONFIG } from '@/server/lib/stripe'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import {
@@ -42,57 +46,101 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  try {
-    switch (event.type) {
-      case STRIPE_WEBHOOK_EVENTS.CUSTOMER_SUBSCRIPTION_CREATED: {
-        const subscription = event.data.object as Stripe.Subscription
-        await subscriptionService.handleSubscriptionCreated(subscription.id)
-        break
+  const existingEvent = await subscriptionRepository.findWebhookEventByStripeId(
+    event.id,
+  )
+
+  if (existingEvent?.processed) {
+    console.log(`[Webhook] Event ${event.id} already processed, skipping`)
+    return createSuccessResponse({ received: true, skipped: true })
+  }
+
+  if (!existingEvent) {
+    try {
+      await subscriptionRepository.createWebhookEvent({
+        stripeEventId: event.id,
+        eventType: event.type,
+        payload: event as any,
+        processed: false,
+        processedAt: null,
+        error: null,
+        retryCount: 0,
+      })
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        console.log(
+          `[Webhook] Event ${event.id} already created by another request, continuing`,
+        )
+      } else {
+        throw error
       }
-
-      case STRIPE_WEBHOOK_EVENTS.CUSTOMER_SUBSCRIPTION_UPDATED: {
-        const subscription = event.data.object as Stripe.Subscription
-        await subscriptionService.handleSubscriptionUpdated(subscription.id)
-        break
-      }
-
-      case STRIPE_WEBHOOK_EVENTS.CUSTOMER_SUBSCRIPTION_DELETED: {
-        const subscription = event.data.object as Stripe.Subscription
-        await subscriptionService.handleSubscriptionDeleted(subscription.id)
-        break
-      }
-
-      case STRIPE_WEBHOOK_EVENTS.INVOICE_PAYMENT_SUCCEEDED: {
-        const invoice = event.data.object as Stripe.Invoice
-        await subscriptionService.handleInvoicePaymentSucceeded(invoice.id)
-        break
-      }
-
-      case STRIPE_WEBHOOK_EVENTS.INVOICE_PAYMENT_FAILED: {
-        const invoice = event.data.object as Stripe.Invoice
-        await subscriptionService.handleInvoicePaymentFailed(invoice.id)
-        break
-      }
-
-      case 'payment_intent.succeeded': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent
-
-        if (paymentIntent.metadata.bundleId && paymentIntent.metadata.userId) {
-          await creditService.purchaseBundle(
-            paymentIntent.metadata.userId,
-            paymentIntent.metadata.bundleId as any,
-          )
-        }
-        break
-      }
-
-      default:
-        console.log(`Unhandled event type: ${event.type}`)
     }
+  }
+
+  try {
+    await db.$transaction(async () => {
+      switch (event.type) {
+        case STRIPE_WEBHOOK_EVENTS.CUSTOMER_SUBSCRIPTION_CREATED: {
+          const subscription = event.data.object as Stripe.Subscription
+          await subscriptionService.handleSubscriptionCreated(subscription.id)
+          break
+        }
+
+        case STRIPE_WEBHOOK_EVENTS.CUSTOMER_SUBSCRIPTION_UPDATED: {
+          const subscription = event.data.object as Stripe.Subscription
+          await subscriptionService.handleSubscriptionUpdated(subscription.id)
+          break
+        }
+
+        case STRIPE_WEBHOOK_EVENTS.CUSTOMER_SUBSCRIPTION_DELETED: {
+          const subscription = event.data.object as Stripe.Subscription
+          await subscriptionService.handleSubscriptionDeleted(subscription.id)
+          break
+        }
+
+        case STRIPE_WEBHOOK_EVENTS.INVOICE_PAYMENT_SUCCEEDED: {
+          const invoice = event.data.object as Stripe.Invoice
+          await subscriptionService.handleInvoicePaymentSucceeded(invoice.id)
+          break
+        }
+
+        case STRIPE_WEBHOOK_EVENTS.INVOICE_PAYMENT_FAILED: {
+          const invoice = event.data.object as Stripe.Invoice
+          await subscriptionService.handleInvoicePaymentFailed(invoice.id)
+          break
+        }
+
+        case 'payment_intent.succeeded': {
+          const paymentIntent = event.data.object as Stripe.PaymentIntent
+
+          if (
+            paymentIntent.metadata.bundleId &&
+            paymentIntent.metadata.userId
+          ) {
+            await creditService.purchaseBundle(
+              paymentIntent.metadata.userId,
+              paymentIntent.metadata.bundleId as any,
+            )
+          }
+          break
+        }
+
+        default:
+          console.log(`Unhandled event type: ${event.type}`)
+      }
+    })
+
+    await subscriptionRepository.markWebhookEventProcessed(event.id)
 
     return createSuccessResponse({ received: true })
   } catch (error) {
     console.error('Webhook handler error:', error)
+
+    await subscriptionRepository.markWebhookEventProcessed(
+      event.id,
+      error instanceof Error ? error.message : 'Unknown error',
+    )
+
     return createErrorResponse(
       'INTERNAL_ERROR',
       'Erreur lors du traitement du webhook',

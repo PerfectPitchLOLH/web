@@ -33,6 +33,9 @@ export const ERROR_CODES = {
   PLAN_NOT_FOUND: 'PLAN_NOT_FOUND',
   USER_ID_MISSING: 'USER_ID_MISSING',
   PAYMENT_INTENT_FAILED: 'PAYMENT_INTENT_FAILED',
+  NO_ACTIVE_SUBSCRIPTION: 'NO_ACTIVE_SUBSCRIPTION',
+  CREDITS_NOT_FOUND: 'CREDITS_NOT_FOUND',
+  CONFIGURATION_ERROR: 'CONFIGURATION_ERROR',
 } as const
 
 export const ERROR_MESSAGES = {
@@ -55,4 +58,7 @@ export const ERROR_MESSAGES = {
   PLAN_NOT_FOUND: 'Plan not found',
   USER_ID_MISSING: 'User ID is missing',
   PAYMENT_INTENT_FAILED: 'Payment intent creation failed',
+  NO_ACTIVE_SUBSCRIPTION: 'No active subscription',
+  CREDITS_NOT_FOUND: 'Credits not found',
+  CONFIGURATION_ERROR: 'Configuration error',
 } as const
