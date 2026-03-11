@@ -12,6 +12,10 @@ import type {
   CreatePortalSessionRequest,
 } from './subscription.types'
 
+type UpgradeSubscriptionRequest = {
+  priceId: string
+}
+
 export class SubscriptionController {
   constructor(private service: SubscriptionService) {}
 
@@ -53,16 +57,27 @@ export class SubscriptionController {
 
   async cancelSubscription(userId: string) {
     try {
-      const subscription = await this.service.getUserSubscription(userId)
+      await this.service.cancelSubscription(userId)
+      return createSuccessResponse({ message: 'Résiliation programmée' })
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
 
-      if (!subscription.subscription) {
-        return createSuccessResponse(
-          { message: 'Aucun abonnement actif' },
-          HTTP_STATUS.NOT_FOUND,
-        )
-      }
+  async reactivateSubscription(userId: string) {
+    try {
+      await this.service.reactivateSubscription(userId)
+      return createSuccessResponse({ message: 'Abonnement réactivé' })
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
 
-      return createSuccessResponse({ message: 'Abonnement annulé' })
+  async upgradeSubscription(userId: string, request: NextRequest) {
+    try {
+      const body = (await request.json()) as UpgradeSubscriptionRequest
+      await this.service.upgradeSubscription(userId, body.priceId)
+      return createSuccessResponse({ message: 'Abonnement mis à jour' })
     } catch (error) {
       return handleApiError(error)
     }

@@ -36,7 +36,11 @@ const CREDIT_BUNDLES = [
   },
 ]
 
-export function AdditionalCreditsSection() {
+export function AdditionalCreditsSection({
+  showHeader = true,
+}: {
+  showHeader?: boolean
+}) {
   const [selectedBundle, setSelectedBundle] = useState<
     (typeof CREDIT_BUNDLES)[number] | null
   >(null)
@@ -55,26 +59,29 @@ export function AdditionalCreditsSection() {
   }
 
   return (
-    <section className="mt-24">
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 mb-4">
-          <Sparkles className="size-4 text-primary" />
-          <span className="text-sm font-medium text-primary">
-            Flexibilité maximale
-          </span>
+    <section className={showHeader ? 'mt-24' : ''}>
+      {showHeader && (
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 mb-4">
+            <Sparkles className="size-4 text-primary" />
+            <span className="text-sm font-medium text-primary">
+              Flexibilité maximale
+            </span>
+          </div>
+
+          <h2 className="text-4xl font-bold tracking-tight mb-4">
+            Besoin de minutes supplémentaires ?
+          </h2>
+
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Achetez des{' '}
+            <strong className="text-foreground">Crédits Bonus</strong>{' '}
+            persistants sans changer d'abonnement.
+            <br />
+            Parfait pour les mois où vous transcrivez plus que d'habitude.
+          </p>
         </div>
-
-        <h2 className="text-4xl font-bold tracking-tight mb-4">
-          Besoin de minutes supplémentaires ?
-        </h2>
-
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Achetez des <strong className="text-foreground">Crédits Bonus</strong>{' '}
-          persistants sans changer d'abonnement.
-          <br />
-          Parfait pour les mois où vous transcrivez plus que d'habitude.
-        </p>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
         {CREDIT_BUNDLES.map((bundle, index) => (

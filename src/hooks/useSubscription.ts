@@ -2,25 +2,48 @@
 
 import { useEffect, useState } from 'react'
 
-type SubscriptionInfo = {
+export type SubscriptionStatus =
+  | 'active'
+  | 'canceled'
+  | 'incomplete'
+  | 'incomplete_expired'
+  | 'past_due'
+  | 'paused'
+  | 'trialing'
+  | 'unpaid'
+
+export type SubscriptionInvoice = {
+  id: string
+  amount: number
+  currency: string
+  status: string
+  createdAt: string
+  paidAt: string | null
+  hostedInvoiceUrl: string | null
+  invoicePdf: string | null
+  description: string | null
+}
+
+export type SubscriptionInfo = {
   hasActiveSubscription: boolean
   subscription: {
     id: string
-    status: string
+    status: SubscriptionStatus
+    currentPeriodStart: string
     currentPeriodEnd: string
     cancelAtPeriodEnd: boolean
+    canceledAt: string | null
+    trialEnd: string | null
     plan: {
+      id: string
       name: string
+      stripePriceId: string
+      monthlyPrice: number
+      yearlyPrice: number | null
       transcriptionMinutes: number
     }
   } | null
-  invoices: Array<{
-    id: string
-    amount: number
-    status: string
-    createdAt: string
-    hostedInvoiceUrl: string | null
-  }>
+  invoices: SubscriptionInvoice[]
 }
 
 export function useSubscription() {
@@ -33,9 +56,7 @@ export function useSubscription() {
       setLoading(true)
       const response = await fetch('/api/subscriptions')
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch subscription')
-      }
+      if (!response.ok) throw new Error('Failed to fetch subscription')
 
       const result = await response.json()
 
@@ -56,61 +77,86 @@ export function useSubscription() {
   }, [])
 
   const createCheckoutSession = async (priceId: string) => {
-    try {
-      const response = await fetch('/api/subscriptions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          priceId,
-          successUrl: `${window.location.origin}/dashboard?subscribed=true`,
-          cancelUrl: `${window.location.origin}/dashboard/subscription`,
-        }),
-      })
+    const response = await fetch('/api/subscriptions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        priceId,
+        successUrl: `${window.location.origin}/dashboard?subscribed=true`,
+        cancelUrl: `${window.location.origin}/dashboard/subscription`,
+      }),
+    })
 
-      if (!response.ok) {
-        throw new Error('Failed to create checkout session')
-      }
+    if (!response.ok) throw new Error('Failed to create checkout session')
 
-      const result = await response.json()
+    const result = await response.json()
 
-      if (result.success && result.data.url) {
-        window.location.href = result.data.url
-      } else {
-        throw new Error(result.message || 'Failed to create checkout session')
-      }
-    } catch (err) {
-      throw err
+    if (result.success && result.data.url) {
+      window.location.href = result.data.url
+    } else {
+      throw new Error(result.message || 'Failed to create checkout session')
     }
   }
 
   const openPortal = async () => {
-    try {
-      const response = await fetch('/api/subscriptions/portal', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          returnUrl: `${window.location.origin}/dashboard/subscription`,
-        }),
-      })
+    const response = await fetch('/api/subscriptions/portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        returnUrl: `${window.location.origin}/dashboard/subscription`,
+      }),
+    })
 
-      if (!response.ok) {
-        throw new Error('Failed to create portal session')
-      }
+    if (!response.ok) throw new Error('Failed to create portal session')
 
-      const result = await response.json()
+    const result = await response.json()
 
-      if (result.success && result.data.url) {
-        window.location.href = result.data.url
-      } else {
-        throw new Error(result.message || 'Failed to create portal session')
-      }
-    } catch (err) {
-      throw err
+    if (result.success && result.data.url) {
+      window.location.href = result.data.url
+    } else {
+      throw new Error(result.message || 'Failed to create portal session')
     }
+  }
+
+  const cancelSubscription = async () => {
+    const response = await fetch('/api/subscriptions/cancel', {
+      method: 'PATCH',
+    })
+
+    if (!response.ok) {
+      const result = await response.json()
+      throw new Error(result.message || 'Failed to cancel subscription')
+    }
+
+    await fetchSubscription()
+  }
+
+  const reactivateSubscription = async () => {
+    const response = await fetch('/api/subscriptions/reactivate', {
+      method: 'PATCH',
+    })
+
+    if (!response.ok) {
+      const result = await response.json()
+      throw new Error(result.message || 'Failed to reactivate subscription')
+    }
+
+    await fetchSubscription()
+  }
+
+  const upgradeSubscription = async (priceId: string) => {
+    const response = await fetch('/api/subscriptions/upgrade', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ priceId }),
+    })
+
+    if (!response.ok) {
+      const result = await response.json()
+      throw new Error(result.message || 'Failed to upgrade subscription')
+    }
+
+    await fetchSubscription()
   }
 
   return {
@@ -120,5 +166,8 @@ export function useSubscription() {
     refresh: fetchSubscription,
     createCheckoutSession,
     openPortal,
+    cancelSubscription,
+    reactivateSubscription,
+    upgradeSubscription,
   }
 }

@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 
 import { CreditBalanceCard } from '@/components/dashboard/credits/CreditBalanceCard'
-import { EmailVerificationBanner } from '@/components/dashboard/EmailVerificationBanner'
 import { SubscriptionSuccessCelebration } from '@/components/dashboard/SubscriptionSuccessCelebration'
 import { auth } from '@/server/lib/auth'
 
@@ -13,7 +12,6 @@ export default async function DashboardPage() {
       <Suspense fallback={null}>
         <SubscriptionSuccessCelebration />
       </Suspense>
-      <EmailVerificationBanner />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <CreditBalanceCard />
 

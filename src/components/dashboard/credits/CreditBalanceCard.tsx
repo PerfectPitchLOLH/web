@@ -132,7 +132,7 @@ export function CreditBalanceCard() {
 
       <div className="flex gap-2">
         <Button variant="outline" className="flex-1" asChild>
-          <Link href="/dashboard/subscription">Voir les offres</Link>
+          <Link href="/dashboard/subscription#plan">Voir les offres</Link>
         </Button>
       </div>
 

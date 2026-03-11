@@ -427,6 +427,101 @@ export class SubscriptionService {
     })
   }
 
+  async cancelSubscription(userId: string): Promise<void> {
+    const subscription = await this.repository.findSubscriptionByUserId(userId)
+
+    if (!subscription || subscription.status !== 'active') {
+      throw new ApiError(
+        'SUBSCRIPTION_NOT_FOUND',
+        HTTP_STATUS.NOT_FOUND,
+        'Aucun abonnement actif',
+      )
+    }
+
+    await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+      cancel_at_period_end: true,
+    })
+
+    await this.repository.updateSubscription(
+      subscription.stripeSubscriptionId,
+      {
+        cancelAtPeriodEnd: true,
+      },
+    )
+  }
+
+  async reactivateSubscription(userId: string): Promise<void> {
+    const subscription = await this.repository.findSubscriptionByUserId(userId)
+
+    if (!subscription) {
+      throw new ApiError(
+        'SUBSCRIPTION_NOT_FOUND',
+        HTTP_STATUS.NOT_FOUND,
+        'Aucun abonnement trouvé',
+      )
+    }
+
+    if (!subscription.cancelAtPeriodEnd) {
+      throw new ApiError(
+        'SUBSCRIPTION_NOT_CANCELING',
+        HTTP_STATUS.BAD_REQUEST,
+        "L'abonnement n'est pas en cours de résiliation",
+      )
+    }
+
+    await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+      cancel_at_period_end: false,
+    })
+
+    await this.repository.updateSubscription(
+      subscription.stripeSubscriptionId,
+      {
+        cancelAtPeriodEnd: false,
+      },
+    )
+  }
+
+  async upgradeSubscription(userId: string, newPriceId: string): Promise<void> {
+    const subscription = await this.repository.findSubscriptionByUserId(userId)
+
+    if (!subscription || subscription.status !== 'active') {
+      throw new ApiError(
+        'SUBSCRIPTION_NOT_FOUND',
+        HTTP_STATUS.NOT_FOUND,
+        'Aucun abonnement actif',
+      )
+    }
+
+    const newPlan = await this.repository.findPlanByStripePriceId(newPriceId)
+
+    if (!newPlan) {
+      throw new ApiError(
+        'INVALID_PLAN',
+        HTTP_STATUS.BAD_REQUEST,
+        'Plan invalide',
+      )
+    }
+
+    const stripeSubscription = await stripe.subscriptions.retrieve(
+      subscription.stripeSubscriptionId,
+    )
+
+    const itemId = stripeSubscription.items.data[0]?.id
+
+    if (!itemId) {
+      throw new ApiError(
+        'SUBSCRIPTION_ITEM_NOT_FOUND',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        "Item d'abonnement introuvable",
+      )
+    }
+
+    await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+      items: [{ id: itemId, price: newPriceId }],
+      proration_behavior: 'create_prorations',
+    })
+  }
+
   async grantWelcomeCredits(userId: string, email: string): Promise<void> {
     await this.creditService.getUserCreditsBalance(userId)
 

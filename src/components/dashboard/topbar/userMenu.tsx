@@ -33,11 +33,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useCredits } from '@/hooks/useCredits'
+import { useSubscription } from '@/hooks/useSubscription'
 
 export const UserMenu = memo(function UserMenu() {
   const { theme, setTheme } = useTheme()
   const { data: session, status } = useSession()
   const { credits } = useCredits()
+  const { subscription } = useSubscription()
+  const hasSubscription = subscription?.hasActiveSubscription ?? false
 
   const userEmail = useMemo(
     () => session?.user?.email ?? 'Loading...',
@@ -134,7 +137,7 @@ export const UserMenu = memo(function UserMenu() {
         <DropdownMenuItem asChild>
           <Link href="/dashboard/subscription">
             <CreditCard className="mr-2 size-4" />
-            Abonnement
+            {hasSubscription ? "Gestion de l'abonnement" : 'Abonnement'}
           </Link>
         </DropdownMenuItem>
 
