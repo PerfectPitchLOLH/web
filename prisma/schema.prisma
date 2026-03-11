@@ -21,6 +21,13 @@ model User {
   status               String                 @default("active")
   suspendedAt          DateTime?
   stripeCustomerId     String?                @unique
+  bio                  String?
+  twoFactorEnabled     Boolean                @default(false)
+  twoFactorSecret      String?
+  twoFactorBackupCodes Json?
+  theme                String                 @default("system")
+  language             String                 @default("fr")
+  notificationPreferences Json?
   accounts             Account[]
   creditTransactions   CreditTransaction[]
   adminImpersonations  ImpersonationSession[] @relation("AdminImpersonations")

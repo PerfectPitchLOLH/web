@@ -1,4 +1,5 @@
 import type { User } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 
 import { db } from '@/server/lib/database'
 import type { PaginationParams } from '@/server/shared/types'
@@ -55,7 +56,17 @@ export class UserRepository {
   async update(id: string, data: UpdateUserDTO): Promise<User | null> {
     return db.user.update({
       where: { id },
-      data,
+      data: {
+        ...data,
+        twoFactorBackupCodes:
+          data.twoFactorBackupCodes === null
+            ? Prisma.JsonNull
+            : data.twoFactorBackupCodes,
+        notificationPreferences:
+          data.notificationPreferences === null
+            ? Prisma.JsonNull
+            : data.notificationPreferences,
+      },
     })
   }
 

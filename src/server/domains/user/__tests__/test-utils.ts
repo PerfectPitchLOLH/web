@@ -13,5 +13,11 @@ export const createMockUser = (overrides: any = {}) => ({
   suspendedAt: null,
   deletedAt: null,
   stripeCustomerId: null,
+  twoFactorEnabled: false,
+  twoFactorSecret: null,
+  twoFactorBackupCodes: null,
+  theme: 'system',
+  language: 'fr',
+  notificationPreferences: null,
   ...overrides,
 })

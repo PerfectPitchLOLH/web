@@ -6,6 +6,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { SessionProvider } from '@/components/providers/SessionProvider'
 import { ThemeProvider } from '@/components/providers/themeProvider'
 import { JsonLdSchema } from '@/components/seo/json-ld-schema'
+import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 const geistSans = Geist({
@@ -116,6 +117,7 @@ export default function RootLayout({
         <SessionProvider>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
             <TooltipProvider>{children}</TooltipProvider>
+            <Toaster richColors position="bottom-right" />
           </ThemeProvider>
         </SessionProvider>
       </body>

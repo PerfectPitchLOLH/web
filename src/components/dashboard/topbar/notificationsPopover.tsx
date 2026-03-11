@@ -30,11 +30,19 @@ const mockNotifications = [
 ]
 
 export function NotificationsPopover() {
-  const [notifications] = useState(mockNotifications)
+  const [notifications, setNotifications] = useState(mockNotifications)
+  const [open, setOpen] = useState(false)
   const unreadCount = notifications.filter((n) => !n.read).length
 
+  function handleOpenChange(value: boolean) {
+    setOpen(value)
+    if (value) {
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+    }
+  }
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="size-5" />

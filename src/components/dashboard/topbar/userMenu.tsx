@@ -11,7 +11,6 @@ import {
   Sun,
   UserCircle,
   Users,
-  Wallet,
 } from 'lucide-react'
 import Link from 'next/link'
 import { signOut, useSession } from 'next-auth/react'
@@ -153,13 +152,6 @@ export const UserMenu = memo(function UserMenu() {
               Mode sombre
             </>
           )}
-        </DropdownMenuItem>
-
-        <DropdownMenuItem asChild>
-          <Link href="/dashboard/payments">
-            <Wallet className="mr-2 size-4" />
-            Paiements
-          </Link>
         </DropdownMenuItem>
 
         <DropdownMenuItem asChild>

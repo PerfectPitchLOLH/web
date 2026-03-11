@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 
 import { AdditionalCreditsSection } from '@/components/credits/AdditionalCreditsSection'
-import { useSubscription } from '@/hooks/useSubscription'
+import type { SubscriptionInfo } from '@/hooks/useSubscription'
 
 import { PricingTiersSection } from '../PricingTiersSection'
 import { getBillingInterval } from '../utils'
@@ -12,30 +12,33 @@ import { CreditsCard } from './CreditsCard'
 import { CurrentPlanCard } from './CurrentPlanCard'
 import { DangerZone } from './DangerZone'
 import { InvoicesSection } from './InvoicesSection'
-import { ManagementSkeleton } from './Skeleton'
 import { StatusBadge } from './StatusBadge'
 
-export function SubscriptionManagementView() {
-  const {
-    subscription,
-    loading,
-    cancelSubscription,
-    reactivateSubscription,
-    upgradeSubscription,
-    openPortal,
-  } = useSubscription()
+type Props = {
+  subscription: SubscriptionInfo
+  cancelSubscription: () => Promise<void>
+  reactivateSubscription: () => Promise<void>
+  upgradeSubscription: (priceId: string) => Promise<void>
+  openPortal: () => Promise<void>
+}
+
+export function SubscriptionManagementView({
+  subscription,
+  cancelSubscription,
+  reactivateSubscription,
+  upgradeSubscription,
+  openPortal,
+}: Props) {
   const [actionLoading, setActionLoading] = useState(false)
   const [portalLoading, setPortalLoading] = useState(false)
   const [upgradeLoading, setUpgradeLoading] = useState(false)
 
   useEffect(() => {
-    if (!loading && window.location.hash) {
+    if (window.location.hash) {
       const el = document.querySelector(window.location.hash)
       if (el) el.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [loading])
-
-  if (loading) return <ManagementSkeleton />
+  }, [])
 
   const sub = subscription?.subscription
 
@@ -104,7 +107,7 @@ export function SubscriptionManagementView() {
         <CreditsCard />
       </div>
 
-      <div id="plan" className="space-y-4">
+      <div id="plan" className="scroll-mt-20 space-y-4">
         <div>
           <h2 className="text-lg font-semibold">Changer de plan</h2>
           <p className="text-sm text-muted-foreground mt-1">

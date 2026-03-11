@@ -16,6 +16,13 @@ export type CreateUserDTO = Omit<
   | 'suspendedAt'
   | 'deletedAt'
   | 'stripeCustomerId'
+  | 'bio'
+  | 'twoFactorEnabled'
+  | 'twoFactorSecret'
+  | 'twoFactorBackupCodes'
+  | 'theme'
+  | 'language'
+  | 'notificationPreferences'
 > & {
   password?: string | null
   emailVerified?: Date | null
@@ -27,7 +34,13 @@ export type CreateUserDTO = Omit<
   stripeCustomerId?: string | null
 }
 
-export type UpdateUserDTO = UpdateDTO<PrismaUser>
+export type UpdateUserDTO = Omit<
+  UpdateDTO<PrismaUser>,
+  'twoFactorBackupCodes' | 'notificationPreferences'
+> & {
+  twoFactorBackupCodes?: string[] | null
+  notificationPreferences?: Record<string, boolean> | null
+}
 
 export type UserListFilters = {
   role?: UserRole
