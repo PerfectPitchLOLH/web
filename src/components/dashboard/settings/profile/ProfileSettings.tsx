@@ -1,5 +1,6 @@
 'use client'
 
+import { Zap } from 'lucide-react'
 import Link from 'next/link'
 import { signOut } from 'next-auth/react'
 import { useState } from 'react'
@@ -16,6 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Progress } from '@/components/ui/progress'
 import {
   Select,
   SelectContent,
@@ -23,12 +25,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useCredits } from '@/hooks/useCredits'
 import {
   useDeleteAccount,
   useExportData,
   useUpdateAppearance,
   useUpdateProfile,
 } from '@/hooks/useSettings'
+import { cn } from '@/lib/utils'
 import type { UserSettings } from '@/server/domains/settings/settings.types'
 
 import { TwoFactorSetup } from '../security/TwoFactorSetup'
@@ -316,12 +321,233 @@ function DeleteAccountDialog({
   )
 }
 
+function CreditsDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const { credits, loading } = useCredits()
+
+  if (!credits && !loading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Utilisation des crédits</DialogTitle>
+            <DialogDescription>
+              Consultez votre utilisation mensuelle de crédits
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-4">
+            Impossible de charger les informations de crédit
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  const monthlyUsed = credits
+    ? Math.min(credits.usedThisMonth, credits.monthlyCredits)
+    : 0
+  const bonusUsed = credits
+    ? Math.max(0, credits.usedThisMonth - credits.monthlyCredits)
+    : 0
+
+  const monthlyRemaining = credits
+    ? Math.max(0, credits.monthlyCredits - monthlyUsed)
+    : 0
+  const bonusRemaining = credits
+    ? Math.max(0, credits.bonusCredits - bonusUsed)
+    : 0
+
+  const monthlyPercent =
+    credits && credits.monthlyCredits > 0
+      ? Math.round((monthlyUsed / credits.monthlyCredits) * 100)
+      : 0
+  const bonusPercent =
+    credits && credits.bonusCredits > 0
+      ? Math.round((bonusUsed / credits.bonusCredits) * 100)
+      : 0
+
+  const totalRemaining = monthlyRemaining + bonusRemaining
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Utilisation des crédits</DialogTitle>
+          <DialogDescription>
+            Consultez votre utilisation mensuelle de crédits
+          </DialogDescription>
+        </DialogHeader>
+
+        {loading ? (
+          <div className="space-y-6 py-4">
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-12 w-40" />
+              <Skeleton className="h-2 w-full" />
+            </div>
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-2 w-full" />
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6 py-4">
+            <div className="rounded-xl border bg-gradient-to-br from-primary/5 to-primary/10 p-6 space-y-2">
+              <div className="text-sm font-medium text-muted-foreground">
+                Total disponible
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-bold">
+                  {Math.round(totalRemaining / 60)}
+                </span>
+                <span className="text-lg text-muted-foreground">minutes</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {Math.round(credits!.usedThisMonth / 60)} min utilisées ce mois
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-card p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap className="size-4 text-primary" />
+                    <span className="text-sm font-medium">
+                      Crédits mensuels
+                    </span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {monthlyPercent}% utilisé
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold">
+                      {Math.round(monthlyRemaining / 60)}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      / {Math.round(credits!.monthlyCredits / 60)} min
+                    </span>
+                  </div>
+
+                  <Progress
+                    value={monthlyPercent}
+                    className={cn(
+                      'h-2',
+                      monthlyPercent > 80 && '[&>div]:bg-orange-500',
+                      monthlyPercent >= 100 && '[&>div]:bg-red-500',
+                    )}
+                  />
+
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{Math.round(monthlyUsed / 60)} min utilisées</span>
+                    <span>
+                      {Math.round(monthlyRemaining / 60)} min restantes
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {credits!.bonusCredits > 0 && (
+                <div className="rounded-lg border bg-card p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Zap className="size-4 text-amber-500" />
+                      <span className="text-sm font-medium">Crédits bonus</span>
+                    </div>
+                    {bonusUsed > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        {bonusPercent}% utilisé
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-bold">
+                        {Math.round(bonusRemaining / 60)}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        / {Math.round(credits!.bonusCredits / 60)} min
+                      </span>
+                    </div>
+
+                    {bonusUsed > 0 && (
+                      <>
+                        <Progress
+                          value={bonusPercent}
+                          className={cn(
+                            'h-2 [&>div]:bg-amber-500',
+                            bonusPercent > 80 && '[&>div]:bg-orange-500',
+                            bonusPercent >= 100 && '[&>div]:bg-red-500',
+                          )}
+                        />
+
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>
+                            {Math.round(bonusUsed / 60)} min utilisées
+                          </span>
+                          <span>
+                            {Math.round(bonusRemaining / 60)} min restantes
+                          </span>
+                        </div>
+                      </>
+                    )}
+
+                    {bonusUsed === 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Seront utilisés après épuisement des crédits mensuels
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {credits!.lastMonthlyRefill && (
+              <div className="text-xs text-muted-foreground text-center pt-2">
+                Dernière recharge le{' '}
+                {new Date(credits!.lastMonthlyRefill).toLocaleDateString(
+                  'fr-FR',
+                  {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  },
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Fermer
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function ProfileSettings({ settings }: Props) {
   const [nameDialogOpen, setNameDialogOpen] = useState(false)
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false)
   const [exportDialogOpen, setExportDialogOpen] = useState(false)
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [creditsDialogOpen, setCreditsDialogOpen] = useState(false)
 
   const [language, setLanguage] = useState(settings.language)
   const [updateAppearance] = useUpdateAppearance()
@@ -398,8 +624,12 @@ export function ProfileSettings({ settings }: Props) {
           label="Utilisation et plafonds de crédit"
           description="Voir l'utilisation de vos crédits"
           action={
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/dashboard/subscription">Voir les détails</Link>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCreditsDialogOpen(true)}
+            >
+              Voir les détails
             </Button>
           }
         />
@@ -487,6 +717,10 @@ export function ProfileSettings({ settings }: Props) {
       <DeleteAccountDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
+      />
+      <CreditsDialog
+        open={creditsDialogOpen}
+        onOpenChange={setCreditsDialogOpen}
       />
     </>
   )

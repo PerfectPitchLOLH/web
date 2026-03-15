@@ -89,14 +89,14 @@ export function TwoFactorSetup({ enabled: initialEnabled }: Props) {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           {enabled ? (
-            <ShieldCheck className="h-5 w-5 text-green-500" />
+            <ShieldCheck className="h-5 w-5 text-green-500 flex-shrink-0" />
           ) : (
-            <ShieldOff className="h-5 w-5 text-muted-foreground" />
+            <ShieldOff className="h-5 w-5 text-muted-foreground flex-shrink-0" />
           )}
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="text-sm font-medium">
               Authentification à deux facteurs
             </p>
@@ -112,13 +112,18 @@ export function TwoFactorSetup({ enabled: initialEnabled }: Props) {
             variant="outline"
             size="sm"
             onClick={() => setStep('disable')}
-            className="gap-2 text-destructive hover:text-destructive"
+            className="gap-2 text-destructive hover:text-destructive flex-shrink-0"
           >
             <ShieldX className="h-4 w-4" />
             Désactiver
           </Button>
         ) : (
-          <Button size="sm" onClick={handleSetup} disabled={loading}>
+          <Button
+            size="sm"
+            onClick={handleSetup}
+            disabled={loading}
+            className="flex-shrink-0"
+          >
             {loading ? 'Chargement...' : 'Activer'}
           </Button>
         )}
