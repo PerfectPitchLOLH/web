@@ -9,6 +9,18 @@ export type CreatePaymentIntentResponse = {
   paymentIntentId: string
 }
 
+export type CreateCheckoutSessionRequest = {
+  bundleId: string
+  bundleName: string
+  minutes: number
+  priceId: string
+}
+
+export type CreateCheckoutSessionResponse = {
+  sessionId: string
+  url: string
+}
+
 export type ConfirmPaymentRequest = {
   paymentIntentId: string
 }

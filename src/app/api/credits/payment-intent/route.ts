@@ -1,10 +1,16 @@
 import { NextRequest } from 'next/server'
 
-import { initializeCreditController } from '@/server/domains/credit'
+import { creditService } from '@/server/domains/credit'
+import { CreditController } from '@/server/domains/credit/credit.controller'
 import { paymentService } from '@/server/domains/payment'
 import { auth } from '@/server/lib/auth'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { createErrorResponse } from '@/server/shared/utils/api.utils'
+
+const creditControllerWithPayment = new CreditController(
+  creditService,
+  paymentService,
+)
 
 export async function POST(request: NextRequest) {
   const session = await auth()
@@ -18,9 +24,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const creditController = initializeCreditController(paymentService)
-
-  return creditController.createBundlePurchaseIntent(
+  return creditControllerWithPayment.createBundlePurchaseCheckout(
     session.user.id,
     session.user.email,
     request,
