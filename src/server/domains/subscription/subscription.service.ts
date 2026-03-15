@@ -3,6 +3,7 @@ import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
 import type { CreditService } from '../credit/credit.service'
+import type { CreditPurchaseRepository } from '../credit-purchase/credit-purchase.repository'
 import { SUBSCRIPTION_STATUS } from './subscription.constants'
 import type { SubscriptionRepository } from './subscription.repository'
 import type {
@@ -18,16 +19,40 @@ export class SubscriptionService {
   constructor(
     private repository: SubscriptionRepository,
     private creditService: CreditService,
+    private creditPurchaseRepository: CreditPurchaseRepository,
   ) {}
 
   async getUserSubscription(userId: string): Promise<UserSubscriptionInfo> {
     const subscription = await this.repository.findSubscriptionWithPlan(userId)
     const invoices = await this.repository.findInvoicesByUserId(userId)
 
+    const creditPurchases =
+      await this.creditPurchaseRepository.findSucceededByUserId(userId)
+
+    const creditInvoices = creditPurchases.map((purchase) => ({
+      id: purchase.id,
+      userId: purchase.userId,
+      stripeInvoiceId: purchase.stripePaymentIntentId,
+      amount: purchase.amount / 100,
+      currency: purchase.currency,
+      status: 'paid',
+      createdAt: purchase.createdAt,
+      paidAt: purchase.creditsGrantedAt,
+      updatedAt: purchase.updatedAt,
+      hostedInvoiceUrl: null,
+      invoicePdf: (purchase as any).invoicePdf ?? null,
+      description: `Achat de ${purchase.bundleName} (${purchase.minutes} minutes)`,
+    }))
+
+    const allInvoices = [...invoices, ...creditInvoices].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
+
     return {
       hasActiveSubscription: subscription !== null,
       subscription,
-      invoices,
+      invoices: allInvoices,
     }
   }
 

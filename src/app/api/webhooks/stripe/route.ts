@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import Stripe from 'stripe'
 
-import { creditService } from '@/server/domains/credit'
+import { creditPurchaseService } from '@/server/domains/credit-purchase'
 import {
   subscriptionRepository,
   subscriptionService,
@@ -110,17 +110,20 @@ export async function POST(request: NextRequest) {
           break
         }
 
-        case 'payment_intent.succeeded': {
-          const paymentIntent = event.data.object as Stripe.PaymentIntent
+        case 'checkout.session.completed': {
+          const session = event.data.object as Stripe.Checkout.Session
 
-          if (
-            paymentIntent.metadata.bundleId &&
-            paymentIntent.metadata.userId
-          ) {
-            await creditService.purchaseBundle(
-              paymentIntent.metadata.userId,
-              paymentIntent.metadata.bundleId as any,
-            )
+          if (session.metadata?.bundleId && session.metadata?.userId) {
+            await creditPurchaseService.processCheckoutSuccess(session.id)
+          }
+          break
+        }
+
+        case 'checkout.session.expired': {
+          const session = event.data.object as Stripe.Checkout.Session
+
+          if (session.metadata?.bundleId) {
+            await creditPurchaseService.handleCheckoutExpired(session.id)
           }
           break
         }
