@@ -23,7 +23,7 @@ type CreditBundle = {
   bestValue?: boolean
 }
 
-type PurchaseState = 'idle' | 'loading' | 'success' | 'error'
+type PurchaseState = 'idle' | 'loading' | 'error'
 
 interface CreditPurchaseModalProps {
   open: boolean
@@ -36,7 +36,6 @@ export function CreditPurchaseModal({
   open,
   onOpenChange,
   bundle,
-  onPurchaseComplete,
 }: CreditPurchaseModalProps) {
   const [state, setState] = useState<PurchaseState>('idle')
   const [errorMessage, setErrorMessage] = useState<string>('')
@@ -48,7 +47,7 @@ export function CreditPurchaseModal({
     setErrorMessage('')
 
     try {
-      const response = await fetch('/api/credits', {
+      const response = await fetch('/api/credits/payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bundleId: bundle.id }),
@@ -57,15 +56,12 @@ export function CreditPurchaseModal({
       const data = await response.json()
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error?.message || "Échec de l'achat")
+        throw new Error(
+          data.error?.message || 'Échec de la création du paiement',
+        )
       }
 
-      setState('success')
-
-      setTimeout(() => {
-        onPurchaseComplete?.()
-        handleClose()
-      }, 2000)
+      window.location.href = data.data.url
     } catch (error) {
       setState('error')
       setErrorMessage(
@@ -96,7 +92,7 @@ export function CreditPurchaseModal({
             Acheter des minutes
           </DialogTitle>
           <DialogDescription>
-            Confirmez votre achat de crédits supplémentaires
+            Vous serez redirigé vers Stripe pour finaliser le paiement
           </DialogDescription>
         </DialogHeader>
 
@@ -162,7 +158,7 @@ export function CreditPurchaseModal({
                 className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
                 onClick={handlePurchase}
               >
-                Confirmer l'achat
+                Continuer vers Stripe
               </Button>
             </div>
           )}
@@ -171,22 +167,8 @@ export function CreditPurchaseModal({
             <div className="flex flex-col items-center gap-3 py-4">
               <Loader2 className="size-8 animate-spin text-amber-500" />
               <p className="text-sm text-muted-foreground">
-                Traitement de votre achat...
+                Redirection vers Stripe...
               </p>
-            </div>
-          )}
-
-          {state === 'success' && (
-            <div className="flex flex-col items-center gap-3 py-4">
-              <div className="rounded-full bg-green-500/10 p-3">
-                <Check className="size-8 text-green-500" />
-              </div>
-              <div className="text-center">
-                <p className="font-semibold">Achat réussi !</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {bundle.minutes} minutes ajoutées à votre solde
-                </p>
-              </div>
             </div>
           )}
 
@@ -197,7 +179,7 @@ export function CreditPurchaseModal({
                   <X className="size-8 text-red-500" />
                 </div>
                 <div className="text-center">
-                  <p className="font-semibold text-red-500">Échec de l'achat</p>
+                  <p className="font-semibold text-red-500">Erreur</p>
                   <p className="text-sm text-muted-foreground mt-1">
                     {errorMessage}
                   </p>

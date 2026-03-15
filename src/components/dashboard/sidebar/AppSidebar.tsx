@@ -48,7 +48,7 @@ const featuresItems = [
 
 export function AppSidebar() {
   const pathname = usePathname()
-  const { theme } = useTheme()
+  const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export function AppSidebar() {
               <div className="flex aspect-square size-8 items-center justify-center">
                 <Image
                   src={
-                    mounted && theme === 'dark'
+                    mounted && resolvedTheme === 'dark'
                       ? '/logo_dark.svg'
                       : '/logo_light.svg'
                   }

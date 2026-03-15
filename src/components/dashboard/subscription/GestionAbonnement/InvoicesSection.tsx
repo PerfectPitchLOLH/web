@@ -1,4 +1,4 @@
-import { Download, ExternalLink } from 'lucide-react'
+import { Download } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -89,22 +89,6 @@ export function InvoicesSection({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
-                      {invoice.hostedInvoiceUrl && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8"
-                          asChild
-                        >
-                          <a
-                            href={invoice.hostedInvoiceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <ExternalLink className="size-3.5" />
-                          </a>
-                        </Button>
-                      )}
                       {invoice.invoicePdf && (
                         <Button
                           variant="ghost"
