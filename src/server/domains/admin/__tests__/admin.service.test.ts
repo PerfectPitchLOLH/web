@@ -5,6 +5,7 @@ import { ApiError } from '@/server/shared/utils'
 
 import { AdminRepository } from '../admin.repository'
 import { AdminService } from '../admin.service'
+import { createMockUser } from './test-utils'
 
 describe('AdminService', () => {
   let adminService: AdminService
@@ -97,17 +98,11 @@ describe('AdminService', () => {
     it('should return users with filters applied', async () => {
       const mockResult = {
         users: [
-          {
+          createMockUser({
             id: '1',
             email: 'user@test.com',
             name: 'Test User',
-            password: 'hashed',
-            role: 'user',
-            emailVerified: new Date(),
-            image: null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
+          }),
         ],
         total: 1,
         page: 1,
@@ -128,32 +123,20 @@ describe('AdminService', () => {
   })
 
   describe('updateUserRole', () => {
-    const mockUser = {
+    const mockUser = createMockUser({
       id: 'user123',
       email: 'user@test.com',
       name: 'Test User',
-      password: 'hashed',
-      role: 'user',
-      isRootAdmin: false,
-      emailVerified: new Date(),
-      image: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
+    })
 
     it('should update user role successfully', async () => {
-      const mockAdmin = {
+      const mockAdmin = createMockUser({
         id: 'admin123',
         email: 'admin@test.com',
         name: 'Admin User',
-        password: 'hashed',
         role: 'admin',
         isRootAdmin: true,
-        emailVerified: new Date(),
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.getUserById)
         .mockResolvedValueOnce(mockUser)
@@ -224,18 +207,13 @@ describe('AdminService', () => {
     })
 
     it('should throw FORBIDDEN error if admin tries to change own role', async () => {
-      const mockAdminUser = {
+      const mockAdminUser = createMockUser({
         id: 'user123',
         email: 'user@test.com',
         name: 'Test User',
-        password: 'hashed',
         role: 'admin',
         isRootAdmin: true,
-        emailVerified: new Date(),
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.getUserById).mockResolvedValue(mockAdminUser)
 
@@ -259,18 +237,13 @@ describe('AdminService', () => {
     })
 
     it('should create audit log after successful role update', async () => {
-      const mockAdmin = {
+      const mockAdmin = createMockUser({
         id: 'admin123',
         email: 'admin@test.com',
         name: 'Admin User',
-        password: 'hashed',
         role: 'admin',
         isRootAdmin: true,
-        emailVerified: new Date(),
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.getUserById)
         .mockResolvedValueOnce(mockUser)
@@ -304,31 +277,21 @@ describe('AdminService', () => {
     })
 
     it('should prevent invited admin from changing root admin role', async () => {
-      const mockRootAdmin = {
+      const mockRootAdmin = createMockUser({
         id: 'root123',
         email: 'root@test.com',
         name: 'Root Admin',
-        password: 'hashed',
         role: 'admin',
         isRootAdmin: true,
-        emailVerified: new Date(),
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
-      const mockInvitedAdmin = {
+      const mockInvitedAdmin = createMockUser({
         id: 'invited123',
         email: 'invited@test.com',
         name: 'Invited Admin',
-        password: 'hashed',
         role: 'admin',
         isRootAdmin: false,
-        emailVerified: new Date(),
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.getUserById)
         .mockImplementationOnce((id: string) =>
@@ -362,31 +325,21 @@ describe('AdminService', () => {
     })
 
     it('should allow root admin to change invited admin role', async () => {
-      const mockInvitedAdmin = {
+      const mockInvitedAdmin = createMockUser({
         id: 'invited123',
         email: 'invited@test.com',
         name: 'Invited Admin',
-        password: 'hashed',
         role: 'admin',
         isRootAdmin: false,
-        emailVerified: new Date(),
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
-      const mockRootAdmin = {
+      const mockRootAdmin = createMockUser({
         id: 'root123',
         email: 'root@test.com',
         name: 'Root Admin',
-        password: 'hashed',
         role: 'admin',
         isRootAdmin: true,
-        emailVerified: new Date(),
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.getUserById)
         .mockResolvedValueOnce(mockInvitedAdmin)
@@ -414,31 +367,21 @@ describe('AdminService', () => {
     })
 
     it('should prevent invited admin from changing other admin roles', async () => {
-      const mockTargetAdmin = {
+      const mockTargetAdmin = createMockUser({
         id: 'target123',
         email: 'target@test.com',
         name: 'Target Admin',
-        password: 'hashed',
         role: 'admin',
         isRootAdmin: false,
-        emailVerified: new Date(),
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
-      const mockInvitedAdmin = {
+      const mockInvitedAdmin = createMockUser({
         id: 'invited123',
         email: 'invited@test.com',
         name: 'Invited Admin',
-        password: 'hashed',
         role: 'admin',
         isRootAdmin: false,
-        emailVerified: new Date(),
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockRepository.getUserById)
         .mockImplementationOnce((id: string) =>

@@ -4,11 +4,13 @@ import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import Google from 'next-auth/providers/google'
 
+import { AuthRepository } from '../domains/auth/auth.repository'
 import { signInSchema } from '../domains/auth/auth.schemas'
 import { verifyPassword } from '../shared/utils/password.utils'
 import { db } from './database'
 
 const MAX_SESSION_DURATION_MS = 30 * 60 * 1000
+const authRepository = new AuthRepository()
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db) as any,
@@ -73,11 +75,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id
         token.role = user.role
+        token.emailVerified = user.emailVerified
       }
+
+      if (trigger === 'update' && token.id) {
+        const freshUser = await authRepository.findEmailVerifiedById(
+          token.id as string,
+        )
+        if (freshUser) {
+          token.emailVerified = freshUser.emailVerified
+        }
+      }
+
       return token
     },
     async session({ session, token }) {

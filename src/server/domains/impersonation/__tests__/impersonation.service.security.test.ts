@@ -4,6 +4,7 @@ import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
 import type { AdminRepository } from '../../admin/admin.repository'
+import { createMockUser } from '../../user/__tests__/test-utils'
 import type { UserRepository } from '../../user/user.repository'
 import type { ImpersonationRepository } from '../impersonation.repository'
 import { ImpersonationService } from '../impersonation.service'
@@ -59,21 +60,13 @@ describe('ImpersonationService - Security Tests', () => {
     })
 
     it('should reject when admin is not actually an admin', async () => {
-      const nonAdminUser = {
+      const nonAdminUser = createMockUser({
         id: 'user123',
         email: 'user@test.com',
         name: 'Regular User',
         role: 'user',
-        password: null,
         emailVerified: new Date(),
-        image: null,
-        isRootAdmin: false,
-        status: 'active',
-        suspendedAt: null,
-        deletedAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockUserRepo.findById).mockResolvedValue(nonAdminUser)
 
@@ -91,21 +84,14 @@ describe('ImpersonationService - Security Tests', () => {
     })
 
     it('should reject when target user does not exist', async () => {
-      const adminUser = {
+      const adminUser = createMockUser({
         id: 'admin123',
         email: 'admin@test.com',
         name: 'Admin User',
         role: 'admin',
-        password: null,
-        emailVerified: new Date(),
-        image: null,
         isRootAdmin: true,
-        status: 'active',
-        suspendedAt: null,
-        deletedAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+        emailVerified: new Date(),
+      })
 
       vi.mocked(mockUserRepo.findById)
         .mockResolvedValueOnce(adminUser)
@@ -121,37 +107,21 @@ describe('ImpersonationService - Security Tests', () => {
     })
 
     it('should reject impersonation of another admin', async () => {
-      const adminUser = {
+      const adminUser = createMockUser({
         id: 'admin123',
         email: 'admin@test.com',
         name: 'Admin User',
         role: 'admin',
-        password: null,
-        emailVerified: new Date(),
-        image: null,
         isRootAdmin: true,
-        status: 'active',
-        suspendedAt: null,
-        deletedAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-
-      const targetAdmin = {
+        emailVerified: new Date(),
+      })
+      const targetAdmin = createMockUser({
         id: 'admin456',
         email: 'admin2@test.com',
         name: 'Another Admin',
         role: 'admin',
-        password: null,
         emailVerified: new Date(),
-        image: null,
-        isRootAdmin: false,
-        status: 'active',
-        suspendedAt: null,
-        deletedAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(mockUserRepo.findById)
         .mockResolvedValueOnce(adminUser)
@@ -167,21 +137,14 @@ describe('ImpersonationService - Security Tests', () => {
     })
 
     it('should reject self-impersonation (admin role checked first)', async () => {
-      const adminUser = {
+      const adminUser = createMockUser({
         id: 'admin123',
         email: 'admin@test.com',
         name: 'Admin User',
         role: 'admin',
-        password: null,
-        emailVerified: new Date(),
-        image: null,
         isRootAdmin: true,
-        status: 'active',
-        suspendedAt: null,
-        deletedAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+        emailVerified: new Date(),
+      })
 
       vi.mocked(mockUserRepo.findById)
         .mockResolvedValueOnce(adminUser)
@@ -197,37 +160,21 @@ describe('ImpersonationService - Security Tests', () => {
     })
 
     it('should allow valid impersonation and end previous sessions', async () => {
-      const adminUser = {
+      const adminUser = createMockUser({
         id: 'admin123',
         email: 'admin@test.com',
         name: 'Admin User',
         role: 'admin',
-        password: null,
-        emailVerified: new Date(),
-        image: null,
         isRootAdmin: true,
-        status: 'active',
-        suspendedAt: null,
-        deletedAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-
-      const targetUser = {
+        emailVerified: new Date(),
+      })
+      const targetUser = createMockUser({
         id: 'user123',
         email: 'user@test.com',
         name: 'Target User',
         role: 'user',
-        password: null,
         emailVerified: new Date(),
-        image: null,
-        isRootAdmin: false,
-        status: 'active',
-        suspendedAt: null,
-        deletedAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       const mockSession = {
         id: 'session123',
@@ -297,6 +244,17 @@ describe('ImpersonationService - Security Tests', () => {
         startedAt: new Date(),
         endedAt: new Date(),
         isActive: false,
+        admin: {
+          id: 'admin123',
+          name: 'Admin',
+          email: 'admin@test.com',
+        },
+        targetUser: {
+          id: 'user123',
+          name: 'Target User',
+          email: 'target@test.com',
+          role: 'user',
+        },
       }
 
       vi.mocked(mockImpersonationRepo.findById).mockResolvedValue(
@@ -335,6 +293,7 @@ describe('ImpersonationService - Security Tests', () => {
           id: 'user123',
           name: 'Target User',
           email: 'user@test.com',
+          role: 'user',
         },
       }
 

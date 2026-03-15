@@ -1,24 +1,12 @@
 'use client'
 
-import {
-  AudioLines,
-  ChevronDown,
-  Coins,
-  FileMusic,
-  Home,
-  Piano,
-} from 'lucide-react'
+import { AudioLines, Coins, FileMusic, Home, Piano } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
 import {
   Sidebar,
   SidebarContent,
@@ -60,7 +48,7 @@ const featuresItems = [
 
 export function AppSidebar() {
   const pathname = usePathname()
-  const { theme } = useTheme()
+  const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -72,11 +60,14 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex items-center gap-2 px-2 py-2 group-data-[collapsible=icon]:justify-center">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 px-2 py-2 cursor-pointer group-data-[collapsible=icon]:justify-center"
+            >
               <div className="flex aspect-square size-8 items-center justify-center">
                 <Image
                   src={
-                    mounted && theme === 'dark'
+                    mounted && resolvedTheme === 'dark'
                       ? '/logo_dark.svg'
                       : '/logo_light.svg'
                   }
@@ -89,7 +80,7 @@ export function AppSidebar() {
               <div className="group-data-[collapsible=icon]:hidden">
                 <span className="font-semibold">Notavex</span>
               </div>
-            </div>
+            </Link>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -112,38 +103,23 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <Collapsible
-          defaultOpen
-          className="group/collapsible group-data-[collapsible=icon]:hidden"
-        >
-          <SidebarGroup>
-            <SidebarGroupLabel asChild>
-              <CollapsibleTrigger>
-                Features
-                <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-              </CollapsibleTrigger>
-            </SidebarGroupLabel>
-            <CollapsibleContent>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {featuresItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname === item.url}
-                      >
-                        <Link href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
-        </Collapsible>
+        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+          <SidebarGroupLabel>Features</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {featuresItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={pathname === item.url}>
+                    <Link href={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
         <SidebarGroup className="group-data-[collapsible=icon]:block hidden">
           <SidebarGroupContent>
@@ -170,7 +146,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild size="lg" tooltip="Améliorer">
-              <Link href="/dashboard/upgrade">
+              <Link href="/dashboard/subscription">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-amber-500 text-white">
                   <Coins className="size-4" />
                 </div>

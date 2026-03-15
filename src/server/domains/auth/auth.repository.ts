@@ -63,4 +63,13 @@ export class AuthRepository {
       where: { token },
     })
   }
+
+  async findEmailVerifiedById(
+    id: string,
+  ): Promise<{ emailVerified: Date | null } | null> {
+    return db.user.findUnique({
+      where: { id },
+      select: { emailVerified: true },
+    })
+  }
 }

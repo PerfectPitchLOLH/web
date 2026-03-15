@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from '@/server/lib/database'
 
 import { AdminRepository } from '../admin.repository'
+import { createMockUser } from './test-utils'
 
 vi.mock('@/server/lib/database', () => ({
   db: {
@@ -40,9 +41,9 @@ describe('AdminRepository', () => {
         .mockResolvedValueOnce(25)
 
       vi.mocked(db.user.groupBy).mockResolvedValue([
-        { role: 'admin', _count: 10 },
-        { role: 'user', _count: 90 },
-      ])
+        { role: 'admin', _count: { _all: 10 } },
+        { role: 'user', _count: { _all: 90 } },
+      ] as any)
 
       const result = await repository.getUserStats()
 
@@ -82,28 +83,18 @@ describe('AdminRepository', () => {
 
   describe('getUsersWithFilters', () => {
     const mockUsers = [
-      {
+      createMockUser({
         id: '1',
         email: 'user1@test.com',
         name: 'User 1',
-        password: 'hashed',
         role: 'user',
-        emailVerified: new Date(),
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
+      }),
+      createMockUser({
         id: '2',
         email: 'user2@test.com',
         name: 'User 2',
-        password: 'hashed',
         role: 'admin',
-        emailVerified: new Date(),
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
+      }),
     ]
 
     it('should return users with pagination', async () => {
@@ -194,18 +185,11 @@ describe('AdminRepository', () => {
 
   describe('getUserById', () => {
     it('should return user by id', async () => {
-      const mockUser = {
+      const mockUser = createMockUser({
         id: '1',
         email: 'test@test.com',
         name: 'Test User',
-        password: 'hashed',
-        role: 'user',
-        isRootAdmin: false,
-        emailVerified: new Date(),
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(db.user.findUnique).mockResolvedValue(mockUser)
 
@@ -227,18 +211,13 @@ describe('AdminRepository', () => {
     })
 
     it('should return user with isRootAdmin field', async () => {
-      const mockRootAdmin = {
+      const mockRootAdmin = createMockUser({
         id: 'root123',
         email: 'root@test.com',
         name: 'Root Admin',
-        password: 'hashed',
         role: 'admin',
         isRootAdmin: true,
-        emailVerified: new Date(),
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(db.user.findUnique).mockResolvedValue(mockRootAdmin)
 
@@ -251,18 +230,13 @@ describe('AdminRepository', () => {
 
   describe('getRootAdmin', () => {
     it('should return root admin user', async () => {
-      const mockRootAdmin = {
+      const mockRootAdmin = createMockUser({
         id: 'root123',
         email: 'root@test.com',
         name: 'Root Admin',
-        password: 'hashed',
         role: 'admin',
         isRootAdmin: true,
-        emailVerified: new Date(),
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(db.user.findFirst).mockResolvedValue(mockRootAdmin)
 
@@ -310,17 +284,12 @@ describe('AdminRepository', () => {
 
   describe('updateUserRole', () => {
     it('should update user role', async () => {
-      const mockUpdatedUser = {
+      const mockUpdatedUser = createMockUser({
         id: '1',
         email: 'test@test.com',
         name: 'Test User',
-        password: 'hashed',
         role: 'admin',
-        emailVerified: new Date(),
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      })
 
       vi.mocked(db.user.update).mockResolvedValue(mockUpdatedUser)
 

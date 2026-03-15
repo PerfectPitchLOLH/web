@@ -3,22 +3,24 @@
 import {
   CreditCard,
   FileText,
+  History,
   LogOut,
   Moon,
   Settings,
   Shield,
-  Sparkles,
   Sun,
   UserCircle,
   Users,
-  Wallet,
 } from 'lucide-react'
 import Link from 'next/link'
 import { signOut, useSession } from 'next-auth/react'
 import { useTheme } from 'next-themes'
 import { memo, useCallback, useMemo } from 'react'
 
+import { CircularProgressAvatar } from '@/components/dashboard/credits/CircularProgressAvatar'
 import { UserMenuSkeleton } from '@/components/dashboard/skeletons/UserMenuSkeleton'
+import { UserMenuLabel } from '@/components/dashboard/topbar/UserMenuLabel'
+import { WalletDropdownCard } from '@/components/dashboard/topbar/WalletDropdownCard'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,10 +31,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useCredits } from '@/hooks/useCredits'
+import { useSubscription } from '@/hooks/useSubscription'
 
 export const UserMenu = memo(function UserMenu() {
   const { theme, setTheme } = useTheme()
   const { data: session, status } = useSession()
+  const { credits } = useCredits()
+  const { subscription } = useSubscription()
+  const hasSubscription = subscription?.hasActiveSubscription ?? false
 
   const userEmail = useMemo(
     () => session?.user?.email ?? 'Loading...',
@@ -59,6 +66,12 @@ export const UserMenu = memo(function UserMenu() {
     [session?.user?.role],
   )
 
+  const creditsPercentage = useMemo(() => {
+    if (!credits) return 75
+    const total = credits.totalCredits
+    return total > 0 ? (credits.remainingCredits / total) * 100 : 0
+  }, [credits])
+
   const handleThemeToggle = useCallback(() => {
     setTheme(theme === 'dark' ? 'light' : 'dark')
   }, [theme, setTheme])
@@ -66,11 +79,6 @@ export const UserMenu = memo(function UserMenu() {
   const handleSignOut = useCallback(async () => {
     await signOut({ callbackUrl: '/auth/signin' })
   }, [])
-
-  const credits = {
-    total: 1000,
-    remaining: 750,
-  }
 
   if (status === 'loading') {
     return <UserMenuSkeleton />
@@ -80,50 +88,28 @@ export const UserMenu = memo(function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative size-10 rounded-full p-0">
-          <Avatar className="size-10">
-            <AvatarImage src={userImage || undefined} alt={userName} />
-            <AvatarFallback>
-              {userInitial ? (
-                <span className="text-sm font-medium">{userInitial}</span>
-              ) : (
-                <UserCircle className="size-6" />
-              )}
-            </AvatarFallback>
-          </Avatar>
+          <CircularProgressAvatar percentage={creditsPercentage}>
+            <Avatar className="size-10">
+              <AvatarImage src={userImage || undefined} alt={userName} />
+              <AvatarFallback>
+                {userInitial ? (
+                  <span className="text-sm font-medium">{userInitial}</span>
+                ) : (
+                  <UserCircle className="size-6" />
+                )}
+              </AvatarFallback>
+            </Avatar>
+          </CircularProgressAvatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-72" align="end">
         <DropdownMenuLabel>
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{userName}</p>
-            <p className="text-xs leading-none text-muted-foreground">
-              {userEmail}
-            </p>
-          </div>
+          <UserMenuLabel name={userName} email={userEmail} />
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
         <div className="px-2 py-3">
-          <div className="rounded-lg bg-muted p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Wallet className="size-4 text-amber-500" />
-                <span className="text-sm font-medium">Solde de crédits</span>
-              </div>
-            </div>
-            <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-2xl font-bold">{credits.remaining}</span>
-              <span className="text-sm text-muted-foreground">
-                / {credits.total}
-              </span>
-            </div>
-            <Button size="sm" className="mt-2 w-full" variant="outline" asChild>
-              <Link href="/dashboard/upgrade">
-                <Sparkles className="mr-2 size-4" />
-                Acheter des crédits
-              </Link>
-            </Button>
-          </div>
+          <WalletDropdownCard />
         </div>
 
         <DropdownMenuSeparator />
@@ -150,7 +136,7 @@ export const UserMenu = memo(function UserMenu() {
         <DropdownMenuItem asChild>
           <Link href="/dashboard/subscription">
             <CreditCard className="mr-2 size-4" />
-            Abonnement
+            {hasSubscription ? "Gestion de l'abonnement" : 'Abonnement'}
           </Link>
         </DropdownMenuItem>
 
@@ -169,9 +155,9 @@ export const UserMenu = memo(function UserMenu() {
         </DropdownMenuItem>
 
         <DropdownMenuItem asChild>
-          <Link href="/dashboard/payments">
-            <Wallet className="mr-2 size-4" />
-            Paiements
+          <Link href="/dashboard/credits/history">
+            <History className="mr-2 size-4" />
+            Historique des crédits
           </Link>
         </DropdownMenuItem>
 
