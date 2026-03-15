@@ -30,6 +30,7 @@ model User {
   notificationPreferences Json?
   accounts             Account[]
   creditTransactions   CreditTransaction[]
+  creditPurchases      CreditPurchase[]
   adminImpersonations  ImpersonationSession[] @relation("AdminImpersonations")
   impersonatedSessions ImpersonationSession[] @relation("ImpersonatedUsers")
   sessions             Session[]
@@ -37,6 +38,7 @@ model User {
   customer             Customer?
   subscriptions        Subscription[]
   invoices             Invoice[]
+  notifications        Notification[]
 
   @@map("users")
 }
@@ -186,6 +188,31 @@ model CreditRefill {
   @@map("credit_refills")
 }
 
+model CreditPurchase {
+  id                String   @id @default(cuid())
+  userId            String
+  stripePaymentIntentId String @unique
+  bundleId          String
+  bundleName        String
+  minutes           Int
+  amount            Int
+  currency          String   @default("eur")
+  status            String
+  creditsGranted    Boolean  @default(false)
+  creditsGrantedAt  DateTime?
+  invoicePdf        String?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stripePaymentIntentId])
+  @@index([status])
+  @@index([creditsGranted])
+  @@map("credit_purchases")
+}
+
 model Customer {
   userId               String    @id
   stripeCustomerId     String    @unique
@@ -260,6 +287,24 @@ model Invoice {
   @@index([status])
   @@index([createdAt])
   @@map("invoices")
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  title       String
+  description String
+  icon        String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
 }
 
 model WebhookEvent {
