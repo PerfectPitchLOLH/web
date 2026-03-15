@@ -9,7 +9,11 @@ import {
 import type { PaymentService } from '../payment/payment.service'
 import { CREDIT_BUNDLES } from './credit.constants'
 import type { CreditService } from './credit.service'
-import type { CreditHistoryParams, PurchaseBundleRequest } from './credit.types'
+import type {
+  CreditBundleId,
+  CreditHistoryParams,
+  PurchaseBundleRequest,
+} from './credit.types'
 
 export class CreditController {
   constructor(
@@ -26,7 +30,7 @@ export class CreditController {
     }
   }
 
-  async createBundlePurchaseIntent(
+  async createBundlePurchaseCheckout(
     userId: string,
     email: string,
     request: NextRequest,
@@ -49,24 +53,30 @@ export class CreditController {
         )
       }
 
-      const paymentIntent = await this.paymentService.createPaymentIntent(
+      const checkoutSession = await this.paymentService.createCheckoutSession(
         userId,
         email,
         {
-          amount: bundle.price,
-          currency: 'eur',
-          metadata: {
-            bundleId: bundle.id,
-            bundleName: bundle.name,
-            minutes: bundle.minutes.toString(),
-          },
+          bundleId: bundle.id,
+          bundleName: bundle.name,
+          minutes: bundle.minutes,
+          priceId: this.getPriceId(bundle.id),
         },
       )
 
-      return createSuccessResponse(paymentIntent, HTTP_STATUS.CREATED)
+      return createSuccessResponse(checkoutSession, HTTP_STATUS.CREATED)
     } catch (error) {
       return handleApiError(error)
     }
+  }
+
+  private getPriceId(bundleId: CreditBundleId): string {
+    const priceIds: Record<CreditBundleId, string> = {
+      small: process.env.STRIPE_CREDITS_SMALL_PRICE_ID || '',
+      medium: process.env.STRIPE_CREDITS_MEDIUM_PRICE_ID || '',
+      big: process.env.STRIPE_CREDITS_BIG_PRICE_ID || '',
+    }
+    return priceIds[bundleId]
   }
 
   async purchaseBundle(userId: string, request: NextRequest) {

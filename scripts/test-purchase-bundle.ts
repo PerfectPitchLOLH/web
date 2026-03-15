@@ -37,7 +37,7 @@ async function testPurchaseBundle() {
   console.log('\n--- PURCHASING LARGE BUNDLE (30 min) ---')
   balance = await creditService.purchaseBundle(
     userId,
-    'large',
+    'big',
     'test_invoice_large',
   )
   console.log(`✅ Large bundle purchased`)

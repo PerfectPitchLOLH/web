@@ -16,8 +16,8 @@ export const CREDIT_BUNDLES: Record<string, CreditBundle> = {
     pricePerMinute: 0.866,
     discountPercent: 13,
   },
-  LARGE: {
-    id: 'large',
+  BIG: {
+    id: 'big',
     name: 'Grand',
     minutes: 30,
     price: 22.99,

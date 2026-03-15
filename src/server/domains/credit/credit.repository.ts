@@ -102,9 +102,12 @@ export class CreditRepository {
   async addBonusCredits(
     userId: string,
     amount: number,
-    invoiceId?: string,
+    paymentReferenceId?: string,
   ): Promise<UserCredits> {
-    if (invoiceId && (await this.checkRefillExists(invoiceId))) {
+    if (
+      paymentReferenceId &&
+      (await this.checkRefillExists(paymentReferenceId))
+    ) {
       const existingCredits = await this.getUserCredits(userId)
       if (!existingCredits) {
         throw new Error(`User credits not found for userId: ${userId}`)
@@ -132,10 +135,10 @@ export class CreditRepository {
       },
     })
 
-    if (invoiceId) {
+    if (paymentReferenceId) {
       await this.createRefillRecord({
         userCreditsId: userId,
-        stripeInvoiceId: invoiceId,
+        stripeInvoiceId: paymentReferenceId,
         amount,
         type: 'BONUS',
         reason: 'package_purchase',

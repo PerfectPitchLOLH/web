@@ -4,7 +4,7 @@ import type { CreateDTO, Entity } from '@/server/shared/types'
 
 export type CreditType = PrismaCreditType
 
-export type CreditBundleId = 'small' | 'medium' | 'large' | 'big'
+export type CreditBundleId = 'small' | 'medium' | 'big'
 
 export type CreditBundle = {
   id: CreditBundleId

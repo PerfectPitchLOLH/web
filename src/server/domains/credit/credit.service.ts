@@ -53,7 +53,7 @@ export class CreditService {
   async purchaseBundle(
     userId: string,
     bundleId: CreditBundleId,
-    invoiceId?: string,
+    paymentReferenceId?: string,
   ): Promise<UserCreditsBalance> {
     const bundle = CREDIT_BUNDLES_ARRAY.find((b) => b.id === bundleId)
 
@@ -95,7 +95,7 @@ export class CreditService {
     const updatedCredits = await this.repository.addBonusCredits(
       userId,
       seconds,
-      invoiceId,
+      paymentReferenceId,
     )
 
     const newBalance =
@@ -111,6 +111,7 @@ export class CreditService {
         bundleId: bundle.id,
         bundleName: bundle.name,
         price: bundle.price,
+        paymentReferenceId,
       },
     })
 
