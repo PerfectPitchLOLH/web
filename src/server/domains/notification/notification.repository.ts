@@ -166,4 +166,107 @@ export class NotificationRepository {
 
     return { count: result.count }
   }
+
+  async bulkCreate(
+    notifications: CreateNotificationDTO[],
+  ): Promise<NotificationEntity[]> {
+    const created = await db.$transaction(
+      notifications.map((notif) =>
+        db.notification.create({
+          data: {
+            userId: notif.userId,
+            type: notif.type,
+            title: notif.title,
+            description: notif.description,
+            icon: notif.icon,
+            read: notif.read ?? false,
+          },
+        }),
+      ),
+    )
+
+    return created as NotificationEntity[]
+  }
+
+  async findAllAdmin(filters: {
+    type?: string
+    dateFrom?: Date
+    dateTo?: Date
+    limit?: number
+    offset?: number
+  }): Promise<NotificationEntity[]> {
+    const limit = Math.min(
+      filters.limit ?? NOTIFICATION_DEFAULTS.DEFAULT_LIMIT,
+      NOTIFICATION_DEFAULTS.MAX_LIMIT,
+    )
+    const skip = filters.offset ?? 0
+
+    const where = {
+      ...(filters.type && { type: filters.type }),
+      ...(filters.dateFrom &&
+        filters.dateTo && {
+          createdAt: {
+            gte: filters.dateFrom,
+            lte: filters.dateTo,
+          },
+        }),
+    }
+
+    const notifications = await db.notification.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    })
+
+    return notifications as NotificationEntity[]
+  }
+
+  async countAdmin(filters: {
+    type?: string
+    dateFrom?: Date
+    dateTo?: Date
+  }): Promise<number> {
+    const where = {
+      ...(filters.type && { type: filters.type }),
+      ...(filters.dateFrom &&
+        filters.dateTo && {
+          createdAt: {
+            gte: filters.dateFrom,
+            lte: filters.dateTo,
+          },
+        }),
+    }
+
+    return await db.notification.count({ where })
+  }
+
+  async getStats(): Promise<{
+    totalSent: number
+    totalRead: number
+    totalUnread: number
+    byType: Record<string, number>
+  }> {
+    const [total, read, unread, byTypeRaw] = await Promise.all([
+      db.notification.count(),
+      db.notification.count({ where: { read: true } }),
+      db.notification.count({ where: { read: false } }),
+      db.notification.groupBy({
+        by: ['type'],
+        _count: { type: true },
+      }),
+    ])
+
+    const byType: Record<string, number> = {}
+    byTypeRaw.forEach((item) => {
+      byType[item.type] = item._count.type
+    })
+
+    return {
+      totalSent: total,
+      totalRead: read,
+      totalUnread: unread,
+      byType,
+    }
+  }
 }

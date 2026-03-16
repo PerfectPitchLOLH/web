@@ -6,6 +6,7 @@ import { ImpersonationBanner } from '@/components/admin/impersonation'
 import { EmailVerificationBanner } from '@/components/dashboard/EmailVerificationBanner'
 import { AppSidebar } from '@/components/dashboard/sidebar/AppSidebar'
 import { DashboardTopbar } from '@/components/dashboard/topbar/DashboardTopbar'
+import { DevModeBanner } from '@/components/dev-mode'
 import { SessionProvider } from '@/components/providers/SessionProvider'
 import { SidebarProvider } from '@/components/ui/sidebar'
 
@@ -19,6 +20,7 @@ export function DashboardShell({ children, session }: DashboardShellProps) {
     <SessionProvider session={session}>
       <SidebarProvider>
         <ImpersonationBanner />
+        <DevModeBanner />
         <div className="flex min-h-screen w-full">
           <AppSidebar />
           <div className="flex flex-1 flex-col">

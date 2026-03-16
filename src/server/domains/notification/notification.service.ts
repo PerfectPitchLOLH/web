@@ -180,4 +180,152 @@ export class NotificationService {
   async getUnreadCount(userId: string): Promise<number> {
     return await this.repository.countUnread(userId)
   }
+
+  async sendBulkNotification(
+    data: import('./notification.types').BulkNotificationDTO,
+  ): Promise<{ count: number; notifications: NotificationEntity[] }> {
+    const { db } = await import('@/server/lib/database')
+
+    let userIds: string[] = []
+
+    if (data.targeting.sendToAll) {
+      const allUsers = await db.user.findMany({
+        where: { status: 'active', deletedAt: null },
+        select: { id: true },
+      })
+      userIds = allUsers.map((u) => u.id)
+    } else if (data.targeting.filters) {
+      const filters = data.targeting.filters
+
+      const where: any = {
+        status: 'active',
+        deletedAt: null,
+      }
+
+      if (filters.userIds && filters.userIds.length > 0) {
+        userIds = filters.userIds
+      } else {
+        if (
+          filters.subscriptionStatus &&
+          filters.subscriptionStatus !== 'all'
+        ) {
+          where.subscriptions = {
+            some: {
+              status: filters.subscriptionStatus,
+            },
+          }
+        }
+
+        if (filters.subscriptionPlanName) {
+          where.subscriptions = {
+            some: {
+              ...(where.subscriptions?.some || {}),
+              plan: {
+                name: filters.subscriptionPlanName,
+              },
+            },
+          }
+        }
+
+        const targetedUsers = await db.user.findMany({
+          where,
+          select: { id: true },
+        })
+
+        userIds = targetedUsers.map((u) => u.id)
+      }
+    }
+
+    if (userIds.length === 0) {
+      throw new ApiError(
+        'VALIDATION_ERROR',
+        HTTP_STATUS.BAD_REQUEST,
+        'Aucun utilisateur correspondant aux filtres',
+      )
+    }
+
+    const icon =
+      data.icon ||
+      NOTIFICATION_ICONS[data.type] ||
+      NOTIFICATION_DEFAULTS.DEFAULT_ICON
+
+    const notifications = userIds.map((userId) => ({
+      userId,
+      type: data.type,
+      title: data.title,
+      description: data.description,
+      icon,
+      read: false,
+    }))
+
+    const created = await this.repository.bulkCreate(notifications)
+
+    return {
+      count: created.length,
+      notifications: created,
+    }
+  }
+
+  async getTargetedUserCount(
+    filters: import('./notification.types').UserTargetingFilters,
+  ): Promise<number> {
+    const { db } = await import('@/server/lib/database')
+
+    const where: any = {
+      status: 'active',
+      deletedAt: null,
+    }
+
+    if (filters.userIds && filters.userIds.length > 0) {
+      return filters.userIds.length
+    }
+
+    if (filters.subscriptionStatus && filters.subscriptionStatus !== 'all') {
+      where.subscriptions = {
+        some: {
+          status: filters.subscriptionStatus,
+        },
+      }
+    }
+
+    if (filters.subscriptionPlanName) {
+      where.subscriptions = {
+        some: {
+          ...(where.subscriptions?.some || {}),
+          plan: {
+            name: filters.subscriptionPlanName,
+          },
+        },
+      }
+    }
+
+    return await db.user.count({ where })
+  }
+
+  async getAdminNotifications(
+    filters: import('./notification.types').AdminNotificationFilters,
+  ): Promise<{ notifications: NotificationEntity[]; total: number }> {
+    const [notifications, total] = await Promise.all([
+      this.repository.findAllAdmin(filters),
+      this.repository.countAdmin(filters),
+    ])
+
+    return { notifications, total }
+  }
+
+  async getStats(): Promise<import('./notification.types').NotificationStats> {
+    const stats = await this.repository.getStats()
+
+    const readRate =
+      stats.totalSent > 0 ? (stats.totalRead / stats.totalSent) * 100 : 0
+
+    return {
+      ...stats,
+      readRate: Math.round(readRate * 100) / 100,
+      byType: stats.byType as Record<
+        import('./notification.types').NotificationType,
+        number
+      >,
+    }
+  }
 }

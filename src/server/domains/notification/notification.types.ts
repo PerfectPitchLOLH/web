@@ -38,3 +38,36 @@ export type NotificationListResponse = {
   total: number
   unreadCount: number
 }
+
+export type UserTargetingFilters = {
+  subscriptionStatus?: 'active' | 'canceled' | 'trial' | 'all'
+  subscriptionPlanName?: string
+  userIds?: string[]
+}
+
+export type BulkNotificationDTO = {
+  type: NotificationType
+  title: string
+  description: string
+  icon?: string
+  targeting: {
+    sendToAll?: boolean
+    filters?: UserTargetingFilters
+  }
+}
+
+export type AdminNotificationFilters = {
+  type?: NotificationType
+  dateFrom?: Date
+  dateTo?: Date
+  limit?: number
+  offset?: number
+}
+
+export type NotificationStats = {
+  totalSent: number
+  totalRead: number
+  totalUnread: number
+  readRate: number
+  byType: Record<NotificationType, number>
+}

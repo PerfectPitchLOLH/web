@@ -146,7 +146,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild size="lg" tooltip="Améliorer">
-              <Link href="/dashboard/subscription">
+              <Link href="/dashboard/subscription#plan">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-amber-500 text-white">
                   <Coins className="size-4" />
                 </div>

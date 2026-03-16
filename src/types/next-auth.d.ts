@@ -1,5 +1,7 @@
 import { DefaultSession } from 'next-auth'
 
+import type { DevModeConfig } from '@/server/domains/dev-mode/dev-mode.types'
+
 declare module 'next-auth' {
   interface Session {
     user: {
@@ -13,6 +15,7 @@ declare module 'next-auth' {
       adminEmail: string
       sessionId: string
     }
+    devMode?: DevModeConfig
   }
 
   interface User {
@@ -32,5 +35,6 @@ declare module 'next-auth/jwt' {
       adminEmail: string
       sessionId: string
     }
+    devMode?: DevModeConfig
   }
 }

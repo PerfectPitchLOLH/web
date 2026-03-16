@@ -1,6 +1,7 @@
 import {
   Activity,
   BarChart3,
+  Bell,
   FileText,
   Home,
   Shield,
@@ -57,6 +58,13 @@ export default async function AdminLayout({
               <Button variant="ghost" className="w-full justify-start">
                 <Users className="mr-2 size-4" />
                 Gestion Utilisateurs
+              </Button>
+            </Link>
+
+            <Link href="/admin/notifications">
+              <Button variant="ghost" className="w-full justify-start">
+                <Bell className="mr-2 size-4" />
+                Notifications
               </Button>
             </Link>
 

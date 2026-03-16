@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import { memo, useMemo } from 'react'
 
 import { UserMenu } from '@/components/dashboard/topbar/userMenu'
+import { DevModeToggle } from '@/components/dev-mode'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 
 import { NotificationsPopover } from './notificationsPopover'
@@ -26,6 +27,7 @@ export const DashboardTopbar = memo(function DashboardTopbar() {
       <div className="flex flex-1 items-center justify-between gap-4">
         <h1 className="text-xl font-semibold">{title}</h1>
         <div className="flex items-center gap-2">
+          <DevModeToggle />
           <NotificationsPopover />
           <UserMenu />
         </div>

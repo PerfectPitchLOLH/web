@@ -3,6 +3,8 @@
 import type { Session } from 'next-auth'
 import { SessionProvider as NextAuthSessionProvider } from 'next-auth/react'
 
+import { DevModeProvider } from '@/contexts/DevModeContext'
+
 export function SessionProvider({
   children,
   session,
@@ -12,7 +14,7 @@ export function SessionProvider({
 }) {
   return (
     <NextAuthSessionProvider session={session}>
-      {children}
+      <DevModeProvider>{children}</DevModeProvider>
     </NextAuthSessionProvider>
   )
 }

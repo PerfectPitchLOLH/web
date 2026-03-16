@@ -6,6 +6,7 @@ import Google from 'next-auth/providers/google'
 
 import { AuthRepository } from '../domains/auth/auth.repository'
 import { signInSchema } from '../domains/auth/auth.schemas'
+import { DEV_MODE_COOKIE_NAME } from '../domains/dev-mode'
 import { verifyPassword } from '../shared/utils/password.utils'
 import { db } from './database'
 
@@ -101,6 +102,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       const cookieStore = await cookies()
+
+      const devModeCookie = cookieStore.get(DEV_MODE_COOKIE_NAME)
+      if (devModeCookie?.value && session.user.role === 'admin') {
+        try {
+          session.devMode = JSON.parse(devModeCookie.value)
+        } catch (error) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('[DEV_MODE] Error parsing dev mode cookie:', error)
+          }
+        }
+      }
+
       const impersonationCookie = cookieStore.get('impersonation_session_id')
 
       if (!impersonationCookie?.value) {

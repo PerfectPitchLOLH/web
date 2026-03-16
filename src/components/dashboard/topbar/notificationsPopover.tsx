@@ -64,6 +64,33 @@ export function NotificationsPopover() {
   useEffect(() => {
     setMounted(true)
     fetchUnreadCount()
+
+    const eventSource = new EventSource('/api/notifications/stream')
+
+    eventSource.addEventListener('message', (event) => {
+      try {
+        const data = JSON.parse(event.data)
+
+        if (data.type === 'new-notification') {
+          fetchUnreadCount()
+          if (open) {
+            fetchNotifications()
+          }
+        } else if (data.type === 'unread-count') {
+          setUnreadCount(data.count)
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    })
+
+    eventSource.addEventListener('error', () => {
+      eventSource.close()
+    })
+
+    return () => {
+      eventSource.close()
+    }
   }, [])
 
   async function fetchNotifications() {
