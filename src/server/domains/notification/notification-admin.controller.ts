@@ -63,10 +63,22 @@ export class NotificationAdminController {
     }
   }
 
-  async getStats(request: NextRequest) {
+  async getStats(_request: NextRequest) {
     try {
       const stats = await this.service.getStats()
       return createSuccessResponse(stats)
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
+  async deleteNotification(id: string) {
+    try {
+      await this.service.deleteNotificationAdmin(id)
+      return createSuccessResponse(
+        { message: 'Notification supprimée avec succès' },
+        HTTP_STATUS.OK,
+      )
     } catch (error) {
       return handleApiError(error)
     }

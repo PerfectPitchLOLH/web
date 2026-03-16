@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog'
 
 import { NotificationsTable } from './NotificationsTable'
 import { NotificationStats } from './NotificationStats'
@@ -33,6 +34,10 @@ export default function AdminNotificationsPage() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [alertOpen, setAlertOpen] = useState(false)
+  const [notificationToDelete, setNotificationToDelete] = useState<
+    string | null
+  >(null)
 
   useEffect(() => {
     fetchNotifications()
@@ -58,24 +63,35 @@ export default function AdminNotificationsPage() {
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette notification ?')) {
-      return
-    }
+  function handleDelete(id: string) {
+    setNotificationToDelete(id)
+    setAlertOpen(true)
+  }
+
+  async function confirmDelete() {
+    if (!notificationToDelete) return
 
     try {
-      const response = await fetch(`/api/notifications/${id}`, {
-        method: 'DELETE',
-      })
+      const response = await fetch(
+        `/api/admin/notifications/${notificationToDelete}`,
+        {
+          method: 'DELETE',
+        },
+      )
 
       if (response.ok) {
-        setNotifications((prev) => prev.filter((n) => n.id !== id))
+        setNotifications((prev) =>
+          prev.filter((n) => n.id !== notificationToDelete),
+        )
         setTotal((prev) => prev - 1)
       } else {
         alert('Échec de la suppression')
       }
     } catch {
       alert('Erreur lors de la suppression')
+    } finally {
+      setAlertOpen(false)
+      setNotificationToDelete(null)
     }
   }
 
@@ -112,6 +128,14 @@ export default function AdminNotificationsPage() {
           />
         </CardContent>
       </Card>
+
+      <DeleteConfirmDialog
+        open={alertOpen}
+        onOpenChange={setAlertOpen}
+        onConfirm={confirmDelete}
+        title="Supprimer la notification"
+        description="Êtes-vous sûr de vouloir supprimer cette notification ? Cette action est irréversible."
+      />
     </div>
   )
 }

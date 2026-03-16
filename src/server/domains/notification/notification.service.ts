@@ -153,6 +153,28 @@ export class NotificationService {
     }
   }
 
+  async deleteNotificationAdmin(id: string): Promise<void> {
+    const notification = await this.repository.findById(id)
+
+    if (!notification) {
+      throw new ApiError(
+        'NOT_FOUND',
+        HTTP_STATUS.NOT_FOUND,
+        'Notification introuvable',
+      )
+    }
+
+    const deleted = await this.repository.delete(id)
+
+    if (!deleted) {
+      throw new ApiError(
+        'INTERNAL_ERROR',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        'Échec de la suppression de la notification',
+      )
+    }
+  }
+
   async deleteMultiple(
     notificationIds: string[],
     userId: string,
