@@ -44,8 +44,7 @@ export async function GET() {
     }
 
     return createSuccessResponse(user, HTTP_STATUS.OK)
-  } catch (error) {
-    console.error('Error fetching current user:', error)
+  } catch {
     return createErrorResponse(
       'INTERNAL_ERROR',
       'Failed to fetch user',

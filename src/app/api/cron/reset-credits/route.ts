@@ -34,8 +34,6 @@ export async function GET(request: NextRequest) {
       await creditRepository.findUsersNeedingMonthlyRefill()
     const userIds = creditsToRefill.map((c) => c.userId)
 
-    console.log(`[CronJob] Found ${userIds.length} users needing credit refill`)
-
     if (userIds.length === 0) {
       return createSuccessResponse({
         processed: 0,
@@ -47,14 +45,6 @@ export async function GET(request: NextRequest) {
 
     const result = await creditService.batchRefillMonthlyCredits(userIds)
 
-    console.log(
-      `[CronJob] Reset complete: ${result.success} success, ${result.failed} failed`,
-    )
-
-    if (result.errors.length > 0) {
-      console.error('[CronJob] Errors:', result.errors)
-    }
-
     return createSuccessResponse({
       processed: userIds.length,
       success: result.success,
@@ -62,7 +52,6 @@ export async function GET(request: NextRequest) {
       errors: result.errors,
     })
   } catch (error) {
-    console.error('[CronJob] Reset credits error:', error)
     return createErrorResponse(
       'INTERNAL_ERROR',
       'Erreur lors de la régénération des crédits',

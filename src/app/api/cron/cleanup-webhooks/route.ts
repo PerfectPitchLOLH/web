@@ -35,16 +35,11 @@ export async function GET(request: NextRequest) {
     const deleted =
       await subscriptionRepository.deleteOldWebhookEvents(TTL_HOURS)
 
-    console.log(
-      `[CronJob] Deleted ${deleted} old webhook events (> ${TTL_HOURS}h)`,
-    )
-
     return createSuccessResponse({
       deleted,
       ttlHours: TTL_HOURS,
     })
   } catch (error) {
-    console.error('[CronJob] Cleanup webhooks error:', error)
     return createErrorResponse(
       'INTERNAL_ERROR',
       'Erreur lors du nettoyage des webhooks',

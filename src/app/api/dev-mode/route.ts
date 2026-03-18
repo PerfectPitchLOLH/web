@@ -46,25 +46,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PATCH(request: NextRequest) {
-  try {
-    const session = await auth()
-
-    if (!session?.user) {
-      return createErrorResponse(
-        'UNAUTHORIZED',
-        'Authentication required',
-        null,
-        HTTP_STATUS.UNAUTHORIZED,
-      )
-    }
-
-    return devModeController.update(request, session.user.role)
-  } catch (error) {
-    return handleApiError(error)
-  }
-}
-
 export async function DELETE(request: NextRequest) {
   try {
     const session = await auth()

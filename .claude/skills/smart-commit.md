@@ -4,6 +4,12 @@ Automatically analyze ALL code changes and create a single gitmoji commit.
 
 ## Execution Steps
 
+### 1. Verify changed files are from différent new feature
+
+You have to take car that file changed are from the same modification scope. If there is two feature created in the same time, you will have to create two differents commit.
+
+For each commit who will be created, follow the instruction bellow.
+
 ### 1. Gather Information (run in parallel)
 
 - `git status` - See all changes

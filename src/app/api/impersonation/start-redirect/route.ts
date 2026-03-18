@@ -110,10 +110,7 @@ async function handleImpersonationStart(
     )
 
     return redirectResponse
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[IMPERSONATION START REDIRECT] Error:', error)
-    }
+  } catch {
     return NextResponse.redirect(new URL('/admin/users', request.url))
   }
 }

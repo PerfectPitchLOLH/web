@@ -51,7 +51,6 @@ export async function POST(request: NextRequest) {
   )
 
   if (existingEvent?.processed) {
-    console.log(`[Webhook] Event ${event.id} already processed, skipping`)
     return createSuccessResponse({ received: true, skipped: true })
   }
 
@@ -67,11 +66,7 @@ export async function POST(request: NextRequest) {
         retryCount: 0,
       })
     } catch (error: any) {
-      if (error.code === 'P2002') {
-        console.log(
-          `[Webhook] Event ${event.id} already created by another request, continuing`,
-        )
-      } else {
+      if (error.code !== 'P2002') {
         throw error
       }
     }
@@ -129,7 +124,7 @@ export async function POST(request: NextRequest) {
         }
 
         default:
-          console.log(`Unhandled event type: ${event.type}`)
+          break
       }
     })
 
@@ -137,8 +132,6 @@ export async function POST(request: NextRequest) {
 
     return createSuccessResponse({ received: true })
   } catch (error) {
-    console.error('Webhook handler error:', error)
-
     await subscriptionRepository.markWebhookEventProcessed(
       event.id,
       error instanceof Error ? error.message : 'Unknown error',

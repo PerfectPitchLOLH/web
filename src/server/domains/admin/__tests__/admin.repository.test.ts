@@ -61,7 +61,7 @@ describe('AdminRepository', () => {
       expect(db.user.count).toHaveBeenCalledTimes(5)
       expect(db.user.groupBy).toHaveBeenCalledWith({
         by: ['role'],
-        _count: true,
+        _count: { _all: true },
       })
     })
   })

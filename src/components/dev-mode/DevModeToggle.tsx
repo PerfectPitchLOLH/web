@@ -6,16 +6,16 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { useDevMode } from '@/contexts/DevModeContext'
 
-import { DevModePanel } from './DevModePanel'
+import { DevModeForm } from './DevModeForm'
 
 export function DevModeToggle() {
   const { isAdmin, isActive } = useDevMode()
@@ -26,8 +26,8 @@ export function DevModeToggle() {
   }
 
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
         <Button
           variant={isActive ? 'default' : 'outline'}
           size="sm"
@@ -42,22 +42,22 @@ export function DevModeToggle() {
             />
           )}
         </Button>
-      </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
             <Settings className="size-5" />
-            Mode Développeur
-          </SheetTitle>
-          <SheetDescription>
-            Prévisualisez l'application avec différents types d'abonnement et
-            configurations.
-          </SheetDescription>
-        </SheetHeader>
-        <div className="mt-6">
-          <DevModePanel onClose={() => setIsOpen(false)} />
+            Configurer le Mode Développeur
+          </DialogTitle>
+          <DialogDescription>
+            Simulez différents types d'abonnement et configurations de crédits
+            pour tester l'application.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="mt-4">
+          <DevModeForm onSuccess={() => setIsOpen(false)} />
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }

@@ -103,115 +103,106 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       const cookieStore = await cookies()
 
-      const devModeCookie = cookieStore.get(DEV_MODE_COOKIE_NAME)
-      if (devModeCookie?.value && session.user.role === 'admin') {
-        try {
-          session.devMode = JSON.parse(devModeCookie.value)
-        } catch (error) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error('[DEV_MODE] Error parsing dev mode cookie:', error)
-          }
-        }
-      }
-
       const impersonationCookie = cookieStore.get('impersonation_session_id')
 
-      if (!impersonationCookie?.value) {
-        return session
-      }
+      let finalSession = session
 
-      if (session.user.role !== 'admin') {
-        return session
-      }
-
-      try {
-        const impersonationSession = await db.impersonationSession.findUnique({
-          where: {
-            id: impersonationCookie.value,
-            isActive: true,
-          },
-          include: {
-            admin: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
+      if (impersonationCookie?.value && session.user.role === 'admin') {
+        try {
+          const impersonationSession = await db.impersonationSession.findUnique(
+            {
+              where: {
+                id: impersonationCookie.value,
+                isActive: true,
+              },
+              include: {
+                admin: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+                targetUser: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    emailVerified: true,
+                    image: true,
+                  },
+                },
               },
             },
-            targetUser: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                role: true,
-                emailVerified: true,
-                image: true,
-              },
-            },
-          },
-        })
+          )
 
-        if (!impersonationSession) {
-          return session
+          if (
+            impersonationSession &&
+            impersonationSession.adminId === session.user.id
+          ) {
+            const currentAdmin = await db.user.findUnique({
+              where: { id: impersonationSession.adminId },
+              select: { role: true },
+            })
+
+            if (currentAdmin && currentAdmin.role === 'admin') {
+              const sessionAge =
+                Date.now() - impersonationSession.startedAt.getTime()
+
+              if (sessionAge <= MAX_SESSION_DURATION_MS) {
+                finalSession = {
+                  ...session,
+                  user: {
+                    id: impersonationSession.targetUser.id,
+                    name: impersonationSession.targetUser.name,
+                    email: impersonationSession.targetUser.email,
+                    role: impersonationSession.targetUser.role,
+                    emailVerified:
+                      impersonationSession.targetUser.emailVerified,
+                    image: impersonationSession.targetUser.image,
+                  },
+                  impersonation: {
+                    isActive: true,
+                    adminId: impersonationSession.adminId,
+                    adminEmail: impersonationSession.admin.email,
+                    sessionId: impersonationSession.id,
+                  },
+                }
+              } else {
+                await db.impersonationSession.update({
+                  where: { id: impersonationSession.id },
+                  data: {
+                    endedAt: new Date(),
+                    isActive: false,
+                  },
+                })
+              }
+            } else {
+              await db.impersonationSession.update({
+                where: { id: impersonationSession.id },
+                data: {
+                  endedAt: new Date(),
+                  isActive: false,
+                },
+              })
+            }
+          }
+        } catch {
+          // Ignore error
         }
-
-        if (impersonationSession.adminId !== session.user.id) {
-          return session
-        }
-
-        const currentAdmin = await db.user.findUnique({
-          where: { id: impersonationSession.adminId },
-          select: { role: true },
-        })
-
-        if (!currentAdmin || currentAdmin.role !== 'admin') {
-          await db.impersonationSession.update({
-            where: { id: impersonationSession.id },
-            data: {
-              endedAt: new Date(),
-              isActive: false,
-            },
-          })
-          return session
-        }
-
-        const sessionAge = Date.now() - impersonationSession.startedAt.getTime()
-        if (sessionAge > MAX_SESSION_DURATION_MS) {
-          await db.impersonationSession.update({
-            where: { id: impersonationSession.id },
-            data: {
-              endedAt: new Date(),
-              isActive: false,
-            },
-          })
-          return session
-        }
-
-        const transformedSession = {
-          ...session,
-          user: {
-            id: impersonationSession.targetUser.id,
-            name: impersonationSession.targetUser.name,
-            email: impersonationSession.targetUser.email,
-            role: impersonationSession.targetUser.role,
-            emailVerified: impersonationSession.targetUser.emailVerified,
-            image: impersonationSession.targetUser.image,
-          },
-          impersonation: {
-            isActive: true,
-            adminId: impersonationSession.adminId,
-            adminEmail: impersonationSession.admin.email,
-            sessionId: impersonationSession.id,
-          },
-        }
-
-        return transformedSession
-      } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[IMPERSONATION] Error in callback:', error)
-        }
-        return session
       }
+
+      const devModeCookie = cookieStore.get(DEV_MODE_COOKIE_NAME)
+      if (devModeCookie?.value && finalSession.user.role === 'admin') {
+        try {
+          finalSession.devMode = JSON.parse(devModeCookie.value)
+        } catch {
+          // Ignore error
+        }
+      }
+
+      return finalSession
     },
   },
   trustHost: true,

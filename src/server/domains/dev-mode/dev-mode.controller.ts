@@ -9,7 +9,7 @@ import {
 
 import { DEV_MODE_COOKIE_NAME } from './dev-mode.constants'
 import { DevModeService } from './dev-mode.service'
-import type { ActivateDevModeDTO, UpdateDevModeDTO } from './dev-mode.types'
+import type { ActivateDevModeDTO } from './dev-mode.types'
 
 export class DevModeController {
   constructor(private service: DevModeService) {}
@@ -32,40 +32,6 @@ export class DevModeController {
       })
 
       return createSuccessResponse({ config }, HTTP_STATUS.OK)
-    } catch (error) {
-      return handleApiError(error)
-    }
-  }
-
-  async update(request: NextRequest, userRole: string) {
-    try {
-      this.service.validateAdminRole(userRole)
-
-      const cookieStore = await cookies()
-      const currentConfigCookie = cookieStore.get(DEV_MODE_COOKIE_NAME)
-
-      if (!currentConfigCookie) {
-        return createSuccessResponse(
-          { message: 'No active dev mode to update' },
-          HTTP_STATUS.BAD_REQUEST,
-        )
-      }
-
-      const currentConfig = JSON.parse(currentConfigCookie.value)
-      const body = (await request.json()) as UpdateDevModeDTO
-
-      const updatedConfig = this.service.updateConfig(currentConfig, body)
-
-      cookieStore.set({
-        name: DEV_MODE_COOKIE_NAME,
-        value: JSON.stringify(updatedConfig),
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24,
-      })
-
-      return createSuccessResponse({ config: updatedConfig }, HTTP_STATUS.OK)
     } catch (error) {
       return handleApiError(error)
     }
@@ -103,49 +69,6 @@ export class DevModeController {
       const config = JSON.parse(configCookie.value)
 
       return createSuccessResponse({ config })
-    } catch (error) {
-      return handleApiError(error)
-    }
-  }
-
-  async getPresets(_request: NextRequest, userRole: string) {
-    try {
-      this.service.validateAdminRole(userRole)
-
-      const presets = this.service.getPresets()
-
-      return createSuccessResponse({ presets })
-    } catch (error) {
-      return handleApiError(error)
-    }
-  }
-
-  async activatePreset(request: NextRequest, userRole: string) {
-    try {
-      this.service.validateAdminRole(userRole)
-
-      const { presetId } = (await request.json()) as { presetId: string }
-
-      if (presetId === undefined || presetId === null) {
-        return createSuccessResponse(
-          { message: 'presetId is required' },
-          HTTP_STATUS.BAD_REQUEST,
-        )
-      }
-
-      const config = this.service.getPresetById(presetId)
-
-      const cookieStore = await cookies()
-      cookieStore.set({
-        name: DEV_MODE_COOKIE_NAME,
-        value: JSON.stringify(config),
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24,
-      })
-
-      return createSuccessResponse({ config }, HTTP_STATUS.OK)
     } catch (error) {
       return handleApiError(error)
     }

@@ -1,3 +1,3 @@
-export { DevModeBanner } from './DevModeBanner'
-export { DevModePanel } from './DevModePanel'
+export { DevModeBox } from './DevModeBox'
+export { DevModeForm } from './DevModeForm'
 export { DevModeToggle } from './DevModeToggle'

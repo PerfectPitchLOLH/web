@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
         try {
           const unreadCount = await notificationService.getUnreadCount(userId)
           sendEvent({ type: 'unread-count', count: unreadCount })
-        } catch (error) {
-          console.error('Error fetching unread count:', error)
+        } catch {
+          // Ignore error
         }
       }, 30000)
 
@@ -68,8 +68,7 @@ export function notifyUser(userId: string, notification: any) {
           `data: ${JSON.stringify({ type: 'new-notification', notification })}\n\n`,
         ),
       )
-    } catch (error) {
-      console.error('Error sending notification:', error)
+    } catch {
       clients.delete(userId)
     }
   }
