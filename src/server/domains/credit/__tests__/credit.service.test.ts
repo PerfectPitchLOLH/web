@@ -8,6 +8,13 @@ import { CreditRepository } from '../credit.repository'
 import { CreditService } from '../credit.service'
 
 vi.mock('../credit.repository')
+vi.mock('@/server/lib/database', () => ({
+  db: {
+    subscription: {
+      findFirst: vi.fn(),
+    },
+  },
+}))
 
 describe('CreditService', () => {
   let service: CreditService
@@ -40,7 +47,7 @@ describe('CreditService', () => {
         bonusCredits: 10,
         totalCredits: 30,
         usedThisMonth: 5,
-        remainingCredits: 30,
+        remainingCredits: 25,
         lastMonthlyRefill: mockCredits.lastMonthlyRefill,
         alerts: {
           lowBalance: false,
@@ -103,6 +110,13 @@ describe('CreditService', () => {
 
   describe('purchaseBundle', () => {
     it('devrait acheter un bundle valide', async () => {
+      const { db } = await import('@/server/lib/database')
+      vi.mocked(db.subscription.findFirst).mockResolvedValue({
+        id: 'sub-1',
+        userId: 'user-1',
+        status: 'active',
+      } as any)
+
       const mockCredits = {
         userId: 'user-1',
         monthlyCredits: 20,
@@ -117,7 +131,10 @@ describe('CreditService', () => {
         bonusCredits: 25,
       }
 
-      mockRepository.getUserCredits = vi.fn().mockResolvedValue(mockCredits)
+      mockRepository.getUserCredits = vi
+        .fn()
+        .mockResolvedValueOnce(mockCredits)
+        .mockResolvedValueOnce(mockUpdatedCredits)
       mockRepository.addBonusCredits = vi
         .fn()
         .mockResolvedValue(mockUpdatedCredits)
@@ -149,8 +166,15 @@ describe('CreditService', () => {
       ).rejects.toThrow(ApiError)
     })
 
-    it('devrait créer les crédits si non existants', async () => {
-      const mockNewCredits = {
+    it('devrait créer les crédits si non existants via getUserCreditsBalance', async () => {
+      const { db } = await import('@/server/lib/database')
+      vi.mocked(db.subscription.findFirst).mockResolvedValue({
+        id: 'sub-1',
+        userId: 'user-1',
+        status: 'active',
+      } as any)
+
+      const initialCredits = {
         userId: 'user-1',
         monthlyCredits: 0,
         bonusCredits: 0,
@@ -159,14 +183,29 @@ describe('CreditService', () => {
         updatedAt: new Date(),
       }
 
-      mockRepository.getUserCredits = vi.fn().mockResolvedValue(null)
+      const updatedCredits = {
+        ...initialCredits,
+        bonusCredits: 300,
+      }
+
+      const createdCredits = {
+        userId: 'user-1',
+        monthlyCredits: 180,
+        bonusCredits: 300,
+        usedThisMonth: 0,
+        lastMonthlyRefill: null,
+        updatedAt: new Date(),
+      }
+
+      mockRepository.getUserCredits = vi
+        .fn()
+        .mockResolvedValueOnce(initialCredits)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(createdCredits)
       mockRepository.createOrUpdateUserCredits = vi
         .fn()
-        .mockResolvedValue(mockNewCredits)
-      mockRepository.addBonusCredits = vi.fn().mockResolvedValue({
-        ...mockNewCredits,
-        bonusCredits: 300,
-      })
+        .mockResolvedValue(createdCredits)
+      mockRepository.addBonusCredits = vi.fn().mockResolvedValue(updatedCredits)
       mockRepository.createTransaction = vi.fn().mockResolvedValue({
         id: 1,
         userId: 'user-1',
@@ -195,11 +234,12 @@ describe('CreditService', () => {
         updatedAt: new Date(),
       }
 
-      mockRepository.getUserCredits = vi.fn().mockResolvedValue(mockCredits)
-      mockRepository.consumeCredits = vi.fn().mockResolvedValue({
+      const updatedCredits = {
         ...mockCredits,
         usedThisMonth: 10,
-      })
+      }
+      mockRepository.getUserCredits = vi.fn().mockResolvedValue(updatedCredits)
+      mockRepository.consumeCredits = vi.fn().mockResolvedValue(updatedCredits)
       mockRepository.createTransaction = vi.fn().mockResolvedValue({
         id: 1,
         userId: 'user-1',

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { ZodError } from 'zod'
 
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { validateApiAuth } from '@/server/shared/middleware/auth.middleware'
@@ -36,14 +37,11 @@ export class AdminController {
         ip,
       )
 
-      return NextResponse.json(
-        createErrorResponse(
-          'FORBIDDEN',
-          'Admin access required',
-          undefined,
-          HTTP_STATUS.FORBIDDEN,
-        ),
-        { status: HTTP_STATUS.FORBIDDEN },
+      return createErrorResponse(
+        'FORBIDDEN',
+        'Admin access required',
+        undefined,
+        HTTP_STATUS.FORBIDDEN,
       )
     }
 
@@ -70,14 +68,11 @@ export class AdminController {
         ip,
       )
 
-      return NextResponse.json(
-        createErrorResponse(
-          'FORBIDDEN',
-          'Admin access required',
-          undefined,
-          HTTP_STATUS.FORBIDDEN,
-        ),
-        { status: HTTP_STATUS.FORBIDDEN },
+      return createErrorResponse(
+        'FORBIDDEN',
+        'Admin access required',
+        undefined,
+        HTTP_STATUS.FORBIDDEN,
       )
     }
 
@@ -121,14 +116,11 @@ export class AdminController {
         ip,
       )
 
-      return NextResponse.json(
-        createErrorResponse(
-          'FORBIDDEN',
-          'Admin access required',
-          undefined,
-          HTTP_STATUS.FORBIDDEN,
-        ),
-        { status: HTTP_STATUS.FORBIDDEN },
+      return createErrorResponse(
+        'FORBIDDEN',
+        'Admin access required',
+        undefined,
+        HTTP_STATUS.FORBIDDEN,
       )
     }
 
@@ -147,14 +139,28 @@ export class AdminController {
         userAgent,
       )
 
-      return NextResponse.json(
-        createSuccessResponse(
-          { message: 'User role updated successfully' },
-          HTTP_STATUS.OK,
-        ),
+      return createSuccessResponse(
+        { message: 'User role updated successfully' },
+        HTTP_STATUS.OK,
       )
     } catch (error) {
-      return NextResponse.json(handleApiError(error))
+      if (error instanceof SyntaxError) {
+        return createErrorResponse(
+          'INVALID_JSON',
+          'Invalid JSON in request body',
+          undefined,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
+      if (error instanceof ZodError) {
+        return createErrorResponse(
+          'VALIDATION_ERROR',
+          'Invalid request data',
+          error.issues,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
+      return handleApiError(error)
     }
   }
 
@@ -199,14 +205,28 @@ export class AdminController {
         userAgent,
       )
 
-      return NextResponse.json(
-        createSuccessResponse(
-          { message: 'User suspension status updated successfully' },
-          HTTP_STATUS.OK,
-        ),
+      return createSuccessResponse(
+        { message: 'User suspension status updated successfully' },
+        HTTP_STATUS.OK,
       )
     } catch (error) {
-      return NextResponse.json(handleApiError(error))
+      if (error instanceof SyntaxError) {
+        return createErrorResponse(
+          'INVALID_JSON',
+          'Invalid JSON in request body',
+          undefined,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
+      if (error instanceof ZodError) {
+        return createErrorResponse(
+          'VALIDATION_ERROR',
+          'Invalid request data',
+          error.issues,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
+      return handleApiError(error)
     }
   }
 
@@ -251,14 +271,28 @@ export class AdminController {
         userAgent,
       )
 
-      return NextResponse.json(
-        createSuccessResponse(
-          { message: 'User deleted successfully' },
-          HTTP_STATUS.OK,
-        ),
+      return createSuccessResponse(
+        { message: 'User deleted successfully' },
+        HTTP_STATUS.OK,
       )
     } catch (error) {
-      return NextResponse.json(handleApiError(error))
+      if (error instanceof SyntaxError) {
+        return createErrorResponse(
+          'INVALID_JSON',
+          'Invalid JSON in request body',
+          undefined,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
+      if (error instanceof ZodError) {
+        return createErrorResponse(
+          'VALIDATION_ERROR',
+          'Invalid request data',
+          error.issues,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
+      return handleApiError(error)
     }
   }
 

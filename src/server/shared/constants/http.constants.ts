@@ -8,9 +8,11 @@ export const HTTP_STATUS = {
   FORBIDDEN: 403,
   NOT_FOUND: 404,
   CONFLICT: 409,
+  PAYLOAD_TOO_LARGE: 413,
   UNPROCESSABLE_ENTITY: 422,
   TOO_MANY_REQUESTS: 429,
   INTERNAL_SERVER_ERROR: 500,
+  SERVICE_UNAVAILABLE: 503,
 } as const
 
 export const ERROR_CODES = {
@@ -43,6 +45,8 @@ export const ERROR_CODES = {
   PAYMENT_NOT_SUCCEEDED: 'PAYMENT_NOT_SUCCEEDED',
   INVALID_PAYMENT_METADATA: 'INVALID_PAYMENT_METADATA',
   AMOUNT_TOO_HIGH: 'AMOUNT_TOO_HIGH',
+  SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
+  INVALID_JSON: 'INVALID_JSON',
 } as const
 
 export const ERROR_MESSAGES = {
@@ -75,4 +79,6 @@ export const ERROR_MESSAGES = {
   PAYMENT_NOT_SUCCEEDED: 'Payment has not succeeded',
   INVALID_PAYMENT_METADATA: 'Invalid payment metadata',
   AMOUNT_TOO_HIGH: 'Amount exceeds maximum limit',
+  SERVICE_UNAVAILABLE: 'Service temporarily unavailable',
+  INVALID_JSON: 'Invalid JSON in request body',
 } as const

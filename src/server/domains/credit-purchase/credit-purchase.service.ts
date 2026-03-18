@@ -34,19 +34,27 @@ export class CreditPurchaseService {
       return existing
     }
 
-    return this.repository.create({
-      userId,
-      stripePaymentIntentId: paymentIntentId,
-      bundleId,
-      bundleName,
-      minutes,
-      amount,
-      currency,
-      status: 'pending',
-      metadata: {
-        createdVia: 'payment_intent',
-      },
-    })
+    try {
+      return await this.repository.create({
+        userId,
+        stripePaymentIntentId: paymentIntentId,
+        bundleId,
+        bundleName,
+        minutes,
+        amount,
+        currency,
+        status: 'pending',
+        metadata: {
+          createdVia: 'payment_intent',
+        },
+      })
+    } catch {
+      throw new ApiError(
+        'INTERNAL_ERROR',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        "Erreur lors de la création de l'achat",
+      )
+    }
   }
 
   async processPaymentSuccess(
@@ -131,7 +139,7 @@ export class CreditPurchaseService {
       throw new ApiError(
         'NO_ACTIVE_SUBSCRIPTION',
         HTTP_STATUS.PAYMENT_REQUIRED,
-        'Un abonnement actif est requis pour recevoir des crédits',
+        'NO_ACTIVE_SUBSCRIPTION: Un abonnement actif est requis pour recevoir des crédits',
       )
     }
 
@@ -169,7 +177,7 @@ export class CreditPurchaseService {
       throw new ApiError(
         'RATE_LIMIT_EXCEEDED',
         HTTP_STATUS.TOO_MANY_REQUESTS,
-        `Limite d'achats atteinte (${MAX_PURCHASES_PER_HOUR}/heure)`,
+        `RATE_LIMIT_EXCEEDED: Limite d'achats atteinte (${MAX_PURCHASES_PER_HOUR}/heure)`,
       )
     }
   }

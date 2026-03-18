@@ -23,6 +23,14 @@ export class PaymentService {
     email: string,
     request: CreatePaymentIntentRequest,
   ): Promise<CreatePaymentIntentResponse> {
+    if (!userId || !email) {
+      throw new ApiError(
+        'INTERNAL_ERROR',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        'userId and email are required',
+      )
+    }
+
     let customer =
       await this.subscriptionRepository.findCustomerByUserId(userId)
 
@@ -43,13 +51,30 @@ export class PaymentService {
       })
     }
 
+    const sanitizedMetadata: Record<string, string> = {}
+    if (request.metadata) {
+      const {
+        userId: _,
+        stripeCustomerId: __,
+        ...safeMetadata
+      } = request.metadata as any
+      Object.keys(safeMetadata).forEach((key) => {
+        if (
+          typeof safeMetadata[key] === 'string' ||
+          typeof safeMetadata[key] === 'number'
+        ) {
+          sanitizedMetadata[key] = String(safeMetadata[key])
+        }
+      })
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(request.amount * 100),
       currency: request.currency ?? 'eur',
       customer: customer.stripeCustomerId,
       metadata: {
         userId,
-        ...request.metadata,
+        ...sanitizedMetadata,
       },
       automatic_payment_methods: {
         enabled: true,
@@ -92,6 +117,14 @@ export class PaymentService {
     email: string,
     request: CreateCheckoutSessionRequest,
   ): Promise<CreateCheckoutSessionResponse> {
+    if (!userId || !email) {
+      throw new ApiError(
+        'INTERNAL_ERROR',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        'userId and email are required',
+      )
+    }
+
     let customer =
       await this.subscriptionRepository.findCustomerByUserId(userId)
 

@@ -104,7 +104,7 @@ export class AuthService {
       )
     }
 
-    if (verificationToken.expires < new Date()) {
+    if (verificationToken.expires <= new Date()) {
       await this.repository.deleteVerificationToken(token)
       throw new ApiError(
         'UNAUTHORIZED',
@@ -152,7 +152,7 @@ export class AuthService {
       )
     }
 
-    if (verificationToken.expires < new Date()) {
+    if (verificationToken.expires <= new Date()) {
       await this.repository.deleteVerificationToken(token)
       throw new ApiError(
         'UNAUTHORIZED',

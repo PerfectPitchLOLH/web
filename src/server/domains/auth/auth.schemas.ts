@@ -12,9 +12,9 @@ export const signUpSchema = z.object({
     .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Password must contain special character'),
   name: z
     .string()
+    .trim()
     .min(2, 'Name must be at least 2 characters')
-    .max(100, 'Name too long')
-    .trim(),
+    .max(100, 'Name too long'),
 })
 
 export const signInSchema = z.object({

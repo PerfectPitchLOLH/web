@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import {
+  createErrorResponse,
   createSuccessResponse,
   handleApiError,
 } from '@/server/shared/utils/api.utils'
@@ -65,6 +66,14 @@ export class NotificationController {
       const notification = await this.service.createNotification(body)
       return createSuccessResponse(notification, HTTP_STATUS.CREATED)
     } catch (error) {
+      if (error instanceof SyntaxError) {
+        return createErrorResponse(
+          'INVALID_JSON',
+          'Invalid JSON in request body',
+          undefined,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
       return handleApiError(error)
     }
   }
@@ -79,6 +88,14 @@ export class NotificationController {
       )
       return createSuccessResponse(notification)
     } catch (error) {
+      if (error instanceof SyntaxError) {
+        return createErrorResponse(
+          'INVALID_JSON',
+          'Invalid JSON in request body',
+          undefined,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
       return handleApiError(error)
     }
   }
@@ -109,6 +126,14 @@ export class NotificationController {
       )
       return createSuccessResponse(result)
     } catch (error) {
+      if (error instanceof SyntaxError) {
+        return createErrorResponse(
+          'INVALID_JSON',
+          'Invalid JSON in request body',
+          undefined,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
       return handleApiError(error)
     }
   }

@@ -21,7 +21,7 @@ export class UserController {
   constructor(private service: UserService) {}
 
   async getUsers(request: NextRequest) {
-    const { session, response } = await validateApiAuth(request)
+    const { response } = await validateApiAuth(request)
     if (response) return response
 
     try {
@@ -65,7 +65,7 @@ export class UserController {
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
   ) {
-    const { session, response } = await validateApiAuth(request)
+    const { response } = await validateApiAuth(request)
     if (response) return response
 
     try {
@@ -87,7 +87,7 @@ export class UserController {
   }
 
   async createUser(request: NextRequest) {
-    const { session, response } = await validateApiAuth(request)
+    const { response } = await validateApiAuth(request)
     if (response) return response
 
     try {
@@ -96,6 +96,14 @@ export class UserController {
       const user = await this.service.createUser(validated as any)
       return createSuccessResponse(user, HTTP_STATUS.CREATED)
     } catch (error) {
+      if (error instanceof SyntaxError) {
+        return createErrorResponse(
+          'INVALID_JSON',
+          'Invalid JSON in request body',
+          undefined,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
       if (error instanceof ZodError) {
         return createErrorResponse(
           'VALIDATION_ERROR',
@@ -112,7 +120,7 @@ export class UserController {
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
   ) {
-    const { session, response } = await validateApiAuth(request)
+    const { response } = await validateApiAuth(request)
     if (response) return response
 
     try {
@@ -123,6 +131,14 @@ export class UserController {
       const user = await this.service.updateUser(validatedId, validated)
       return createSuccessResponse(user)
     } catch (error) {
+      if (error instanceof SyntaxError) {
+        return createErrorResponse(
+          'INVALID_JSON',
+          'Invalid JSON in request body',
+          undefined,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
       if (error instanceof ZodError) {
         return createErrorResponse(
           'VALIDATION_ERROR',
@@ -139,7 +155,7 @@ export class UserController {
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
   ) {
-    const { session, response } = await validateApiAuth(request)
+    const { response } = await validateApiAuth(request)
     if (response) return response
 
     try {

@@ -15,7 +15,7 @@ async function getDashboardStats(): Promise<AdminDashboardStats> {
   try {
     await requireRole(['admin'])
     return await adminService.getDashboardStats()
-  } catch (error) {
+  } catch {
     redirect('/auth/signin?callbackUrl=/admin')
   }
 }

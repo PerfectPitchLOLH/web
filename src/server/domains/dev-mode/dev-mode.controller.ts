@@ -125,6 +125,14 @@ export class DevModeController {
       this.service.validateAdminRole(userRole)
 
       const { presetId } = (await request.json()) as { presetId: string }
+
+      if (presetId === undefined || presetId === null) {
+        return createSuccessResponse(
+          { message: 'presetId is required' },
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
+
       const config = this.service.getPresetById(presetId)
 
       const cookieStore = await cookies()

@@ -31,7 +31,7 @@ export class CreditService {
     }
 
     const totalCredits = credits.monthlyCredits + credits.bonusCredits
-    const remainingCredits = totalCredits
+    const remainingCredits = totalCredits - credits.usedThisMonth
     const usagePercent =
       totalCredits > 0 ? (credits.usedThisMonth / totalCredits) * 100 : 0
 

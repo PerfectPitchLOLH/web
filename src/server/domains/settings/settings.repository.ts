@@ -1,3 +1,5 @@
+import { Prisma } from '@prisma/client'
+
 import { db } from '@/server/lib/database'
 
 import type {
@@ -75,7 +77,9 @@ export class SettingsRepository {
       data: {
         twoFactorEnabled: data.twoFactorEnabled,
         twoFactorSecret: data.twoFactorSecret,
-        twoFactorBackupCodes: data.twoFactorBackupCodes ?? undefined,
+        twoFactorBackupCodes: data.twoFactorBackupCodes
+          ? data.twoFactorBackupCodes
+          : Prisma.JsonNull,
       },
     })
   }

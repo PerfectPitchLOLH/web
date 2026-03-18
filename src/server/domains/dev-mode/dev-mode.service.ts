@@ -21,12 +21,17 @@ export class DevModeService {
   }
 
   createConfig(data: ActivateDevModeDTO): DevModeConfig {
-    const baseFeaturesForTier = PLAN_FEATURES[data.tier]
+    const validTiers = ['junior', 'basic', 'pro'] as const
+    const normalizedTier = validTiers.includes(data.tier as any)
+      ? data.tier
+      : 'junior'
+
+    const baseFeaturesForTier = PLAN_FEATURES[normalizedTier]
 
     const config: DevModeConfig = {
       isActive: true,
       subscription: {
-        tier: data.tier,
+        tier: normalizedTier,
         status: data.status ?? 'active',
         billingInterval: data.billingInterval ?? 'month',
         features: data.features
@@ -45,7 +50,14 @@ export class DevModeService {
     currentConfig: DevModeConfig,
     updates: UpdateDevModeDTO,
   ): DevModeConfig {
-    const updatedConfig = { ...currentConfig }
+    const updatedConfig: DevModeConfig = {
+      ...currentConfig,
+      subscription: {
+        ...currentConfig.subscription,
+        features: { ...currentConfig.subscription.features },
+      },
+      credits: { ...currentConfig.credits },
+    }
 
     if (updates.tier) {
       updatedConfig.subscription.tier = updates.tier

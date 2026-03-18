@@ -18,6 +18,10 @@ export class PaymentController {
     request: NextRequest,
   ) {
     try {
+      if (!userId || !email) {
+        throw new Error('userId and email are required')
+      }
+
       const body = (await request.json()) as CreatePaymentIntentRequest
       const data = await this.service.createPaymentIntent(userId, email, body)
       return createSuccessResponse(data, HTTP_STATUS.CREATED)

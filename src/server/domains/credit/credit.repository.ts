@@ -115,10 +115,6 @@ export class CreditRepository {
       return existingCredits
     }
 
-    const existingCredits = await db.userCredits.findUnique({
-      where: { userId },
-    })
-
     const credits = await db.userCredits.upsert({
       where: { userId },
       update: {

@@ -103,7 +103,7 @@ export class ImpersonationService {
     }
 
     const sessionAge = Date.now() - session.startedAt.getTime()
-    if (sessionAge > MAX_SESSION_DURATION_MS) {
+    if (sessionAge >= MAX_SESSION_DURATION_MS) {
       await this.repository.endSession(session.id)
       return null
     }
@@ -178,7 +178,7 @@ export class ImpersonationService {
     }
 
     const sessionAge = Date.now() - session.startedAt.getTime()
-    if (sessionAge > MAX_SESSION_DURATION_MS) {
+    if (sessionAge >= MAX_SESSION_DURATION_MS) {
       await this.repository.endSession(sessionId)
       throw new ApiError(
         'UNAUTHORIZED',

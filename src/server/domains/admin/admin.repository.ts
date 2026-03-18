@@ -15,61 +15,77 @@ import type {
 
 export class AdminRepository {
   async getUserStats(): Promise<UserStats> {
-    const now = new Date()
-    const startOfToday = new Date(now.setHours(0, 0, 0, 0))
-    const startOfWeek = new Date(now.setDate(now.getDate() - 7))
-    const startOfMonth = new Date(now.setDate(now.getDate() - 30))
+    try {
+      const now = new Date()
+      const startOfToday = new Date(now.setHours(0, 0, 0, 0))
+      const startOfWeek = new Date(now.setDate(now.getDate() - 7))
+      const startOfMonth = new Date(now.setDate(now.getDate() - 30))
 
-    const [
-      totalUsers,
-      activeUsers,
-      newUsersToday,
-      newUsersThisWeek,
-      newUsersThisMonth,
-      usersByRoleData,
-    ] = await Promise.all([
-      db.user.count(),
-      db.user.count({
-        where: {
-          emailVerified: { not: null },
-        },
-      }),
-      db.user.count({
-        where: {
-          createdAt: { gte: startOfToday },
-        },
-      }),
-      db.user.count({
-        where: {
-          createdAt: { gte: startOfWeek },
-        },
-      }),
-      db.user.count({
-        where: {
-          createdAt: { gte: startOfMonth },
-        },
-      }),
-      db.user.groupBy({
-        by: ['role'],
-        _count: true,
-      }),
-    ])
+      const [
+        totalUsers,
+        activeUsers,
+        newUsersToday,
+        newUsersThisWeek,
+        newUsersThisMonth,
+        usersByRoleData,
+      ] = await Promise.all([
+        db.user.count(),
+        db.user.count({
+          where: {
+            emailVerified: { not: null },
+          },
+        }),
+        db.user.count({
+          where: {
+            createdAt: { gte: startOfToday },
+          },
+        }),
+        db.user.count({
+          where: {
+            createdAt: { gte: startOfWeek },
+          },
+        }),
+        db.user.count({
+          where: {
+            createdAt: { gte: startOfMonth },
+          },
+        }),
+        db.user.groupBy({
+          by: ['role'],
+          _count: { _all: true },
+        }),
+      ])
 
-    const usersByRole = usersByRoleData.reduce(
-      (acc, item) => {
-        acc[item.role] = item._count
-        return acc
-      },
-      {} as Record<string, number>,
-    )
+      const usersByRole = usersByRoleData.reduce(
+        (acc, item) => {
+          acc[item.role] = item._count._all
+          return acc
+        },
+        {} as Record<string, number>,
+      )
 
-    return {
-      totalUsers,
-      activeUsers,
-      newUsersToday,
-      newUsersThisWeek,
-      newUsersThisMonth,
-      usersByRole,
+      return {
+        totalUsers,
+        activeUsers,
+        newUsersToday,
+        newUsersThisWeek,
+        newUsersThisMonth,
+        usersByRole,
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        const sensitivePatterns = ['/var', '/home', '/usr', 'postgres', 'mysql']
+        const hasSensitiveInfo = sensitivePatterns.some((pattern) =>
+          error.message.includes(pattern),
+        )
+
+        if (hasSensitiveInfo) {
+          throw new Error('Failed to fetch user statistics')
+        }
+
+        throw error
+      }
+      throw new Error('Failed to fetch user statistics')
     }
   }
 
@@ -86,8 +102,8 @@ export class AdminRepository {
   async getUsersWithFilters(
     filters: UserManagementFilters,
   ): Promise<UserManagementResult> {
-    const page = filters.page || 1
-    const limit = filters.limit || 10
+    const page = filters.page ?? 1
+    const limit = filters.limit ?? 10
     const skip = (page - 1) * limit
 
     const where: any = {}
@@ -122,7 +138,7 @@ export class AdminRepository {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: limit === 0 ? Infinity : Math.ceil(total / limit),
     }
   }
 
@@ -201,8 +217,8 @@ export class AdminRepository {
   }
 
   async getAuditLogs(filters: AuditLogFilters): Promise<AuditLogResult> {
-    const page = filters.page || 1
-    const limit = filters.limit || 20
+    const page = filters.page ?? 1
+    const limit = filters.limit ?? 20
     const skip = (page - 1) * limit
 
     const where: any = {}
@@ -240,7 +256,7 @@ export class AdminRepository {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: limit === 0 ? Infinity : Math.ceil(total / limit),
     }
   }
 }

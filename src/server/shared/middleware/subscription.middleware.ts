@@ -7,7 +7,7 @@ import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { createErrorResponse } from '@/server/shared/utils/api.utils'
 
 export async function requireActiveSubscription(
-  request: NextRequest,
+  _request: NextRequest,
 ): Promise<NextResponse | null> {
   const session = await auth()
 

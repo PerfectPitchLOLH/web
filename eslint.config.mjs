@@ -41,7 +41,7 @@ const eslintConfig = [
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
 
-      'no-console': 'warn',
+      'no-console': 'off',
 
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
@@ -56,7 +56,7 @@ const eslintConfig = [
         },
       ],
 
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
@@ -64,6 +64,32 @@ const eslintConfig = [
 
       'prefer-const': 'warn',
       'react-hooks/exhaustive-deps': 'warn',
+    },
+  },
+  {
+    files: [
+      '**/__tests__/**/*.ts',
+      '**/__tests__/**/*.tsx',
+      '**/*.test.ts',
+      '**/*.test.tsx',
+    ],
+    rules: {
+      '@typescript-eslint/ban-ts-comment': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      'no-console': 'off',
+      'unused-imports/no-unused-vars': 'off',
+    },
+  },
+  {
+    files: [
+      'src/app/api/cron/**/*.ts',
+      'src/app/api/webhooks/**/*.ts',
+      'src/server/shared/utils/audit.logger.ts',
+      'src/server/shared/middleware/rate-limit.middleware.ts',
+      'src/server/lib/auth.ts',
+    ],
+    rules: {
+      'no-console': 'off',
     },
   },
   prettierConfig,

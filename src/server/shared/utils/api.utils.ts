@@ -78,17 +78,17 @@ export const handleApiError = (
     error &&
     typeof error === 'object' &&
     'name' in error &&
-    error.name === 'ZodError'
+    error.name === 'ZodError' &&
+    'issues' in error
   ) {
     return createErrorResponse(
       'VALIDATION_ERROR',
       'Validation failed',
-      (error as any).errors,
+      (error as any).issues,
       HTTP_STATUS.BAD_REQUEST,
     )
   }
 
-  // eslint-disable-next-line no-console
   console.error('Unexpected error:', error)
   return createErrorResponse(
     'INTERNAL_ERROR',

@@ -46,6 +46,7 @@ export function UserTargeting({ data, onChange }: Props) {
     } else {
       setPreviewCount(null)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
 
   async function fetchPlans() {

@@ -182,7 +182,7 @@ describe('SettingsService', () => {
           newPassword: 'NewPass1!',
         })
       } catch (error) {
-        expect((error as ApiError).code).toBe('BAD_REQUEST')
+        expect((error as ApiError).code).toBe('VALIDATION_ERROR')
       }
     })
 

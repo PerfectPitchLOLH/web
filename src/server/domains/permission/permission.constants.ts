@@ -1,5 +1,16 @@
 import type { FeatureLimits, PlanPermissions } from './permission.types'
 
+function deepFreeze<T>(obj: T): T {
+  Object.freeze(obj)
+  Object.getOwnPropertyNames(obj).forEach((prop) => {
+    const value = (obj as any)[prop]
+    if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+      deepFreeze(value)
+    }
+  })
+  return obj
+}
+
 const FREE_FEATURES: FeatureLimits = {
   transcription: { enabled: true, limit: 3, unit: 'minutes' },
   falling_notes: { enabled: true },
@@ -67,7 +78,7 @@ const PRO_FEATURES: FeatureLimits = {
 export const PLAN_PERMISSIONS: Record<
   'free' | 'junior' | 'basic' | 'pro',
   PlanPermissions
-> = {
+> = deepFreeze({
   free: {
     tier: 'free',
     displayName: 'Gratuit',
@@ -92,7 +103,7 @@ export const PLAN_PERMISSIONS: Record<
     features: PRO_FEATURES,
     priority: 3,
   },
-}
+})
 
 export const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing'] as const
 

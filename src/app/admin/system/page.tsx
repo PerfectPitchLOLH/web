@@ -22,7 +22,7 @@ async function getSystemStats(): Promise<SystemStats> {
     await requireRole(['admin'])
     const stats = await adminService.getDashboardStats()
     return stats.system
-  } catch (error) {
+  } catch {
     redirect('/auth/signin?callbackUrl=/admin/system')
   }
 }

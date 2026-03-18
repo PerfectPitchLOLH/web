@@ -463,6 +463,14 @@ export class SubscriptionService {
       )
     }
 
+    if (subscription.userId !== userId) {
+      throw new ApiError(
+        'UNAUTHORIZED',
+        HTTP_STATUS.UNAUTHORIZED,
+        'Unauthorized to cancel this subscription',
+      )
+    }
+
     await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
       cancel_at_period_end: true,
     })

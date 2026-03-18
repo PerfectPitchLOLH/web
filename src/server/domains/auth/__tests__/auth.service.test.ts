@@ -186,6 +186,7 @@ describe('AuthService', () => {
         email: signInData.email,
         name: 'Test User',
         role: 'user',
+        password: null,
       })
 
       vi.mocked(mockRepository.findUserByEmail).mockResolvedValue(oauthUser)

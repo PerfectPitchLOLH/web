@@ -41,6 +41,15 @@ export class AdminService {
     ipAddress: string | null,
     userAgent: string | null,
   ): Promise<void> {
+    if (typeof data.role !== 'string' || Array.isArray(data.role)) {
+      throw new ApiError('VALIDATION_ERROR', 400, 'Invalid role type')
+    }
+
+    const validRoles = ['user', 'admin']
+    if (!validRoles.includes(data.role)) {
+      throw new ApiError('VALIDATION_ERROR', 400, 'Invalid role value')
+    }
+
     const [user, admin] = await Promise.all([
       this.repository.getUserById(data.userId),
       this.repository.getUserById(adminUserId),

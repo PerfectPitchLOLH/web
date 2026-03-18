@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { requireAdminAuth } from '@/server/shared/middleware/auth.middleware'
@@ -80,7 +80,7 @@ export class ImpersonationController {
         )
       }
 
-      const responseData = createSuccessResponse(
+      const response = createSuccessResponse(
         {
           sessionId: impersonationSession.id,
           targetUser: targetUser
@@ -94,10 +94,6 @@ export class ImpersonationController {
         },
         HTTP_STATUS.CREATED,
       )
-
-      const response = NextResponse.json(responseData, {
-        status: HTTP_STATUS.CREATED,
-      })
 
       response.cookies.set(
         'impersonation_session_id',
@@ -117,7 +113,7 @@ export class ImpersonationController {
     }
   }
 
-  async getActiveImpersonation(request: NextRequest) {
+  async getActiveImpersonation(_request: NextRequest) {
     try {
       const session = await requireAdminAuth()
 
@@ -201,14 +197,10 @@ export class ImpersonationController {
         )
       }
 
-      const responseData = createSuccessResponse(
+      const response = createSuccessResponse(
         { message: 'Impersonation ended successfully' },
         HTTP_STATUS.OK,
       )
-
-      const response = NextResponse.json(responseData, {
-        status: HTTP_STATUS.OK,
-      })
 
       response.cookies.delete('impersonation_session_id')
 

@@ -88,7 +88,7 @@ export class ImpersonationLogRepository {
     logs.forEach((log) => {
       stats.byMethod[log.method] = (stats.byMethod[log.method] || 0) + 1
 
-      if (log.statusCode) {
+      if (log.statusCode != null) {
         const statusCategory = `${Math.floor(log.statusCode / 100)}xx`
         stats.byStatus[statusCategory] =
           (stats.byStatus[statusCategory] || 0) + 1

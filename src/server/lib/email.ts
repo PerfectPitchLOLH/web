@@ -38,7 +38,6 @@ export async function sendVerificationEmail(email: string, token: string) {
       `,
     })
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Failed to send verification email:', error)
     throw new Error('Failed to send verification email')
   }
@@ -80,7 +79,6 @@ export async function sendPasswordResetEmail(email: string, token: string) {
       `,
     })
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Failed to send password reset email:', error)
     throw new Error('Failed to send password reset email')
   }

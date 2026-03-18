@@ -28,9 +28,9 @@ export class UserRepository {
     return db.user.findMany({
       where,
       skip: pagination?.page
-        ? (pagination.page - 1) * (pagination.limit || 10)
+        ? (pagination.page - 1) * (pagination.limit ?? 10)
         : 0,
-      take: pagination?.limit || 10,
+      take: pagination?.limit ?? 10,
       orderBy: { createdAt: 'desc' },
     })
   }

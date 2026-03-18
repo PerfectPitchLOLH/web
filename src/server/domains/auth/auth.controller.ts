@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 
 import {
   ERROR_CODES,
@@ -39,20 +39,17 @@ export class AuthController {
       )
 
       if (!success) {
-        return NextResponse.json(
-          createErrorResponse(
-            'TOO_MANY_REQUESTS',
-            'Too many signup attempts. Please try again later.',
-            { retryAfter: new Date(reset).toISOString() },
-            HTTP_STATUS.TOO_MANY_REQUESTS,
-          ),
-          {
-            status: HTTP_STATUS.TOO_MANY_REQUESTS,
-            headers: {
-              'Retry-After': Math.ceil((reset - Date.now()) / 1000).toString(),
-            },
-          },
+        const response = createErrorResponse(
+          'TOO_MANY_REQUESTS',
+          'Too many signup attempts. Please try again later.',
+          { retryAfter: new Date(reset).toISOString() },
+          HTTP_STATUS.TOO_MANY_REQUESTS,
         )
+        response.headers.set(
+          'Retry-After',
+          Math.ceil((reset - Date.now()) / 1000).toString(),
+        )
+        return response
       }
 
       const body = await request.json()
@@ -81,20 +78,17 @@ export class AuthController {
       )
 
       if (!success) {
-        return NextResponse.json(
-          createErrorResponse(
-            'TOO_MANY_REQUESTS',
-            'Too many signin attempts. Please try again later.',
-            { retryAfter: new Date(reset).toISOString() },
-            HTTP_STATUS.TOO_MANY_REQUESTS,
-          ),
-          {
-            status: HTTP_STATUS.TOO_MANY_REQUESTS,
-            headers: {
-              'Retry-After': Math.ceil((reset - Date.now()) / 1000).toString(),
-            },
-          },
+        const response = createErrorResponse(
+          'TOO_MANY_REQUESTS',
+          'Too many signin attempts. Please try again later.',
+          { retryAfter: new Date(reset).toISOString() },
+          HTTP_STATUS.TOO_MANY_REQUESTS,
         )
+        response.headers.set(
+          'Retry-After',
+          Math.ceil((reset - Date.now()) / 1000).toString(),
+        )
+        return response
       }
 
       const user = await this.service.signIn(validated)
@@ -139,20 +133,17 @@ export class AuthController {
       )
 
       if (!success) {
-        return NextResponse.json(
-          createErrorResponse(
-            'TOO_MANY_REQUESTS',
-            'Too many password reset attempts. Please try again later.',
-            { retryAfter: new Date(reset).toISOString() },
-            HTTP_STATUS.TOO_MANY_REQUESTS,
-          ),
-          {
-            status: HTTP_STATUS.TOO_MANY_REQUESTS,
-            headers: {
-              'Retry-After': Math.ceil((reset - Date.now()) / 1000).toString(),
-            },
-          },
+        const response = createErrorResponse(
+          'TOO_MANY_REQUESTS',
+          'Too many password reset attempts. Please try again later.',
+          { retryAfter: new Date(reset).toISOString() },
+          HTTP_STATUS.TOO_MANY_REQUESTS,
         )
+        response.headers.set(
+          'Retry-After',
+          Math.ceil((reset - Date.now()) / 1000).toString(),
+        )
+        return response
       }
 
       await this.service.requestPasswordReset(email)
@@ -188,20 +179,17 @@ export class AuthController {
       )
 
       if (!success) {
-        return NextResponse.json(
-          createErrorResponse(
-            'TOO_MANY_REQUESTS',
-            'Too many verification email requests. Please try again later.',
-            { retryAfter: new Date(reset).toISOString() },
-            HTTP_STATUS.TOO_MANY_REQUESTS,
-          ),
-          {
-            status: HTTP_STATUS.TOO_MANY_REQUESTS,
-            headers: {
-              'Retry-After': Math.ceil((reset - Date.now()) / 1000).toString(),
-            },
-          },
+        const response = createErrorResponse(
+          'TOO_MANY_REQUESTS',
+          'Too many verification email requests. Please try again later.',
+          { retryAfter: new Date(reset).toISOString() },
+          HTTP_STATUS.TOO_MANY_REQUESTS,
         )
+        response.headers.set(
+          'Retry-After',
+          Math.ceil((reset - Date.now()) / 1000).toString(),
+        )
+        return response
       }
 
       await this.service.resendVerificationEmail(session.user.email)
