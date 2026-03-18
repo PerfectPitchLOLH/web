@@ -9,11 +9,6 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: false,
-      },
-    },
     server: {
       deps: {
         inline: ['next-auth'],
