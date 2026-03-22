@@ -1,3 +1,5 @@
+import Stripe from 'stripe'
+
 import { stripe } from '@/server/lib/stripe'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
@@ -142,6 +144,98 @@ export class SubscriptionService {
         'Impossible de créer la session de paiement',
       )
     }
+
+    return {
+      sessionId: session.id,
+      url: session.url,
+    }
+  }
+
+  async createUpgradeCheckoutSession(
+    userId: string,
+    newPriceId: string,
+  ): Promise<CreateCheckoutSessionResponse> {
+    console.log('[UPGRADE_CHECKOUT] Création session Checkout pour upgrade:', {
+      userId,
+      newPriceId,
+    })
+
+    const subscription = await this.repository.findSubscriptionByUserId(userId)
+
+    if (!subscription || subscription.status !== 'active') {
+      throw new ApiError(
+        'SUBSCRIPTION_NOT_FOUND',
+        HTTP_STATUS.NOT_FOUND,
+        'Aucun abonnement actif',
+      )
+    }
+
+    const newPlan = await this.repository.findPlanByStripePriceId(newPriceId)
+
+    if (!newPlan) {
+      throw new ApiError(
+        'INVALID_PLAN',
+        HTTP_STATUS.BAD_REQUEST,
+        'Plan invalide',
+      )
+    }
+
+    const customer = await this.repository.findCustomerByUserId(userId)
+
+    if (!customer) {
+      throw new ApiError(
+        'CUSTOMER_NOT_FOUND',
+        HTTP_STATUS.NOT_FOUND,
+        'Client introuvable',
+      )
+    }
+
+    console.log('[UPGRADE_CHECKOUT] Création session avec:', {
+      customerId: customer.stripeCustomerId,
+      currentSubscriptionId: subscription.stripeSubscriptionId,
+      newPriceId,
+      newPlanName: newPlan.name,
+    })
+
+    const session = await stripe.checkout.sessions.create({
+      customer: customer.stripeCustomerId,
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: newPriceId,
+          quantity: 1,
+        },
+      ],
+      subscription_data: {
+        metadata: {
+          userId,
+          planId: newPlan.id,
+          upgradeFrom: subscription.stripeSubscriptionId,
+        },
+      },
+      success_url: `${process.env.API_URL}/dashboard/subscription?upgrade=success`,
+      cancel_url: `${process.env.API_URL}/dashboard/subscription?upgrade=cancelled`,
+      metadata: {
+        userId,
+        planId: newPlan.id,
+        isUpgrade: 'true',
+        oldSubscriptionId: subscription.stripeSubscriptionId,
+      },
+    })
+
+    if (!session.url) {
+      throw new ApiError(
+        'CHECKOUT_SESSION_FAILED',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        'Impossible de créer la session de paiement',
+      )
+    }
+
+    console.log('[UPGRADE_CHECKOUT] Session créée avec succès:', {
+      sessionId: session.id,
+      url: session.url,
+    })
 
     return {
       sessionId: session.id,
@@ -514,7 +608,18 @@ export class SubscriptionService {
     )
   }
 
-  async upgradeSubscription(userId: string, newPriceId: string): Promise<void> {
+  async upgradeSubscription(
+    userId: string,
+    newPriceId: string,
+  ): Promise<CreateCheckoutSessionResponse> {
+    console.log('[UPGRADE] Redirection vers Stripe Checkout pour upgrade')
+    return this.createUpgradeCheckoutSession(userId, newPriceId)
+  }
+
+  async upgradeSubscriptionDirect(
+    userId: string,
+    newPriceId: string,
+  ): Promise<void> {
     const subscription = await this.repository.findSubscriptionByUserId(userId)
 
     if (!subscription || subscription.status !== 'active') {
@@ -549,10 +654,48 @@ export class SubscriptionService {
       )
     }
 
-    await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
-      items: [{ id: itemId, price: newPriceId }],
-      proration_behavior: 'create_prorations',
+    console.log("[UPGRADE_DIRECT] Tentative d'upgrade direct:", {
+      userId,
+      subscriptionId: subscription.stripeSubscriptionId,
+      currentPlanId: subscription.planId,
+      newPriceId,
+      newPlanId: newPlan.id,
+      itemId,
     })
+
+    try {
+      const updatedSubscription: Stripe.Subscription =
+        await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+          items: [{ id: itemId, price: newPriceId }],
+          proration_behavior: 'create_prorations',
+        })
+
+      console.log('[UPGRADE_DIRECT] Abonnement mis à jour avec succès:', {
+        subscriptionId: updatedSubscription.id,
+        status: updatedSubscription.status,
+        currentPeriodEnd: new Date(
+          (updatedSubscription as any).current_period_end * 1000,
+        ),
+        latestInvoice: updatedSubscription.latest_invoice,
+        items: updatedSubscription.items.data.map((item) => ({
+          id: item.id,
+          priceId: item.price.id,
+        })),
+      })
+    } catch (error) {
+      console.error('[UPGRADE_DIRECT] Erreur lors de la mise à jour Stripe:', {
+        error,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorType: (error as any)?.type,
+        errorCode: (error as any)?.code,
+        stripeError: (error as any)?.raw,
+      })
+      throw new ApiError(
+        'STRIPE_UPDATE_FAILED',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        `Échec de la mise à jour de l'abonnement: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+      )
+    }
   }
 
   async grantWelcomeCredits(userId: string, email: string): Promise<void> {

@@ -145,18 +145,50 @@ export function useSubscription() {
   }
 
   const upgradeSubscription = async (priceId: string) => {
-    const response = await fetch('/api/subscriptions/upgrade', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ priceId }),
+    console.log("[FRONTEND] Tentative d'upgrade:", {
+      priceId,
+      timestamp: new Date().toISOString(),
     })
 
-    if (!response.ok) {
-      const result = await response.json()
-      throw new Error(result.message || 'Failed to upgrade subscription')
-    }
+    try {
+      const response = await fetch('/api/subscriptions/upgrade', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId }),
+      })
 
-    await fetchSubscription()
+      console.log('[FRONTEND] Réponse reçue:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+      })
+
+      if (!response.ok) {
+        const result = await response.json()
+        console.error('[FRONTEND] Erreur de la réponse:', result)
+        throw new Error(result.message || 'Failed to upgrade subscription')
+      }
+
+      const result = await response.json()
+      console.log("[FRONTEND] Résultat de l'upgrade:", result)
+
+      if (result.data?.checkoutUrl) {
+        console.log(
+          '[FRONTEND] Redirection vers Stripe Checkout:',
+          result.data.checkoutUrl,
+        )
+        window.location.href = result.data.checkoutUrl
+      } else {
+        console.error('[FRONTEND] URL de checkout manquante dans la réponse')
+        throw new Error('URL de checkout manquante')
+      }
+    } catch (error) {
+      console.error("[FRONTEND] Erreur lors de l'upgrade:", {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+      })
+      throw error
+    }
   }
 
   return {

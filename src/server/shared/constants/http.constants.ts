@@ -47,6 +47,7 @@ export const ERROR_CODES = {
   AMOUNT_TOO_HIGH: 'AMOUNT_TOO_HIGH',
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
   INVALID_JSON: 'INVALID_JSON',
+  STRIPE_UPDATE_FAILED: 'STRIPE_UPDATE_FAILED',
 } as const
 
 export const ERROR_MESSAGES = {
@@ -81,4 +82,5 @@ export const ERROR_MESSAGES = {
   AMOUNT_TOO_HIGH: 'Amount exceeds maximum limit',
   SERVICE_UNAVAILABLE: 'Service temporarily unavailable',
   INVALID_JSON: 'Invalid JSON in request body',
+  STRIPE_UPDATE_FAILED: 'Failed to update subscription in Stripe',
 } as const
