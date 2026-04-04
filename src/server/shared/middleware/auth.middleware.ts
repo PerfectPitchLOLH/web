@@ -5,7 +5,7 @@ import { auth } from '@/server/lib/auth'
 import { db } from '@/server/lib/database'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { auditLogger } from '@/server/shared/utils'
-import { createErrorResponse } from '@/server/shared/utils/api.utils'
+import { ApiError, createErrorResponse } from '@/server/shared/utils/api.utils'
 
 export type AuthSession = Session & {
   user: {
@@ -17,11 +17,15 @@ export type AuthSession = Session & {
   }
 }
 
+export type ValidateApiAuthResult =
+  | { ok: true; session: AuthSession }
+  | { ok: false; response: NextResponse }
+
 export async function requireAuth(): Promise<AuthSession> {
   const session = await auth()
 
   if (!session?.user) {
-    throw new Error('UNAUTHORIZED')
+    throw new ApiError('UNAUTHORIZED', HTTP_STATUS.UNAUTHORIZED)
   }
 
   return session as AuthSession
@@ -31,7 +35,7 @@ export async function requireAdminAuth(): Promise<AuthSession> {
   const session = await auth()
 
   if (!session?.user) {
-    throw new Error('UNAUTHORIZED')
+    throw new ApiError('UNAUTHORIZED', HTTP_STATUS.UNAUTHORIZED)
   }
 
   const adminId = session.impersonation?.adminId ?? session.user.id
@@ -48,7 +52,7 @@ export async function requireAdminAuth(): Promise<AuthSession> {
   })
 
   if (!admin || admin.role !== 'admin') {
-    throw new Error('FORBIDDEN')
+    throw new ApiError('FORBIDDEN', HTTP_STATUS.FORBIDDEN)
   }
 
   return {
@@ -65,13 +69,10 @@ export async function requireAdminAuth(): Promise<AuthSession> {
 
 export async function validateApiAuth(
   request: NextRequest,
-): Promise<
-  | { session: AuthSession; response?: never }
-  | { session?: never; response: NextResponse }
-> {
+): Promise<ValidateApiAuthResult> {
   try {
     const session = await requireAuth()
-    return { session }
+    return { ok: true, session }
   } catch {
     const ip = getClientIP(request)
     const { pathname } = request.nextUrl
@@ -79,14 +80,12 @@ export async function validateApiAuth(
     auditLogger.logApiUnauthorizedAccess(pathname, request.method, ip)
 
     return {
-      response: NextResponse.json(
-        createErrorResponse(
-          'UNAUTHORIZED',
-          'Authentication required. Please sign in to access this resource.',
-          undefined,
-          HTTP_STATUS.UNAUTHORIZED,
-        ),
-        { status: HTTP_STATUS.UNAUTHORIZED },
+      ok: false,
+      response: createErrorResponse(
+        'UNAUTHORIZED',
+        'Authentication required. Please sign in to access this resource.',
+        undefined,
+        HTTP_STATUS.UNAUTHORIZED,
       ),
     }
   }
@@ -111,7 +110,7 @@ export async function requireEmailVerified(): Promise<AuthSession> {
   const session = await requireAuth()
 
   if (!session.user.emailVerified) {
-    throw new Error('EMAIL_NOT_VERIFIED')
+    throw new ApiError('FORBIDDEN', HTTP_STATUS.FORBIDDEN)
   }
 
   return session
@@ -130,7 +129,7 @@ export async function requireRole(
   const session = await requireAuth()
 
   if (!checkRole(session, allowedRoles)) {
-    throw new Error('FORBIDDEN')
+    throw new ApiError('FORBIDDEN', HTTP_STATUS.FORBIDDEN)
   }
 
   return session

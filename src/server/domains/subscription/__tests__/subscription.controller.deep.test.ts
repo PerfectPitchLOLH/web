@@ -788,7 +788,8 @@ describe('SubscriptionController - Deep Tests', () => {
         'price_pro_monthly',
       )
       expect(createSuccessResponse).toHaveBeenCalledWith({
-        message: 'Abonnement mis à jour',
+        checkoutUrl: 'http://test.com',
+        sessionId: 'test_session',
       })
     })
 

@@ -1,26 +1,21 @@
-import { auth } from '@/server/lib/auth'
+import { NextRequest } from 'next/server'
+
 import { db } from '@/server/lib/database'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
+import { validateApiAuth } from '@/server/shared/middleware/auth.middleware'
 import {
   createErrorResponse,
   createSuccessResponse,
-} from '@/server/shared/utils'
+  handleApiError,
+} from '@/server/shared/utils/api.utils'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await validateApiAuth(request)
+  if (!auth.ok) return auth.response
+
   try {
-    const session = await auth()
-
-    if (!session?.user?.email) {
-      return createErrorResponse(
-        'UNAUTHORIZED',
-        'Not authenticated',
-        null,
-        HTTP_STATUS.UNAUTHORIZED,
-      )
-    }
-
     const user = await db.user.findUnique({
-      where: { email: session.user.email },
+      where: { email: auth.session.user.email },
       select: {
         id: true,
         email: true,
@@ -38,18 +33,13 @@ export async function GET() {
       return createErrorResponse(
         'NOT_FOUND',
         'User not found',
-        null,
+        undefined,
         HTTP_STATUS.NOT_FOUND,
       )
     }
 
-    return createSuccessResponse(user, HTTP_STATUS.OK)
-  } catch {
-    return createErrorResponse(
-      'INTERNAL_ERROR',
-      'Failed to fetch user',
-      null,
-      HTTP_STATUS.INTERNAL_SERVER_ERROR,
-    )
+    return createSuccessResponse(user)
+  } catch (error) {
+    return handleApiError(error)
   }
 }

@@ -39,9 +39,12 @@ model User {
   subscriptions        Subscription[]
   invoices             Invoice[]
   notifications        Notification[]
+  savedPartitions      SavedPartition[]
+  transcriptionJobs    TranscriptionJob[]
 
   @@map("users")
 }
+
 
 model Account {
   id                String  @id @default(cuid())
@@ -305,6 +308,48 @@ model Notification {
   @@index([read])
   @@index([createdAt])
   @@map("notifications")
+}
+
+model TranscriptionJob {
+  id           String   @id @default(cuid())
+  backendJobId String   @unique
+  userId       String
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([backendJobId])
+  @@index([userId])
+  @@map("transcription_jobs")
+}
+
+model SavedPartition {
+  id               String   @id @default(cuid())
+  userId           String
+
+  title            String
+  originalFileName String?
+  instrument       String
+  partitionType    String
+  tags             String[] @default([])
+  notes            String?
+
+  transcribeConfig Json
+
+  musicXmlContent  String
+  svgContent       String?
+
+  sourceJobId      String?
+  durationSeconds  Float?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([userId, instrument])
+  @@map("saved_partitions")
 }
 
 model WebhookEvent {

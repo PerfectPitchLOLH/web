@@ -1146,7 +1146,7 @@ describe('AdminController - Deep Tests', () => {
         requests.map((req) => controller.getDashboardStats(req)),
       )
 
-      responses.forEach((response) => {
+      responses.forEach((response: NextResponse) => {
         expect(response.status).toBe(HTTP_STATUS.OK)
       })
 
@@ -1227,7 +1227,7 @@ describe('AdminController - Deep Tests', () => {
       )
       const duration = Date.now() - startTime
 
-      responses.forEach((response) => {
+      responses.forEach((response: NextResponse) => {
         expect([200, 429]).toContain(response.status)
       })
 

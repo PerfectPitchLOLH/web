@@ -48,6 +48,11 @@ export const ERROR_CODES = {
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
   INVALID_JSON: 'INVALID_JSON',
   STRIPE_UPDATE_FAILED: 'STRIPE_UPDATE_FAILED',
+  PARTITION_NOT_FOUND: 'PARTITION_NOT_FOUND',
+  PARTITION_NOT_OWNED: 'PARTITION_NOT_OWNED',
+  JOB_NOT_COMPLETED: 'JOB_NOT_COMPLETED',
+  PARTITION_ALREADY_SAVED: 'PARTITION_ALREADY_SAVED',
+  MUSICXML_UNAVAILABLE: 'MUSICXML_UNAVAILABLE',
 } as const
 
 export const ERROR_MESSAGES = {
@@ -83,4 +88,9 @@ export const ERROR_MESSAGES = {
   SERVICE_UNAVAILABLE: 'Service temporarily unavailable',
   INVALID_JSON: 'Invalid JSON in request body',
   STRIPE_UPDATE_FAILED: 'Failed to update subscription in Stripe',
+  PARTITION_NOT_FOUND: 'Partition not found',
+  PARTITION_NOT_OWNED: 'You do not own this partition',
+  JOB_NOT_COMPLETED: 'Job is not completed',
+  PARTITION_ALREADY_SAVED: 'Partition already saved',
+  MUSICXML_UNAVAILABLE: 'MusicXML content unavailable',
 } as const

@@ -5,31 +5,21 @@ import {
   PLAN_FEATURES,
   PLAN_PRICING,
 } from '@/server/domains/subscription/subscription.constants'
-import { auth } from '@/server/lib/auth'
-import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
-import {
-  createErrorResponse,
-  createSuccessResponse,
-} from '@/server/shared/utils/api.utils'
+import { validateApiAuth } from '@/server/shared/middleware/auth.middleware'
+import { createSuccessResponse } from '@/server/shared/utils/api.utils'
 
-export async function GET() {
-  const session = await auth()
+export async function GET(request: NextRequest) {
+  const auth = await validateApiAuth(request)
+  if (!auth.ok) return auth.response
 
-  if (!session?.user?.id) {
-    return createErrorResponse(
-      'UNAUTHORIZED',
-      undefined,
-      undefined,
-      HTTP_STATUS.UNAUTHORIZED,
-    )
-  }
+  const { session } = auth
 
   if (session.devMode?.isActive) {
     const tier = session.devMode.subscription.tier
     const features = PLAN_FEATURES[tier]
     const pricing = PLAN_PRICING[tier]
 
-    const mockSubscription = {
+    return createSuccessResponse({
       hasActiveSubscription: true,
       subscription: {
         id: 'dev_mode_subscription',
@@ -51,29 +41,18 @@ export async function GET() {
         },
       },
       invoices: [],
-    }
-
-    return createSuccessResponse(mockSubscription, HTTP_STATUS.OK)
+    })
   }
 
   return subscriptionController.getUserSubscription(session.user.id)
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth()
-
-  if (!session?.user?.id || !session?.user?.email) {
-    return createErrorResponse(
-      'UNAUTHORIZED',
-      undefined,
-      undefined,
-      HTTP_STATUS.UNAUTHORIZED,
-    )
-  }
-
+  const auth = await validateApiAuth(request)
+  if (!auth.ok) return auth.response
   return subscriptionController.createCheckoutSession(
-    session.user.id,
-    session.user.email,
+    auth.session.user.id,
+    auth.session.user.email,
     request,
   )
 }

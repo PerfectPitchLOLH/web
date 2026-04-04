@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server'
 
 import { notificationService } from '@/server/domains/notification'
 import { auth } from '@/server/lib/auth'
+import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
+import { createErrorResponse } from '@/server/shared/utils/api.utils'
 
 const clients = new Map<string, ReadableStreamDefaultController>()
 
@@ -11,7 +13,12 @@ export async function GET(request: NextRequest) {
   const session = await auth()
 
   if (!session?.user?.id) {
-    return new Response('Unauthorized', { status: 401 })
+    return createErrorResponse(
+      'UNAUTHORIZED',
+      undefined,
+      undefined,
+      HTTP_STATUS.UNAUTHORIZED,
+    )
   }
 
   const userId = session.user.id

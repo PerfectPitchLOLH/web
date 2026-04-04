@@ -1,67 +1,39 @@
 import { NextRequest } from 'next/server'
 
 import { notificationController } from '@/server/domains/notification'
-import { auth } from '@/server/lib/auth'
-import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
-import { createErrorResponse } from '@/server/shared/utils/api.utils'
+import { validateApiAuth } from '@/server/shared/middleware/auth.middleware'
 
 type RouteContext = {
   params: Promise<{ id: string }>
 }
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  const session = await auth()
-
-  if (!session?.user?.id) {
-    return createErrorResponse(
-      'UNAUTHORIZED',
-      undefined,
-      undefined,
-      HTTP_STATUS.UNAUTHORIZED,
-    )
-  }
-
+  const auth = await validateApiAuth(request)
+  if (!auth.ok) return auth.response
   const { id } = await context.params
-
-  return notificationController.getNotificationById(id, session.user.id)
+  return notificationController.getNotificationById(id, auth.session.user.id)
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const session = await auth()
-
-  if (!session?.user?.id) {
-    return createErrorResponse(
-      'UNAUTHORIZED',
-      undefined,
-      undefined,
-      HTTP_STATUS.UNAUTHORIZED,
-    )
-  }
-
+  const auth = await validateApiAuth(request)
+  if (!auth.ok) return auth.response
   const { id } = await context.params
-  const searchParams = request.nextUrl.searchParams
-  const action = searchParams.get('action')
+  const action = request.nextUrl.searchParams.get('action')
 
   if (action === 'mark-read') {
-    return notificationController.markAsRead(id, session.user.id)
+    return notificationController.markAsRead(id, auth.session.user.id)
   }
 
-  return notificationController.updateNotification(id, session.user.id, request)
+  return notificationController.updateNotification(
+    id,
+    auth.session.user.id,
+    request,
+  )
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
-  const session = await auth()
-
-  if (!session?.user?.id) {
-    return createErrorResponse(
-      'UNAUTHORIZED',
-      undefined,
-      undefined,
-      HTTP_STATUS.UNAUTHORIZED,
-    )
-  }
-
+  const auth = await validateApiAuth(request)
+  if (!auth.ok) return auth.response
   const { id } = await context.params
-
-  return notificationController.deleteNotification(id, session.user.id)
+  return notificationController.deleteNotification(id, auth.session.user.id)
 }

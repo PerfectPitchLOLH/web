@@ -1,22 +1,14 @@
+import { NextRequest } from 'next/server'
+
 import { creditController } from '@/server/domains/credit'
-import { auth } from '@/server/lib/auth'
-import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
-import {
-  createErrorResponse,
-  createSuccessResponse,
-} from '@/server/shared/utils/api.utils'
+import { validateApiAuth } from '@/server/shared/middleware/auth.middleware'
+import { createSuccessResponse } from '@/server/shared/utils/api.utils'
 
-export async function GET() {
-  const session = await auth()
+export async function GET(request: NextRequest) {
+  const auth = await validateApiAuth(request)
+  if (!auth.ok) return auth.response
 
-  if (!session?.user?.id) {
-    return createErrorResponse(
-      'UNAUTHORIZED',
-      undefined,
-      undefined,
-      HTTP_STATUS.UNAUTHORIZED,
-    )
-  }
+  const { session } = auth
 
   if (session.devMode?.isActive) {
     const monthlyCreditsInSeconds = session.devMode.credits.monthly * 60
@@ -24,7 +16,7 @@ export async function GET() {
     const totalCreditsInSeconds =
       monthlyCreditsInSeconds + bonusCreditsInSeconds
 
-    const mockCredits = {
+    return createSuccessResponse({
       monthlyCredits: monthlyCreditsInSeconds,
       bonusCredits: bonusCreditsInSeconds,
       totalCredits: totalCreditsInSeconds,
@@ -35,9 +27,7 @@ export async function GET() {
         lowBalance: totalCreditsInSeconds < 10 * 60,
         outOfCredits: totalCreditsInSeconds === 0,
       },
-    }
-
-    return createSuccessResponse(mockCredits, HTTP_STATUS.OK)
+    })
   }
 
   return creditController.getUserCredits(session.user.id)
