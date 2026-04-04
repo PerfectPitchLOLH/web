@@ -10,10 +10,11 @@ import type {
 
 export const STEPS: ProcessingStep[] = [
   'preprocessing',
-  'separating',
-  'transcribing',
-  'generating',
-  'completed',
+  'separation',
+  'transcription',
+  'musicxml',
+  'score',
+  'svg',
 ]
 
 export const INSTRUMENT_TO_STEM: Record<InstrumentType, TargetStem> = {
@@ -45,7 +46,7 @@ export const PARTITION_TYPE_LABELS: Record<PartitionType, string> = {
 
 export const STEP_ICONS: Partial<Record<ProcessingStep, LucideIcon>> = {
   preprocessing: Wand2,
-  separating: Layers,
-  transcribing: Mic,
-  generating: FileText,
+  separation: Layers,
+  transcription: Mic,
+  score: FileText,
 }

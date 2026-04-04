@@ -24,18 +24,18 @@ const WS_BASE_URL = (
   .replace(/^https:\/\//, 'wss://')
   .replace(/^http:\/\//, 'ws://')
 
-const BACKEND_STEP_MAP: Record<string, ProcessingStep> = {
-  preprocessing: 'preprocessing',
-  separating: 'separating',
-  transcribing: 'transcribing',
-  generating: 'generating',
-  svg: 'generating',
-  completed: 'completed',
-}
+const VALID_STEPS = new Set<ProcessingStep>([
+  'preprocessing',
+  'separation',
+  'transcription',
+  'musicxml',
+  'score',
+  'svg',
+])
 
 function normalizeStep(raw: unknown): ProcessingStep | null {
   if (typeof raw !== 'string') return null
-  return BACKEND_STEP_MAP[raw] ?? null
+  return VALID_STEPS.has(raw as ProcessingStep) ? (raw as ProcessingStep) : null
 }
 
 export function useJobProgress(jobId: string | null): UseJobProgressReturn {

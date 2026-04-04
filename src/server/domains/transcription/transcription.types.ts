@@ -18,10 +18,11 @@ export type TargetStem = 'bass' | 'vocals' | 'drums' | 'other'
 export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed'
 export type ProcessingStep =
   | 'preprocessing'
-  | 'separating'
-  | 'transcribing'
-  | 'generating'
-  | 'completed'
+  | 'separation'
+  | 'transcription'
+  | 'musicxml'
+  | 'score'
+  | 'svg'
 
 // ============================================================================
 // Configuration Types (FastAPI Backend)
@@ -132,10 +133,11 @@ export const AUDIO_FORMATS = [
 
 export const PROCESSING_STEP_LABELS: Record<ProcessingStep, string> = {
   preprocessing: 'Préparation...',
-  separating: 'Séparation des pistes...',
-  transcribing: 'Transcription...',
-  generating: 'Génération de la partition...',
-  completed: 'Terminé !',
+  separation: 'Séparation des pistes...',
+  transcription: 'Transcription...',
+  musicxml: 'Génération MusicXML...',
+  score: 'Génération de la partition...',
+  svg: 'Rendu final...',
 } as const
 
 export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
