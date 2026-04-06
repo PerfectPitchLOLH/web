@@ -16,6 +16,7 @@ interface UseJobProgressReturn {
   results: JobResults | null
   error: string | null
   isConnected: boolean
+  isInitialLoading: boolean
 }
 
 const WS_BASE_URL = (
@@ -45,6 +46,7 @@ export function useJobProgress(jobId: string | null): UseJobProgressReturn {
   const [results, setResults] = useState<JobResults | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
+  const [isInitialLoading, setIsInitialLoading] = useState(false)
 
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -54,24 +56,25 @@ export function useJobProgress(jobId: string | null): UseJobProgressReturn {
   const MAX_RECONNECT_ATTEMPTS = 3
   const RECONNECT_DELAY = 2000
 
-  const fetchFinalStatus = useCallback(async (id: string) => {
+  const fetchCurrentStatus = useCallback(async (id: string) => {
     try {
       const response = await fetch(`/api/transcription/${id}`)
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.data) {
-          if (data.data.results) {
-            setResults(data.data.results)
-          }
-          const finalStep = normalizeStep(data.data.current_step)
-          if (finalStep !== null) setStep(finalStep)
-          setStatus(data.data.status)
-          statusRef.current = data.data.status
-          setProgress(100)
+          const job = data.data
+          if (job.results) setResults(job.results)
+          const currentStep = normalizeStep(job.current_step)
+          if (currentStep !== null) setStep(currentStep)
+          setStatus(job.status)
+          statusRef.current = job.status
+          setProgress(job.status === 'completed' ? 100 : (job.progress ?? 0))
+          if (job.error) setError(job.error)
         }
       }
-    } catch (err) {
-      console.error('Failed to fetch final status:', err)
+    } catch {
+    } finally {
+      setIsInitialLoading(false)
     }
   }, [])
 
@@ -82,15 +85,10 @@ export function useJobProgress(jobId: string | null): UseJobProgressReturn {
       }
 
       try {
-        console.log(
-          '[useJobProgress] Attempting WebSocket connection:',
-          `${WS_BASE_URL}/jobs/${id}/stream`,
-        )
         const ws = new WebSocket(`${WS_BASE_URL}/jobs/${id}/stream`)
         wsRef.current = ws
 
         ws.onopen = () => {
-          console.log('[useJobProgress] WebSocket connected!')
           setIsConnected(true)
           reconnectAttemptsRef.current = 0
         }
@@ -112,7 +110,7 @@ export function useJobProgress(jobId: string | null): UseJobProgressReturn {
             }
 
             if (data.status === 'completed' || data.status === 'failed') {
-              fetchFinalStatus(id)
+              fetchCurrentStatus(id)
             }
           } catch (err) {
             console.error(
@@ -122,37 +120,32 @@ export function useJobProgress(jobId: string | null): UseJobProgressReturn {
           }
         }
 
-        ws.onerror = (err) => {
-          console.error('[useJobProgress] WebSocket error:', err)
+        ws.onerror = () => {
           setIsConnected(false)
-          setError('Erreur de connexion WebSocket')
         }
 
         ws.onclose = () => {
-          console.log('[useJobProgress] WebSocket closed')
           setIsConnected(false)
 
           if (
             statusRef.current !== 'completed' &&
-            statusRef.current !== 'failed' &&
-            reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS
+            statusRef.current !== 'failed'
           ) {
-            reconnectAttemptsRef.current += 1
-            console.log(
-              `[useJobProgress] Reconnecting attempt ${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS}`,
-            )
-
-            reconnectTimeoutRef.current = setTimeout(() => {
-              connectWebSocket(id)
-            }, RECONNECT_DELAY)
+            if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+              reconnectAttemptsRef.current += 1
+              reconnectTimeoutRef.current = setTimeout(() => {
+                connectWebSocket(id)
+              }, RECONNECT_DELAY)
+            } else {
+              fetchCurrentStatus(id)
+            }
           }
         }
-      } catch (err) {
-        console.error('[useJobProgress] WebSocket creation failed:', err)
-        setError('Impossible de créer la connexion WebSocket')
+      } catch {
+        fetchCurrentStatus(id)
       }
     },
-    [fetchFinalStatus],
+    [fetchCurrentStatus],
   )
 
   useEffect(() => {
@@ -160,6 +153,8 @@ export function useJobProgress(jobId: string | null): UseJobProgressReturn {
       return
     }
 
+    setIsInitialLoading(true)
+    fetchCurrentStatus(jobId)
     connectWebSocket(jobId)
 
     return () => {
@@ -172,7 +167,7 @@ export function useJobProgress(jobId: string | null): UseJobProgressReturn {
         reconnectTimeoutRef.current = null
       }
     }
-  }, [jobId, connectWebSocket])
+  }, [jobId, connectWebSocket, fetchCurrentStatus])
 
   return {
     progress,
@@ -181,5 +176,6 @@ export function useJobProgress(jobId: string | null): UseJobProgressReturn {
     results,
     error,
     isConnected,
+    isInitialLoading,
   }
 }

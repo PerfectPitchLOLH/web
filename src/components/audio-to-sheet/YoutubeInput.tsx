@@ -76,7 +76,7 @@ export function YoutubeInput({
       setIsFetching(true)
       try {
         const res = await fetch(
-          `https://www.youtube.com/oembed?url=${encodeURIComponent(urlValue)}&format=json`,
+          `/api/youtube/oembed?url=${encodeURIComponent(urlValue)}`,
         )
         if (!res.ok) throw new Error('not found')
         const data: OEmbedData = await res.json()

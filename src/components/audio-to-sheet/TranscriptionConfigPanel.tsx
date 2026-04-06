@@ -22,7 +22,7 @@ import type {
 interface TranscriptionConfigPanelProps {
   config: TranscribeConfig
   onConfigChange: (config: TranscribeConfig) => void
-  selectedFile: File | null
+  hasSource: boolean
   isProcessing: boolean
   error: string | null
   onTranscribe: () => void
@@ -31,7 +31,7 @@ interface TranscriptionConfigPanelProps {
 export function TranscriptionConfigPanel({
   config,
   onConfigChange,
-  selectedFile,
+  hasSource,
   isProcessing,
   error,
   onTranscribe,
@@ -184,7 +184,7 @@ export function TranscriptionConfigPanel({
       </div>
 
       <Button
-        disabled={!selectedFile || isProcessing}
+        disabled={!hasSource || isProcessing}
         className="w-full h-10"
         onClick={onTranscribe}
       >

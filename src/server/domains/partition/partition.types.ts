@@ -13,7 +13,7 @@ export type CreatePartitionDTO = {
   tags?: string[]
   notes?: string
   transcribeConfig: TranscribeConfig
-  musicXmlContent: string
+  musicXmlContent?: string
   svgContent?: string
   sourceJobId?: string
   durationSeconds?: number

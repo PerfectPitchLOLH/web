@@ -18,12 +18,12 @@ import type {
 import { useJobProgress } from './useJobProgress'
 
 interface UseTranscriptionReturn {
-  transcribe: (file: File, config: TranscribeConfig) => Promise<void>
+  transcribe: (file: File, config: TranscribeConfig) => Promise<string | null>
   transcribeFromYoutube: (
     url: string,
     videoTitle: string,
     config: TranscribeConfig,
-  ) => Promise<void>
+  ) => Promise<string | null>
   resumeSession: () => void
   cancel: () => Promise<void>
   jobId: string | null
@@ -63,9 +63,21 @@ export function useTranscription(): UseTranscriptionReturn {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const session = readSession()
-      if (session) {
-        setSessionToResume(session)
-      }
+      if (!session) return
+      setSessionToResume(session)
+      fetch(`/api/transcription/${session.jobId}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.success && data?.data?.status) {
+            const realStatus = data.data.status
+            if (realStatus !== session.status) {
+              const updated = { ...session, status: realStatus }
+              writeSession(updated)
+              setSessionToResume(updated)
+            }
+          }
+        })
+        .catch(() => {})
     }
   }, [])
 
@@ -83,6 +95,12 @@ export function useTranscription(): UseTranscriptionReturn {
       }
     }
   }, [status, jobId])
+
+  useEffect(() => {
+    if (results?.title) {
+      setJobTitle(results.title)
+    }
+  }, [results])
 
   const transcribe = useCallback(
     async (file: File, config: TranscribeConfig) => {
@@ -124,6 +142,7 @@ export function useTranscription(): UseTranscriptionReturn {
               title,
             })
           }
+          return newJobId
         } else {
           throw new Error(data.error || 'Invalid response from server')
         }
@@ -132,6 +151,7 @@ export function useTranscription(): UseTranscriptionReturn {
           err instanceof Error ? err.message : 'An error occurred'
         setError(errorMessage)
       }
+      return null
     },
     [],
   )
@@ -173,6 +193,7 @@ export function useTranscription(): UseTranscriptionReturn {
               title,
             })
           }
+          return newJobId
         } else {
           throw new Error(data.error || 'Invalid response from server')
         }
@@ -181,6 +202,7 @@ export function useTranscription(): UseTranscriptionReturn {
           err instanceof Error ? err.message : 'An error occurred'
         setError(errorMessage)
       }
+      return null
     },
     [],
   )

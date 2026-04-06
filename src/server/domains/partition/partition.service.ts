@@ -1,5 +1,8 @@
 import { db } from '@/server/lib/database'
-import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
+import {
+  ERROR_CODES,
+  HTTP_STATUS,
+} from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
 import type { PartitionRepository } from './partition.repository'
@@ -21,63 +24,68 @@ export class PartitionService {
     userId: string,
     input: SavePartitionInput,
   ): Promise<PartitionSummary> {
-    if (await this.repository.existsByJobIdAndUserId(input.jobId, userId)) {
+    const existing = await this.repository.findByJobIdAndUserId(
+      input.jobId,
+      userId,
+    )
+    if (existing) {
       throw new ApiError(
-        'PARTITION_ALREADY_SAVED',
+        ERROR_CODES.PARTITION_ALREADY_SAVED,
         HTTP_STATUS.CONFLICT,
         'Partition already saved',
+        { id: existing.id },
       )
     }
 
     const jobOwnerRecord = await db.transcriptionJob.findUnique({
       where: { backendJobId: input.jobId },
+      select: { userId: true, musicXmlContent: true, svgContent: true },
     })
     if (!jobOwnerRecord || jobOwnerRecord.userId !== userId) {
-      throw new ApiError('FORBIDDEN', HTTP_STATUS.FORBIDDEN, 'Access denied')
+      throw new ApiError(
+        ERROR_CODES.FORBIDDEN,
+        HTTP_STATUS.FORBIDDEN,
+        'Access denied',
+      )
     }
 
     const jobRes = await fetch(`${API_BASE_URL}/jobs/${input.jobId}`)
     if (!jobRes.ok) {
-      throw new ApiError('NOT_FOUND', HTTP_STATUS.NOT_FOUND, 'Job not found')
+      throw new ApiError(
+        ERROR_CODES.NOT_FOUND,
+        HTTP_STATUS.NOT_FOUND,
+        'Job not found',
+      )
     }
     const job = await jobRes.json()
 
     if (job.status !== 'completed') {
       throw new ApiError(
-        'JOB_NOT_COMPLETED',
+        ERROR_CODES.JOB_NOT_COMPLETED,
         HTTP_STATUS.BAD_REQUEST,
         'Job is not completed',
       )
     }
 
-    let musicXmlContent = ''
-    let svgContent: string | undefined
+    const musicXmlContent = jobOwnerRecord.musicXmlContent ?? undefined
+    let svgContent: string | undefined = jobOwnerRecord.svgContent ?? undefined
 
-    try {
-      const xmlRes = await fetch(
-        `${API_BASE_URL}/jobs/${input.jobId}/download/musicxml`,
-      )
-      if (xmlRes.ok) {
-        musicXmlContent = await xmlRes.text()
-      }
-    } catch {}
-
-    if (!musicXmlContent) {
-      throw new ApiError(
-        'MUSICXML_UNAVAILABLE',
-        HTTP_STATUS.BAD_REQUEST,
-        'MusicXML content unavailable',
-      )
+    if (!svgContent) {
+      try {
+        const svgRes = await fetch(
+          `${API_BASE_URL}/jobs/${input.jobId}/download/partition`,
+        )
+        if (svgRes.ok) svgContent = await svgRes.text()
+      } catch {}
     }
 
-    try {
-      const svgRes = await fetch(
-        `${API_BASE_URL}/jobs/${input.jobId}/download/partition`,
+    if (!svgContent) {
+      throw new ApiError(
+        ERROR_CODES.SERVICE_UNAVAILABLE,
+        HTTP_STATUS.SERVICE_UNAVAILABLE,
+        'Partition content unavailable',
       )
-      if (svgRes.ok) {
-        svgContent = await svgRes.text()
-      }
-    } catch {}
+    }
 
     const config = job.config || {}
     const instrument = config.instrument_type || 'other'
@@ -117,7 +125,7 @@ export class PartitionService {
   async getById(id: string, userId: string): Promise<SavedPartitionEntity> {
     const partition = await this.repository.findByIdAndUserId(id, userId)
     if (!partition) {
-      throw new ApiError('PARTITION_NOT_FOUND', HTTP_STATUS.NOT_FOUND)
+      throw new ApiError(ERROR_CODES.PARTITION_NOT_FOUND, HTTP_STATUS.NOT_FOUND)
     }
     return partition
   }
@@ -125,7 +133,7 @@ export class PartitionService {
   async getSvg(id: string, userId: string): Promise<string> {
     const data = await this.repository.findSvgByIdAndUserId(id, userId)
     if (!data) {
-      throw new ApiError('PARTITION_NOT_FOUND', HTTP_STATUS.NOT_FOUND)
+      throw new ApiError(ERROR_CODES.PARTITION_NOT_FOUND, HTTP_STATUS.NOT_FOUND)
     }
 
     if (data.svgContent) {
@@ -139,7 +147,10 @@ export class PartitionService {
     })
 
     if (!renderRes.ok) {
-      throw new ApiError('SERVICE_UNAVAILABLE', HTTP_STATUS.SERVICE_UNAVAILABLE)
+      throw new ApiError(
+        ERROR_CODES.SERVICE_UNAVAILABLE,
+        HTTP_STATUS.SERVICE_UNAVAILABLE,
+      )
     }
 
     const svg = await renderRes.text()
@@ -152,7 +163,14 @@ export class PartitionService {
   async getMusicXml(id: string, userId: string): Promise<string> {
     const partition = await this.repository.findByIdAndUserId(id, userId)
     if (!partition) {
-      throw new ApiError('PARTITION_NOT_FOUND', HTTP_STATUS.NOT_FOUND)
+      throw new ApiError(ERROR_CODES.PARTITION_NOT_FOUND, HTTP_STATUS.NOT_FOUND)
+    }
+    if (!partition.musicXmlContent) {
+      throw new ApiError(
+        ERROR_CODES.MUSICXML_UNAVAILABLE,
+        HTTP_STATUS.NOT_FOUND,
+        'MusicXML not available for this partition',
+      )
     }
     return partition.musicXmlContent
   }
@@ -164,7 +182,7 @@ export class PartitionService {
   ): Promise<SavedPartitionEntity> {
     const updated = await this.repository.update(id, userId, data)
     if (!updated) {
-      throw new ApiError('PARTITION_NOT_FOUND', HTTP_STATUS.NOT_FOUND)
+      throw new ApiError(ERROR_CODES.PARTITION_NOT_FOUND, HTTP_STATUS.NOT_FOUND)
     }
     return updated
   }
@@ -172,7 +190,7 @@ export class PartitionService {
   async delete(id: string, userId: string): Promise<void> {
     const deleted = await this.repository.delete(id, userId)
     if (!deleted) {
-      throw new ApiError('PARTITION_NOT_FOUND', HTTP_STATUS.NOT_FOUND)
+      throw new ApiError(ERROR_CODES.PARTITION_NOT_FOUND, HTTP_STATUS.NOT_FOUND)
     }
   }
 }

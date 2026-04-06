@@ -1,7 +1,7 @@
 'use client'
 
 import { BookmarkPlus, Loader2, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
@@ -40,6 +40,12 @@ export function SavePartitionDialog({
   const [notes, setNotes] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [titleError, setTitleError] = useState('')
+
+  useEffect(() => {
+    if (!open) {
+      setTitle(defaultTitle)
+    }
+  }, [defaultTitle, open])
 
   const addTag = () => {
     const trimmed = tagInput.trim()
@@ -85,6 +91,18 @@ export function SavePartitionDialog({
       })
 
       const data = await response.json()
+
+      if (
+        response.status === 409 &&
+        data.error?.code === 'PARTITION_ALREADY_SAVED'
+      ) {
+        const existingId = data.error?.details?.id
+        if (existingId) {
+          onSaved(existingId)
+          onOpenChange(false)
+          return
+        }
+      }
 
       if (!response.ok) {
         throw new Error(data.error?.message || 'Erreur lors de la sauvegarde')

@@ -58,10 +58,15 @@ export class PartitionRepository {
     id: string,
     userId: string,
   ): Promise<{ svgContent: string | null; musicXmlContent: string } | null> {
-    return db.savedPartition.findFirst({
+    const data = await db.savedPartition.findFirst({
       where: { id, userId },
       select: { svgContent: true, musicXmlContent: true },
     })
+    if (!data || !data.musicXmlContent) return null
+    return {
+      svgContent: data.svgContent,
+      musicXmlContent: data.musicXmlContent,
+    }
   }
 
   async create(data: CreatePartitionDTO): Promise<SavedPartitionEntity> {
@@ -114,6 +119,16 @@ export class PartitionRepository {
 
     await db.savedPartition.delete({ where: { id } })
     return true
+  }
+
+  async findByJobIdAndUserId(
+    jobId: string,
+    userId: string,
+  ): Promise<PartitionSummary | null> {
+    return db.savedPartition.findFirst({
+      where: { sourceJobId: jobId, userId },
+      select: SUMMARY_SELECT,
+    }) as unknown as PartitionSummary | null
   }
 
   async existsByJobIdAndUserId(

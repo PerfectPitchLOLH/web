@@ -1,11 +1,6 @@
 'use client'
 
-import {
-  BookmarkCheck,
-  BookmarkPlus,
-  CheckCircle2,
-  Loader2,
-} from 'lucide-react'
+import { BookmarkCheck, BookmarkPlus, Loader2, Music2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { SavePartitionDialog } from '@/components/partitions/SavePartitionDialog'
@@ -20,12 +15,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import type { TranscribeConfig } from '@/server/domains/transcription/transcription.types'
-
-import { INSTRUMENT_LABELS } from './audio-to-sheet.constants'
 
 interface TranscriptionResultViewProps {
   selectedFile: File | null
@@ -43,67 +34,54 @@ export function TranscriptionResultView({
   selectedFile,
   svgContent,
   savedPartitionId,
-  config,
   jobId,
   jobTitle,
-  durationSeconds,
   onReset,
   onSaved,
 }: TranscriptionResultViewProps) {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false)
 
+  const title =
+    jobTitle ?? selectedFile?.name.replace(/\.[^/.]+$/, '') ?? 'Transcription'
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden min-h-0">
-      <div className="flex items-center justify-between px-6 py-3 border-b shrink-0 gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-          <span className="font-medium truncate">
-            {selectedFile?.name.replace(/\.[^/.]+$/, '') ?? 'Transcription'}
-          </span>
-          <Separator orientation="vertical" className="h-4" />
-          <span className="text-sm text-muted-foreground shrink-0">
-            {durationSeconds.toFixed(1)}s
-          </span>
-          <Badge variant="secondary" className="shrink-0 capitalize">
-            {INSTRUMENT_LABELS[config.instrument_type]}
-          </Badge>
+      <div className="flex items-center justify-between px-5 h-12 shrink-0 bg-background/90 backdrop-blur-sm border-b">
+        <div className="flex items-center gap-2 min-w-0">
+          <Music2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <span className="text-sm font-medium truncate">{title}</span>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+
+        <div className="flex items-center gap-3 shrink-0">
           {savedPartitionId ? (
             <>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-green-600 hover:text-green-600"
-                disabled
-              >
-                <BookmarkCheck className="mr-1.5 h-4 w-4" />
+              <span className="flex items-center gap-1.5 text-sm text-green-600">
+                <BookmarkCheck className="h-3.5 w-3.5" />
                 Sauvegardée
-              </Button>
-              <Button variant="outline" size="sm" onClick={onReset}>
+              </span>
+              <Button size="sm" variant="outline" onClick={onReset}>
                 Nouvelle transcription
               </Button>
             </>
           ) : (
             <>
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => setDiscardDialogOpen(true)}
               >
                 Ignorer
-              </Button>
+              </button>
               <Button size="sm" onClick={() => setSaveDialogOpen(true)}>
-                <BookmarkPlus className="mr-1.5 h-4 w-4" />
-                Garder la partition
+                <BookmarkPlus className="h-3.5 w-3.5 mr-1.5" />
+                Sauvegarder
               </Button>
             </>
           )}
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto bg-muted/30">
+      <div className="flex-1 min-h-0 overflow-auto bg-muted/20">
         {svgContent ? (
           <ProtectedSheetMusic
             svgContent={svgContent}
@@ -113,8 +91,8 @@ export function TranscriptionResultView({
             }}
           />
         ) : (
-          <div className="flex h-full items-center justify-center gap-3 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
+          <div className="flex h-full items-center justify-center gap-2.5 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
             <span className="text-sm">Chargement de la partition...</span>
           </div>
         )}
@@ -141,11 +119,7 @@ export function TranscriptionResultView({
       <SavePartitionDialog
         open={saveDialogOpen}
         onOpenChange={setSaveDialogOpen}
-        defaultTitle={
-          jobTitle ??
-          selectedFile?.name.replace(/\.[^/.]+$/, '') ??
-          `Transcription du ${new Date().toLocaleDateString('fr-FR')}`
-        }
+        defaultTitle={title}
         jobId={jobId}
         originalFileName={selectedFile?.name}
         onSaved={onSaved}

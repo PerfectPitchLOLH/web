@@ -1,6 +1,7 @@
 'use client'
 
 import { CheckCircle2, Clock } from 'lucide-react'
+import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
 import type { TranscriptionSession } from '@/lib/transcription-session'
@@ -8,13 +9,13 @@ import { formatSessionAge } from '@/lib/transcription-session'
 
 interface ResumeBannerProps {
   session: TranscriptionSession
-  onResume: () => void
+  resumeHref: string
   onDismiss: () => void
 }
 
 export function ResumeBanner({
   session,
-  onResume,
+  resumeHref,
   onDismiss,
 }: ResumeBannerProps) {
   const isCompleted = session.status === 'completed'
@@ -40,8 +41,10 @@ export function ResumeBanner({
         </p>
       </div>
       <div className="flex gap-2 shrink-0">
-        <Button size="sm" onClick={onResume}>
-          {isCompleted ? 'Reprendre la partition' : "Suivre l'avancement"}
+        <Button size="sm" asChild>
+          <Link href={resumeHref}>
+            {isCompleted ? 'Voir la partition' : "Suivre l'avancement"}
+          </Link>
         </Button>
         <Button size="sm" variant="outline" onClick={onDismiss}>
           {isCompleted ? 'Nouvelle transcription' : 'Annuler et recommencer'}

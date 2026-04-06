@@ -1,19 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
+import { useCallback, useState } from 'react'
 
 import { INSTRUMENT_TO_STEM } from '@/components/audio-to-sheet/audio-to-sheet.constants'
 import { AudioDropzone } from '@/components/audio-to-sheet/AudioDropzone'
 import { ResumeBanner } from '@/components/audio-to-sheet/ResumeBanner'
 import { TranscriptionConfigPanel } from '@/components/audio-to-sheet/TranscriptionConfigPanel'
-import { TranscriptionFailedView } from '@/components/audio-to-sheet/TranscriptionFailedView'
-import { TranscriptionProcessingView } from '@/components/audio-to-sheet/TranscriptionProcessingView'
-import { TranscriptionResultView } from '@/components/audio-to-sheet/TranscriptionResultView'
 import { YoutubeInput } from '@/components/audio-to-sheet/YoutubeInput'
-import { useSvgContent } from '@/hooks/useSvgContent'
 import { useTranscription } from '@/hooks/useTranscription'
-import { clearSession } from '@/lib/transcription-session'
 import type {
   InputSource,
   TranscribeConfig,
@@ -27,50 +22,21 @@ const DEFAULT_CONFIG: TranscribeConfig = {
 }
 
 export default function AudioToSheetPage() {
-  const {
-    transcribe,
-    transcribeFromYoutube,
-    resumeSession,
-    cancel,
-    jobId,
-    jobTitle,
-    status,
-    progress,
-    currentStep,
-    results,
-    error,
-    isProcessing,
-    isCancelling,
-    sessionToResume,
-    reset,
-  } = useTranscription()
-
-  const svgContent = useSvgContent(results, jobId, status)
+  const router = useRouter()
+  const { transcribe, transcribeFromYoutube, sessionToResume, error, reset } =
+    useTranscription()
 
   const [inputSource, setInputSource] = useState<InputSource>(null)
   const [config, setConfig] = useState<TranscribeConfig>(DEFAULT_CONFIG)
-  const [savedPartitionId, setSavedPartitionId] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleReset = () => {
-    reset()
+  const handleYoutubeSelect = useCallback((url: string, videoTitle: string) => {
+    setInputSource({ type: 'youtube', url, videoTitle })
+  }, [])
+
+  const handleYoutubeRemove = useCallback(() => {
     setInputSource(null)
-    setSavedPartitionId(null)
-    setConfig(DEFAULT_CONFIG)
-  }
-
-  const handleSaved = (partitionId: string) => {
-    setSavedPartitionId(partitionId)
-    toast.success('Partition sauvegardée !', {
-      description: 'Retrouvez-la dans votre bibliothèque.',
-      action: {
-        label: 'Voir →',
-        onClick: () => {
-          window.location.href = '/dashboard/partitions'
-        },
-      },
-      duration: 6000,
-    })
-  }
+  }, [])
 
   const handleTranscribe = async () => {
     if (!inputSource) return
@@ -82,60 +48,35 @@ export default function AudioToSheetPage() {
       }),
     }
 
-    if (inputSource.type === 'file') {
-      await transcribe(inputSource.file, configToSend)
-    } else {
-      await transcribeFromYoutube(
-        inputSource.url,
-        inputSource.videoTitle,
-        configToSend,
-      )
+    setIsSubmitting(true)
+    try {
+      let jobId: string | null = null
+      if (inputSource.type === 'file') {
+        jobId = await transcribe(inputSource.file, configToSend)
+      } else {
+        jobId = await transcribeFromYoutube(
+          inputSource.url,
+          inputSource.videoTitle,
+          configToSend,
+        )
+      }
+
+      if (jobId) {
+        router.push(`/dashboard/audio-to-sheet/${jobId}`)
+      }
+    } finally {
+      setIsSubmitting(false)
     }
-  }
-
-  if (jobId && status === 'completed' && results) {
-    return (
-      <TranscriptionResultView
-        selectedFile={inputSource?.type === 'file' ? inputSource.file : null}
-        svgContent={svgContent}
-        savedPartitionId={savedPartitionId}
-        config={config}
-        jobId={jobId}
-        jobTitle={jobTitle}
-        durationSeconds={results.duration_seconds}
-        onReset={handleReset}
-        onSaved={handleSaved}
-      />
-    )
-  }
-
-  if (jobId && isProcessing) {
-    return (
-      <TranscriptionProcessingView
-        progress={progress}
-        currentStep={currentStep}
-        isCancelling={isCancelling}
-        error={error}
-        onCancel={cancel}
-      />
-    )
-  }
-
-  if (jobId && status === 'failed') {
-    return <TranscriptionFailedView error={error} onReset={handleReset} />
   }
 
   return (
     <div className="flex flex-1 flex-col min-h-0 overflow-auto">
-      {sessionToResume && !jobId && (
+      {sessionToResume && (
         <div className="px-6 pt-4 shrink-0">
           <ResumeBanner
             session={sessionToResume}
-            onResume={resumeSession}
-            onDismiss={() => {
-              clearSession()
-              reset()
-            }}
+            resumeHref={`/dashboard/audio-to-sheet/${sessionToResume.jobId}`}
+            onDismiss={reset}
           />
         </div>
       )}
@@ -174,11 +115,9 @@ export default function AudioToSheetPage() {
             <div className="flex-1 rounded-xl border bg-card p-4 flex flex-col justify-center">
               <YoutubeInput
                 inputSource={inputSource}
-                onYoutubeSelect={(url, videoTitle) =>
-                  setInputSource({ type: 'youtube', url, videoTitle })
-                }
-                onYoutubeRemove={() => setInputSource(null)}
-                disabled={isProcessing}
+                onYoutubeSelect={handleYoutubeSelect}
+                onYoutubeRemove={handleYoutubeRemove}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -188,7 +127,7 @@ export default function AudioToSheetPage() {
           config={config}
           onConfigChange={setConfig}
           hasSource={inputSource !== null}
-          isProcessing={isProcessing}
+          isProcessing={isSubmitting}
           error={error}
           onTranscribe={handleTranscribe}
         />

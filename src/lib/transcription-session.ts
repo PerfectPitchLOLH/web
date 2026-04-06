@@ -5,6 +5,7 @@ export type TranscriptionSession = {
   timestamp: number
   status: JobStatus
   title?: string
+  savedPartitionId?: string
 }
 
 const SESSION_KEY = 'transcription_job_id'

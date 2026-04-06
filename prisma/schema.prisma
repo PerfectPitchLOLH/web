@@ -311,11 +311,13 @@ model Notification {
 }
 
 model TranscriptionJob {
-  id           String   @id @default(cuid())
-  backendJobId String   @unique
-  userId       String
-  createdAt    DateTime @default(now())
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  backendJobId    String   @unique
+  userId          String
+  musicXmlContent String?
+  svgContent      String?
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([backendJobId])
   @@index([userId])
@@ -335,7 +337,7 @@ model SavedPartition {
 
   transcribeConfig Json
 
-  musicXmlContent  String
+  musicXmlContent  String?
   svgContent       String?
 
   sourceJobId      String?

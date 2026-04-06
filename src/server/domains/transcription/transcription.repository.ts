@@ -108,11 +108,14 @@ export class TranscriptionRepository {
   async getJobStatus(jobId: string): Promise<JobDetails> {
     const response = await this.callBackendAPI<any>(`/jobs/${jobId}`)
 
+    let musicxmlUrl: string | undefined
+    let partitionUrl: string | undefined
+
     if (response.results) {
-      if (
-        response.results.partition_url ||
-        response.results.partition_svg_url
-      ) {
+      partitionUrl =
+        response.results.partition_url || response.results.partition_svg_url
+
+      if (partitionUrl) {
         response.results.partition_svg_url = `/api/transcription/${jobId}/download`
       }
 
@@ -120,7 +123,51 @@ export class TranscriptionRepository {
       delete response.results.musicxml_url
     }
 
+    if (response.status === 'completed') {
+      const existing = await db.transcriptionJob.findUnique({
+        where: { backendJobId: jobId },
+        select: { svgContent: true },
+      })
+      if (!existing?.svgContent) {
+        await this.cacheJobContent(jobId, partitionUrl)
+      }
+    }
+
     return response as JobDetails
+  }
+
+  private async cacheJobContent(
+    jobId: string,
+    partitionUrl?: string,
+  ): Promise<void> {
+    let svgContent: string | undefined
+
+    const resolveUrl = (url: string) =>
+      url.startsWith('http')
+        ? url
+        : `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`
+
+    const svgUrls = [
+      partitionUrl && resolveUrl(partitionUrl),
+      `${API_BASE_URL}/jobs/${jobId}/download/partition`,
+    ].filter(Boolean) as string[]
+
+    for (const url of svgUrls) {
+      try {
+        const res = await fetch(url)
+        if (res.ok) {
+          svgContent = await res.text()
+          break
+        }
+      } catch {}
+    }
+
+    if (svgContent) {
+      await db.transcriptionJob.update({
+        where: { backendJobId: jobId },
+        data: { svgContent },
+      })
+    }
   }
 
   async downloadPartition(jobId: string): Promise<Blob> {

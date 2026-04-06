@@ -48,6 +48,7 @@ export type TranscribeResponse = {
 export type JobResults = {
   partition_svg_url: string
   duration_seconds: number
+  title?: string
 }
 
 export type JobDetails = {
