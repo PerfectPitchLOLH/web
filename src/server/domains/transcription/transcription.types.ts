@@ -119,6 +119,19 @@ export type TranscriptionFilters = {
 // Constants
 // ============================================================================
 
+export type YoutubeTranscribeRequest = {
+  url: string
+  config: TranscribeConfig
+}
+
+export const YOUTUBE_URL_REGEX =
+  /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[\w-]{11}/
+
+export type InputSource =
+  | { type: 'file'; file: File }
+  | { type: 'youtube'; url: string; videoTitle: string }
+  | null
+
 export const AUDIO_FORMATS = [
   'audio/mpeg',
   'audio/wav',

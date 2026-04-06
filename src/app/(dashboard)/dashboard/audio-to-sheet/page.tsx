@@ -10,10 +10,14 @@ import { TranscriptionConfigPanel } from '@/components/audio-to-sheet/Transcript
 import { TranscriptionFailedView } from '@/components/audio-to-sheet/TranscriptionFailedView'
 import { TranscriptionProcessingView } from '@/components/audio-to-sheet/TranscriptionProcessingView'
 import { TranscriptionResultView } from '@/components/audio-to-sheet/TranscriptionResultView'
+import { YoutubeInput } from '@/components/audio-to-sheet/YoutubeInput'
 import { useSvgContent } from '@/hooks/useSvgContent'
 import { useTranscription } from '@/hooks/useTranscription'
 import { clearSession } from '@/lib/transcription-session'
-import type { TranscribeConfig } from '@/server/domains/transcription/transcription.types'
+import type {
+  InputSource,
+  TranscribeConfig,
+} from '@/server/domains/transcription/transcription.types'
 
 const DEFAULT_CONFIG: TranscribeConfig = {
   instrument_mode: 'single',
@@ -25,6 +29,7 @@ const DEFAULT_CONFIG: TranscribeConfig = {
 export default function AudioToSheetPage() {
   const {
     transcribe,
+    transcribeFromYoutube,
     resumeSession,
     cancel,
     jobId,
@@ -42,13 +47,13 @@ export default function AudioToSheetPage() {
 
   const svgContent = useSvgContent(results, jobId, status)
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [inputSource, setInputSource] = useState<InputSource>(null)
   const [config, setConfig] = useState<TranscribeConfig>(DEFAULT_CONFIG)
   const [savedPartitionId, setSavedPartitionId] = useState<string | null>(null)
 
   const handleReset = () => {
     reset()
-    setSelectedFile(null)
+    setInputSource(null)
     setSavedPartitionId(null)
     setConfig(DEFAULT_CONFIG)
   }
@@ -68,20 +73,30 @@ export default function AudioToSheetPage() {
   }
 
   const handleTranscribe = async () => {
-    if (!selectedFile) return
+    if (!inputSource) return
+
     const configToSend: TranscribeConfig = {
       ...config,
       ...(config.instrument_mode === 'multiple' && {
         target_stem: INSTRUMENT_TO_STEM[config.instrument_type],
       }),
     }
-    await transcribe(selectedFile, configToSend)
+
+    if (inputSource.type === 'file') {
+      await transcribe(inputSource.file, configToSend)
+    } else {
+      await transcribeFromYoutube(
+        inputSource.url,
+        inputSource.videoTitle,
+        configToSend,
+      )
+    }
   }
 
   if (jobId && status === 'completed' && results) {
     return (
       <TranscriptionResultView
-        selectedFile={selectedFile}
+        selectedFile={inputSource?.type === 'file' ? inputSource.file : null}
         svgContent={svgContent}
         savedPartitionId={savedPartitionId}
         config={config}
@@ -132,19 +147,47 @@ export default function AudioToSheetPage() {
               Audio vers Partition
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Convertissez un fichier audio en partition musicale
+              Convertissez un fichier audio ou une vidéo YouTube en partition
+              musicale
             </p>
           </div>
-          <AudioDropzone
-            selectedFile={selectedFile}
-            onFileSelect={setSelectedFile}
-            onFileRemove={() => setSelectedFile(null)}
-          />
+
+          <div className="flex flex-col md:flex-row gap-4 items-stretch">
+            <div className="flex-1">
+              <AudioDropzone
+                selectedFile={
+                  inputSource?.type === 'file' ? inputSource.file : null
+                }
+                onFileSelect={(file) => setInputSource({ type: 'file', file })}
+                onFileRemove={() => setInputSource(null)}
+              />
+            </div>
+
+            <div className="flex items-center justify-center md:flex-col gap-2 shrink-0">
+              <div className="flex-1 md:w-px md:h-full w-full h-px bg-border" />
+              <span className="text-xs text-muted-foreground font-medium px-1">
+                ou
+              </span>
+              <div className="flex-1 md:w-px md:h-full w-full h-px bg-border" />
+            </div>
+
+            <div className="flex-1 rounded-xl border bg-card p-4 flex flex-col justify-center">
+              <YoutubeInput
+                inputSource={inputSource}
+                onYoutubeSelect={(url, videoTitle) =>
+                  setInputSource({ type: 'youtube', url, videoTitle })
+                }
+                onYoutubeRemove={() => setInputSource(null)}
+                disabled={isProcessing}
+              />
+            </div>
+          </div>
         </div>
+
         <TranscriptionConfigPanel
           config={config}
           onConfigChange={setConfig}
-          selectedFile={selectedFile}
+          hasSource={inputSource !== null}
           isProcessing={isProcessing}
           error={error}
           onTranscribe={handleTranscribe}

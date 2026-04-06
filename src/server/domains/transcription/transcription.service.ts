@@ -9,7 +9,7 @@ import type {
   TranscribeConfig,
   TranscribeResponse,
 } from './transcription.types'
-import { AUDIO_FORMATS } from './transcription.types'
+import { AUDIO_FORMATS, YOUTUBE_URL_REGEX } from './transcription.types'
 
 const MAX_FILE_SIZE_MB = parseInt(
   process.env.NEXT_PUBLIC_MAX_FILE_SIZE_MB || '100',
@@ -37,6 +37,24 @@ export class TranscriptionService {
     }
 
     const response = await this.repository.uploadAudio(file, config)
+    await this.repository.saveJobOwner(response.job_id, userId)
+    return response
+  }
+
+  async transcribeFromYoutube(
+    url: string,
+    config: TranscribeConfig,
+    userId: string,
+  ): Promise<TranscribeResponse> {
+    if (!YOUTUBE_URL_REGEX.test(url)) {
+      throw new ApiError(
+        'VALIDATION_ERROR',
+        HTTP_STATUS.BAD_REQUEST,
+        'URL YouTube invalide',
+      )
+    }
+
+    const response = await this.repository.uploadFromYoutubeUrl(url, config)
     await this.repository.saveJobOwner(response.job_id, userId)
     return response
   }

@@ -8,7 +8,11 @@ import {
 } from '@/server/shared/utils/api.utils'
 
 import type { TranscriptionService } from './transcription.service'
-import type { TranscribeConfig } from './transcription.types'
+import type {
+  TranscribeConfig,
+  YoutubeTranscribeRequest,
+} from './transcription.types'
+import { YOUTUBE_URL_REGEX } from './transcription.types'
 
 export class TranscriptionController {
   constructor(private service: TranscriptionService) {}
@@ -39,6 +43,39 @@ export class TranscriptionController {
 
       const config: TranscribeConfig = JSON.parse(configStr)
       const response = await this.service.transcribe(file, config, userId)
+      return createSuccessResponse(response, HTTP_STATUS.CREATED)
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
+  async uploadYoutubeUrl(userId: string, request: NextRequest) {
+    try {
+      const body = (await request.json()) as YoutubeTranscribeRequest
+
+      if (!body.url || !YOUTUBE_URL_REGEX.test(body.url)) {
+        return createErrorResponse(
+          'VALIDATION_ERROR',
+          'URL YouTube invalide',
+          undefined,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
+
+      if (!body.config) {
+        return createErrorResponse(
+          'VALIDATION_ERROR',
+          'Config is required',
+          undefined,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
+
+      const response = await this.service.transcribeFromYoutube(
+        body.url,
+        body.config,
+        userId,
+      )
       return createSuccessResponse(response, HTTP_STATUS.CREATED)
     } catch (error) {
       return handleApiError(error)
