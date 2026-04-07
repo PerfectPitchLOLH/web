@@ -105,6 +105,35 @@ export class TranscriptionRepository {
     }
   }
 
+  async uploadFromSpotifyUrl(
+    url: string,
+    config: TranscribeConfig,
+  ): Promise<TranscribeResponse> {
+    const backendUrl = `${API_BASE_URL}/transcribe/spotify`
+
+    try {
+      const response = await fetch(backendUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, config }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(
+          errorData.detail || `Spotify upload failed: ${response.statusText}`,
+        )
+      }
+
+      return response.json()
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Spotify upload failed: ${error.message}`)
+      }
+      throw new Error('Spotify upload failed with unknown error')
+    }
+  }
+
   async getJobStatus(jobId: string): Promise<JobDetails> {
     const response = await this.callBackendAPI<any>(`/jobs/${jobId}`)
 

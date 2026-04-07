@@ -24,6 +24,11 @@ interface UseTranscriptionReturn {
     videoTitle: string,
     config: TranscribeConfig,
   ) => Promise<string | null>
+  transcribeFromSpotify: (
+    url: string,
+    trackTitle: string,
+    config: TranscribeConfig,
+  ) => Promise<string | null>
   resumeSession: () => void
   cancel: () => Promise<void>
   jobId: string | null
@@ -207,6 +212,56 @@ export function useTranscription(): UseTranscriptionReturn {
     [],
   )
 
+  const transcribeFromSpotify = useCallback(
+    async (url: string, trackTitle: string, config: TranscribeConfig) => {
+      try {
+        setError(null)
+        setSessionToResume(null)
+
+        const response = await fetch('/api/transcription/spotify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, config }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          const errorMessage =
+            typeof errorData.error === 'string'
+              ? errorData.error
+              : errorData.error?.message || 'Upload failed'
+          throw new Error(errorMessage)
+        }
+
+        const data = await response.json()
+
+        if (data.success && data.data) {
+          const newJobId = data.data.job_id
+          setJobId(newJobId)
+
+          if (typeof window !== 'undefined') {
+            setJobTitle(trackTitle)
+            writeSession({
+              jobId: newJobId,
+              timestamp: Date.now(),
+              status: 'queued',
+              title: trackTitle,
+            })
+          }
+          return newJobId
+        } else {
+          throw new Error(data.error || 'Invalid response from server')
+        }
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'An error occurred'
+        setError(errorMessage)
+      }
+      return null
+    },
+    [],
+  )
+
   const resumeSession = useCallback(() => {
     const session = readSession()
     if (session) {
@@ -243,6 +298,7 @@ export function useTranscription(): UseTranscriptionReturn {
   return {
     transcribe,
     transcribeFromYoutube,
+    transcribeFromSpotify,
     resumeSession,
     cancel,
     jobId,

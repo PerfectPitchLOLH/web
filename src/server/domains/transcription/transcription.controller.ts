@@ -9,10 +9,11 @@ import {
 
 import type { TranscriptionService } from './transcription.service'
 import type {
+  SpotifyTranscribeRequest,
   TranscribeConfig,
   YoutubeTranscribeRequest,
 } from './transcription.types'
-import { YOUTUBE_URL_REGEX } from './transcription.types'
+import { SPOTIFY_URL_REGEX, YOUTUBE_URL_REGEX } from './transcription.types'
 
 export class TranscriptionController {
   constructor(private service: TranscriptionService) {}
@@ -72,6 +73,39 @@ export class TranscriptionController {
       }
 
       const response = await this.service.transcribeFromYoutube(
+        body.url,
+        body.config,
+        userId,
+      )
+      return createSuccessResponse(response, HTTP_STATUS.CREATED)
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
+  async uploadSpotifyUrl(userId: string, request: NextRequest) {
+    try {
+      const body = (await request.json()) as SpotifyTranscribeRequest
+
+      if (!body.url || !SPOTIFY_URL_REGEX.test(body.url)) {
+        return createErrorResponse(
+          'VALIDATION_ERROR',
+          'URL Spotify invalide',
+          undefined,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
+
+      if (!body.config) {
+        return createErrorResponse(
+          'VALIDATION_ERROR',
+          'Config is required',
+          undefined,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
+
+      const response = await this.service.transcribeFromSpotify(
         body.url,
         body.config,
         userId,

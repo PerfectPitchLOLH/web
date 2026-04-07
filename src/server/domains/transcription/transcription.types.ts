@@ -128,9 +128,18 @@ export type YoutubeTranscribeRequest = {
 export const YOUTUBE_URL_REGEX =
   /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[\w-]{11}/
 
+export const SPOTIFY_URL_REGEX =
+  /^https?:\/\/open\.spotify\.com\/track\/[A-Za-z0-9]+/
+
+export type SpotifyTranscribeRequest = {
+  url: string
+  config: TranscribeConfig
+}
+
 export type InputSource =
   | { type: 'file'; file: File }
   | { type: 'youtube'; url: string; videoTitle: string }
+  | { type: 'spotify'; url: string; trackTitle: string }
   | null
 
 export const AUDIO_FORMATS = [
