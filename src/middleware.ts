@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
-import { auth } from './server/lib/auth'
-import { auditLogger } from './server/shared/utils'
+import { auth } from '@/server/lib/auth'
+import { auditLogger } from '@/server/shared/utils'
 
 export const runtime = 'nodejs'
 

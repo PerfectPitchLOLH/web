@@ -1,61 +1,31 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import { toast } from 'sonner'
-
 import { LibraryFilterBar } from '@/components/partitions/LibraryFilterBar'
 import { PartitionCard } from '@/components/partitions/PartitionCard'
 import { PartitionDeleteDialog } from '@/components/partitions/PartitionDeleteDialog'
 import { PartitionEmptyState } from '@/components/partitions/PartitionEmptyState'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { usePartitionFilters } from '@/hooks/usePartitionFilters'
-import { usePartitions } from '@/hooks/usePartitions'
-import type { PartitionSummary } from '@/server/domains/partition'
+import { usePartitionsPage } from '@/hooks/usePartitionsPage'
 
 export default function PartitionsPage() {
-  const router = useRouter()
-  const { partitions, isLoading, deletePartition, updatePartition } =
-    usePartitions()
   const {
+    partitions,
+    isLoading,
+    filtered,
     search,
     setSearch,
     instrumentFilter,
     setInstrumentFilter,
     sortBy,
     setSortBy,
-    filtered,
-  } = usePartitionFilters(partitions)
-
-  const [deleteTarget, setDeleteTarget] = useState<PartitionSummary | null>(
-    null,
-  )
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return
-    try {
-      await deletePartition(deleteTarget.id)
-      toast.success('Partition supprimée')
-    } catch {
-      toast.error('Erreur lors de la suppression')
-    } finally {
-      setDeleteTarget(null)
-    }
-  }
-
-  const handleRename = async (id: string) => {
-    const partition = partitions.find((p) => p.id === id)
-    if (!partition) return
-    const newTitle = prompt('Nouveau nom :', partition.title)
-    if (newTitle && newTitle.trim() && newTitle !== partition.title) {
-      try {
-        await updatePartition(id, { title: newTitle.trim() })
-      } catch {
-        toast.error('Erreur lors du renommage')
-      }
-    }
-  }
+    deleteTarget,
+    setDeleteTarget,
+    handleDelete,
+    handleRename,
+    handleView,
+    handleDeleteRequest,
+  } = usePartitionsPage()
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
@@ -104,12 +74,9 @@ export default function PartitionsPage() {
               tags={p.tags}
               createdAt={p.createdAt}
               durationSeconds={p.durationSeconds}
-              onView={(id) => router.push(`/dashboard/partitions/${id}`)}
+              onView={handleView}
               onRename={handleRename}
-              onDelete={(id) => {
-                const target = partitions.find((pt) => pt.id === id)
-                if (target) setDeleteTarget(target)
-              }}
+              onDelete={handleDeleteRequest}
               style={{ animationDelay: `${i * 50}ms` }}
               className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300 [fill-mode:both]"
             />

@@ -1,3 +1,5 @@
+'use client'
+
 import { Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -56,8 +58,6 @@ export function UserTargeting({ data, onChange }: Props) {
       if (result.success && result.data) {
         setPlans(result.data)
       }
-    } catch (error) {
-      console.error('Failed to fetch subscription plans:', error)
     } finally {
       setLoadingPlans(false)
     }

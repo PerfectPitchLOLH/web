@@ -1,12 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-
 import { Pagination } from '@/components/admin/shared/Pagination'
 import {
-  type ActionDialog,
   ActionDialogs,
-  type User,
   UserFilters,
   UserManagementHeader,
   UserTable,
@@ -20,66 +16,30 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { InlineAlert } from '@/components/ui/inline-alert'
-import {
-  useCurrentUser,
-  useUserActions,
-  useUserManagement,
-  useUserPermissions,
-} from '@/hooks/admin'
+import { useAdminUsersPage } from '@/hooks/admin/useAdminUsersPage'
 
 export default function UsersManagement() {
-  const { currentUser } = useCurrentUser()
-
   const {
     users,
     loading,
-    error,
+    displayError,
     search,
     roleFilter,
     page,
     setSearch,
     setRoleFilter,
     setPage,
-    refetchUsers,
     handleSearch,
-  } = useUserManagement()
-
-  const { handleRoleChange, handleSuspendUser, handleDeleteUser, actionError } =
-    useUserActions({ onSuccess: refetchUsers })
-
-  const { canPerformAction, getDisabledReason } =
-    useUserPermissions(currentUser)
-
-  const [actionDialog, setActionDialog] = useState<ActionDialog>({
-    type: null,
-    user: null,
-  })
-
-  const handleOpenSuspendDialog = (user: User) => {
-    setActionDialog({ type: 'suspend', user })
-  }
-
-  const handleOpenDeleteDialog = (user: User) => {
-    setActionDialog({ type: 'delete', user })
-  }
-
-  const handleCloseDialog = () => {
-    setActionDialog({ type: null, user: null })
-  }
-
-  const handleConfirmSuspend = async () => {
-    if (!actionDialog.user) return
-    await handleSuspendUser(actionDialog.user.id)
-    handleCloseDialog()
-  }
-
-  const handleConfirmDelete = async () => {
-    if (!actionDialog.user) return
-    await handleDeleteUser(actionDialog.user.id)
-    handleCloseDialog()
-  }
-
-  const displayError = error || actionError
+    handleRoleChange,
+    canPerformAction,
+    getDisabledReason,
+    actionDialog,
+    handleOpenSuspendDialog,
+    handleOpenDeleteDialog,
+    handleCloseDialog,
+    handleConfirmSuspend,
+    handleConfirmDelete,
+  } = useAdminUsersPage()
 
   return (
     <div className="space-y-8">

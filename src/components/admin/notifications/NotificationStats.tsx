@@ -37,7 +37,6 @@ export function NotificationStats() {
         }
       }
     } catch {
-      // Silently fail
     } finally {
       setLoading(false)
     }

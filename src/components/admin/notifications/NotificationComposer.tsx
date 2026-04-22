@@ -1,8 +1,11 @@
+'use client'
+
 import { Loader2, Send } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { UserTargeting } from '@/components/admin/notifications/UserTargeting'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -23,8 +26,21 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 
-import type { NotificationFormData } from './page'
-import { UserTargeting } from './UserTargeting'
+export type NotificationFormData = {
+  type: string
+  title: string
+  description: string
+  icon: string
+  targeting: {
+    sendToAll: boolean
+    filters: {
+      subscriptionStatus?: string
+      subscriptionPlanName?: string
+      activityDays?: number
+      userIds?: string[]
+    }
+  }
+}
 
 type Props = {
   data: NotificationFormData
@@ -59,17 +75,12 @@ export function NotificationComposer({ data, onChange }: Props) {
   }
 
   function isTargetingValid() {
-    if (data.targeting.sendToAll) {
-      return true
-    }
-
+    if (data.targeting.sendToAll) return true
     const filters = data.targeting.filters
-    const hasSubscriptionStatusFilter =
-      filters.subscriptionStatus && filters.subscriptionStatus !== 'all'
-    const hasPlanFilter =
-      filters.subscriptionPlanName && filters.subscriptionPlanName !== 'all'
-
-    return hasSubscriptionStatusFilter || hasPlanFilter
+    return (
+      (!!filters.subscriptionStatus && filters.subscriptionStatus !== 'all') ||
+      (!!filters.subscriptionPlanName && filters.subscriptionPlanName !== 'all')
+    )
   }
 
   function isFormValid() {

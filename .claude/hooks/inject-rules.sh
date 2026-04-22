@@ -1,0 +1,2 @@
+#!/bin/bash
+printf '%s' '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"MANDATORY RULES — enforce on every task:\n1. page.tsx MUST be thin: NEVER put useState/useEffect/fetch inline — extract ALL logic into use{Feature}.ts custom hook\n2. page.tsx imports and renders components only — no inline JSX logic\n3. ALWAYS create __tests__/ with test file when creating a domain service or repository\n4. ALWAYS follow Controller → Service → Repository — never skip layers\n5. Run npm run check before finishing any task"}}'
