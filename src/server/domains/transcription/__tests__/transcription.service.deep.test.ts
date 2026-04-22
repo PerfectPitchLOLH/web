@@ -54,6 +54,7 @@ describe('TranscriptionService - Deep Tests', () => {
       saveJobOwner: vi.fn(),
       verifyJobOwner: vi.fn(),
       atomicDeductCredits: vi.fn().mockResolvedValue('already_deducted'),
+      getYoutubeInfo: vi.fn().mockResolvedValue({ duration_seconds: 120 }),
     } as any
 
     mockCreditService = {
@@ -85,6 +86,7 @@ describe('TranscriptionService - Deep Tests', () => {
       expect(mockRepo.saveJobOwner).toHaveBeenCalledWith(
         'job-abc-123',
         'user-1',
+        undefined,
       )
     })
 
@@ -195,6 +197,7 @@ describe('TranscriptionService - Deep Tests', () => {
       expect(mockRepo.saveJobOwner).toHaveBeenCalledWith(
         'unique-job-id',
         'specific-user-42',
+        undefined,
       )
     })
 
@@ -349,6 +352,7 @@ describe('TranscriptionService - Deep Tests', () => {
       expect(mockRepo.saveJobOwner).toHaveBeenCalledWith(
         'yt-job-999',
         'user-42',
+        120,
       )
     })
   })
@@ -733,11 +737,6 @@ describe('TranscriptionService - Deep Tests', () => {
         180,
         expect.any(String),
       )
-      expect(mockCreditService.deductCreditsInSeconds).toHaveBeenCalledWith(
-        'user-1',
-        180,
-        expect.stringContaining('180'),
-      )
     })
 
     it('should NOT deduct credits when already deducted (idempotence)', async () => {
@@ -824,8 +823,8 @@ describe('TranscriptionService - Deep Tests', () => {
 
       await service.getJob('job-done', 'user-1')
 
-      expect(mockRepo.atomicDeductCredits).toHaveBeenCalledWith('job-done', 347)
-      expect(mockCreditService.deductCreditsInSeconds).toHaveBeenCalledWith(
+      expect(mockRepo.atomicDeductCredits).toHaveBeenCalledWith(
+        'job-done',
         'user-1',
         347,
         expect.any(String),

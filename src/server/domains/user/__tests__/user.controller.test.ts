@@ -9,6 +9,7 @@ import { UserService } from '../user.service'
 
 vi.mock('@/server/shared/middleware', () => ({
   validateApiAuth: vi.fn().mockResolvedValue({
+    ok: true,
     session: {
       user: { id: 'auth-user-id', email: 'auth@test.com', role: 'user' },
     },

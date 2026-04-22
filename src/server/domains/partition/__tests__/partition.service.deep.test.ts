@@ -60,7 +60,7 @@ describe('PartitionService - Deep Tests', () => {
       update: vi.fn(),
       updateSvg: vi.fn(),
       delete: vi.fn(),
-      existsByJobIdAndUserId: vi.fn(),
+      findByJobIdAndUserId: vi.fn(),
     } as any
 
     service = new PartitionService(mockRepo)
@@ -68,23 +68,20 @@ describe('PartitionService - Deep Tests', () => {
   })
 
   describe('saveFromJob', () => {
-    const setupFetch = (
-      jobData: object,
-      xmlContent = '<score/>',
-      svgContent = '<svg/>',
-    ) => {
+    const setupFetch = (jobData: object, svgContent = '<svg/>') => {
       vi.stubGlobal(
         'fetch',
         vi
           .fn()
           .mockResolvedValueOnce({ ok: true, json: async () => jobData })
-          .mockResolvedValueOnce({ ok: true, text: async () => xmlContent })
           .mockResolvedValueOnce({ ok: true, text: async () => svgContent }),
       )
     }
 
     it('should throw PARTITION_ALREADY_SAVED when job already saved', async () => {
-      vi.mocked(mockRepo.existsByJobIdAndUserId).mockResolvedValue(true)
+      vi.mocked(mockRepo.findByJobIdAndUserId).mockResolvedValue(
+        makeEntity() as any,
+      )
 
       await expect(
         service.saveFromJob('user-1', { jobId: 'job-1', title: 'T' }),
@@ -99,10 +96,12 @@ describe('PartitionService - Deep Tests', () => {
     })
 
     it('should throw FORBIDDEN when job does not belong to user', async () => {
-      vi.mocked(mockRepo.existsByJobIdAndUserId).mockResolvedValue(false)
+      vi.mocked(mockRepo.findByJobIdAndUserId).mockResolvedValue(null)
       vi.mocked(db.transcriptionJob.findUnique).mockResolvedValue({
         backendJobId: 'job-1',
         userId: 'user-other',
+        musicXmlContent: null,
+        svgContent: null,
       } as any)
 
       await expect(
@@ -118,7 +117,7 @@ describe('PartitionService - Deep Tests', () => {
     })
 
     it('should throw FORBIDDEN when job record not found in DB', async () => {
-      vi.mocked(mockRepo.existsByJobIdAndUserId).mockResolvedValue(false)
+      vi.mocked(mockRepo.findByJobIdAndUserId).mockResolvedValue(null)
       vi.mocked(db.transcriptionJob.findUnique).mockResolvedValue(null)
 
       await expect(
@@ -127,10 +126,12 @@ describe('PartitionService - Deep Tests', () => {
     })
 
     it('should throw NOT_FOUND when backend job API returns non-ok', async () => {
-      vi.mocked(mockRepo.existsByJobIdAndUserId).mockResolvedValue(false)
+      vi.mocked(mockRepo.findByJobIdAndUserId).mockResolvedValue(null)
       vi.mocked(db.transcriptionJob.findUnique).mockResolvedValue({
         backendJobId: 'job-1',
         userId: 'user-1',
+        musicXmlContent: null,
+        svgContent: null,
       } as any)
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
 
@@ -146,10 +147,12 @@ describe('PartitionService - Deep Tests', () => {
     })
 
     it('should throw JOB_NOT_COMPLETED when job status is not completed', async () => {
-      vi.mocked(mockRepo.existsByJobIdAndUserId).mockResolvedValue(false)
+      vi.mocked(mockRepo.findByJobIdAndUserId).mockResolvedValue(null)
       vi.mocked(db.transcriptionJob.findUnique).mockResolvedValue({
         backendJobId: 'job-1',
         userId: 'user-1',
+        musicXmlContent: null,
+        svgContent: null,
       } as any)
       vi.stubGlobal(
         'fetch',
@@ -171,11 +174,13 @@ describe('PartitionService - Deep Tests', () => {
       }
     })
 
-    it('should throw MUSICXML_UNAVAILABLE when xml download fails', async () => {
-      vi.mocked(mockRepo.existsByJobIdAndUserId).mockResolvedValue(false)
+    it('should throw SERVICE_UNAVAILABLE when svg download fails', async () => {
+      vi.mocked(mockRepo.findByJobIdAndUserId).mockResolvedValue(null)
       vi.mocked(db.transcriptionJob.findUnique).mockResolvedValue({
         backendJobId: 'job-1',
         userId: 'user-1',
+        musicXmlContent: '<score/>',
+        svgContent: null,
       } as any)
       vi.stubGlobal(
         'fetch',
@@ -188,16 +193,18 @@ describe('PartitionService - Deep Tests', () => {
       await expect(
         service.saveFromJob('user-1', { jobId: 'job-1', title: 'T' }),
       ).rejects.toMatchObject({
-        code: 'MUSICXML_UNAVAILABLE',
-        statusCode: HTTP_STATUS.BAD_REQUEST,
+        code: 'SERVICE_UNAVAILABLE',
+        statusCode: HTTP_STATUS.SERVICE_UNAVAILABLE,
       })
     })
 
     it('should save partition successfully with all fields', async () => {
-      vi.mocked(mockRepo.existsByJobIdAndUserId).mockResolvedValue(false)
+      vi.mocked(mockRepo.findByJobIdAndUserId).mockResolvedValue(null)
       vi.mocked(db.transcriptionJob.findUnique).mockResolvedValue({
         backendJobId: 'job-1',
         userId: 'user-1',
+        musicXmlContent: '<score/>',
+        svgContent: null,
       } as any)
       setupFetch(makeJob())
       vi.mocked(mockRepo.create).mockResolvedValue(makeEntity() as any)
@@ -226,34 +233,34 @@ describe('PartitionService - Deep Tests', () => {
       expect(result).not.toHaveProperty('transcribeConfig')
     })
 
-    it('should save without svgContent when svg download fails gracefully', async () => {
-      vi.mocked(mockRepo.existsByJobIdAndUserId).mockResolvedValue(false)
+    it('should throw SERVICE_UNAVAILABLE when svg fetch throws', async () => {
+      vi.mocked(mockRepo.findByJobIdAndUserId).mockResolvedValue(null)
       vi.mocked(db.transcriptionJob.findUnique).mockResolvedValue({
         backendJobId: 'job-1',
         userId: 'user-1',
+        musicXmlContent: '<score/>',
+        svgContent: null,
       } as any)
       vi.stubGlobal(
         'fetch',
         vi
           .fn()
           .mockResolvedValueOnce({ ok: true, json: async () => makeJob() })
-          .mockResolvedValueOnce({ ok: true, text: async () => '<score/>' })
           .mockRejectedValueOnce(new Error('SVG fetch failed')),
       )
-      vi.mocked(mockRepo.create).mockResolvedValue(makeEntity() as any)
 
-      await service.saveFromJob('user-1', { jobId: 'job-1', title: 'T' })
-
-      expect(mockRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ musicXmlContent: '<score/>' }),
-      )
+      await expect(
+        service.saveFromJob('user-1', { jobId: 'job-1', title: 'T' }),
+      ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' })
     })
 
     it('should use fallback instrument and partitionType when config is empty', async () => {
-      vi.mocked(mockRepo.existsByJobIdAndUserId).mockResolvedValue(false)
+      vi.mocked(mockRepo.findByJobIdAndUserId).mockResolvedValue(null)
       vi.mocked(db.transcriptionJob.findUnique).mockResolvedValue({
         backendJobId: 'job-1',
         userId: 'user-1',
+        musicXmlContent: '<score/>',
+        svgContent: null,
       } as any)
       setupFetch(makeJob({ config: {} }))
       vi.mocked(mockRepo.create).mockResolvedValue(makeEntity() as any)

@@ -181,6 +181,8 @@ describe('TranscriptionController - Deep Tests', () => {
         expect.any(File),
         expect.any(Object),
         'specific-user-99',
+        undefined,
+        false,
       )
     })
   })
@@ -339,6 +341,7 @@ describe('TranscriptionController - Deep Tests', () => {
         'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         expect.any(Object),
         'youtube-user-7',
+        false,
       )
     })
   })

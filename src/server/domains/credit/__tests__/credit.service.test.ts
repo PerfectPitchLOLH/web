@@ -30,7 +30,7 @@ describe('CreditService', () => {
     it('devrait retourner le solde avec alertes si crédits existent', async () => {
       const mockCredits = {
         userId: 'user-1',
-        monthlyCredits: 20,
+        monthlyCredits: 15,
         bonusCredits: 10,
         usedThisMonth: 5,
         lastMonthlyRefill: new Date('2026-04-01'),
@@ -43,7 +43,7 @@ describe('CreditService', () => {
 
       expect(result).toEqual({
         userId: 'user-1',
-        monthlyCredits: 20,
+        monthlyCredits: 15,
         bonusCredits: 10,
         totalCredits: 30,
         usedThisMonth: 5,
@@ -59,8 +59,8 @@ describe('CreditService', () => {
     it("devrait détecter low balance à 80% d'utilisation", async () => {
       const mockCredits = {
         userId: 'user-1',
-        monthlyCredits: 20,
-        bonusCredits: 5,
+        monthlyCredits: 0,
+        bonusCredits: 4,
         usedThisMonth: 21,
         lastMonthlyRefill: new Date('2026-04-01'),
         updatedAt: new Date(),
@@ -77,8 +77,8 @@ describe('CreditService', () => {
     it("devrait détecter outOfCredits à 100% d'utilisation", async () => {
       const mockCredits = {
         userId: 'user-1',
-        monthlyCredits: 20,
-        bonusCredits: 5,
+        monthlyCredits: 0,
+        bonusCredits: 0,
         usedThisMonth: 25,
         lastMonthlyRefill: new Date('2026-04-01'),
         updatedAt: new Date(),
