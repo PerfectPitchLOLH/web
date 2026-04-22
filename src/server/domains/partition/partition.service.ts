@@ -193,4 +193,12 @@ export class PartitionService {
       throw new ApiError(ERROR_CODES.PARTITION_NOT_FOUND, HTTP_STATUS.NOT_FOUND)
     }
   }
+
+  async findSimilarByTitle(
+    userId: string,
+    title: string,
+  ): Promise<{ id: string; title: string }[]> {
+    if (title.trim().length < 3) return []
+    return this.repository.findSimilarByTitle(userId, title.trim())
+  }
 }

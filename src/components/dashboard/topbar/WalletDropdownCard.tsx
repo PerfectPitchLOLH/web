@@ -5,7 +5,12 @@ import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
 import { useCredits } from '@/hooks/useCredits'
-import { cn } from '@/lib/utils'
+import {
+  computeUsagePercent,
+  getCreditProgressColor,
+  secondsToMinutes,
+} from '@/lib/credits'
+import { cn, formatCredits } from '@/lib/utils'
 
 function WalletDropdownCardSkeleton() {
   return (
@@ -28,21 +33,14 @@ export function WalletDropdownCard() {
 
   if (loading) return <WalletDropdownCardSkeleton />
 
-  const totalMinutes = credits ? Math.floor(credits.totalCredits / 60) : 0
-  const remainingMinutes = credits
-    ? Math.floor(credits.remainingCredits / 60)
-    : 0
-  const usagePercent =
-    totalMinutes > 0
-      ? Math.min(100, ((totalMinutes - remainingMinutes) / totalMinutes) * 100)
-      : 0
-
-  const progressColor =
-    remainingMinutes / Math.max(totalMinutes, 1) > 0.5
-      ? 'bg-green-500'
-      : remainingMinutes / Math.max(totalMinutes, 1) > 0.2
-        ? 'bg-orange-500'
-        : 'bg-red-500'
+  const totalSeconds = credits?.totalCredits ?? 0
+  const remainingSeconds = credits?.remainingCredits ?? 0
+  const totalMinutes = secondsToMinutes(totalSeconds)
+  const usagePercent = computeUsagePercent(
+    totalSeconds - remainingSeconds,
+    totalSeconds,
+  )
+  const progressColor = getCreditProgressColor(remainingSeconds, totalSeconds)
 
   return (
     <div className="rounded-lg bg-muted p-3">
@@ -59,7 +57,7 @@ export function WalletDropdownCard() {
       <div className="flex flex-col gap-1 mb-2">
         <div className="flex items-center justify-between w-full text-sm">
           <span className="text-muted-foreground">Total</span>
-          <span className="font-medium">{totalMinutes} min</span>
+          <span className="font-medium">{formatCredits(totalSeconds)}</span>
         </div>
         <div className="flex items-center justify-between w-full text-sm">
           <span className="text-muted-foreground">Restant</span>
@@ -73,7 +71,7 @@ export function WalletDropdownCard() {
                   : '',
             )}
           >
-            {remainingMinutes} min
+            {formatCredits(remainingSeconds)}
           </span>
         </div>
       </div>

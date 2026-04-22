@@ -18,9 +18,13 @@ export class TranscriptionRepository {
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`
 
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 15000)
+
     try {
       const response = await fetch(url, {
         ...options,
+        signal: options?.signal ?? controller.signal,
         headers: {
           'Content-Type': 'application/json',
           ...options?.headers,
@@ -41,6 +45,8 @@ export class TranscriptionRepository {
         throw new Error(`Backend API call failed: ${error.message}`)
       }
       throw new Error('Backend API call failed with unknown error')
+    } finally {
+      clearTimeout(timeoutId)
     }
   }
 
@@ -249,10 +255,89 @@ export class TranscriptionRepository {
     return this.callBackendAPI<HealthStatus>('/health')
   }
 
-  async saveJobOwner(backendJobId: string, userId: string): Promise<void> {
+  async getYoutubeInfo(
+    url: string,
+  ): Promise<{ duration_seconds: number; title: string }> {
+    const backendUrl = `${API_BASE_URL}/transcribe/youtube/info?url=${encodeURIComponent(url)}`
+    const response = await fetch(backendUrl)
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || 'Could not fetch YouTube info')
+    }
+    return response.json()
+  }
+
+  async atomicDeductCredits(
+    backendJobId: string,
+    userId: string,
+    durationSeconds: number,
+    description: string,
+  ): Promise<'deducted' | 'already_deducted' | 'insufficient'> {
+    try {
+      await db.$transaction(async (tx) => {
+        const flagged = await tx.transcriptionJob.updateMany({
+          where: { backendJobId, creditsDeducted: false },
+          data: { creditsDeducted: true, durationSeconds },
+        })
+        if (flagged.count === 0) throw new Error('ALREADY_DEDUCTED')
+
+        const credits = await tx.userCredits.findUnique({ where: { userId } })
+        if (!credits) throw new Error('CREDITS_NOT_FOUND')
+
+        const toDeduct = Math.min(
+          durationSeconds,
+          credits.monthlyCredits + credits.bonusCredits,
+        )
+        if (toDeduct <= 0) throw new Error('INSUFFICIENT_CREDITS')
+
+        let remaining = toDeduct
+        const newMonthly =
+          credits.monthlyCredits >= remaining
+            ? credits.monthlyCredits - remaining
+            : ((remaining -= credits.monthlyCredits), 0)
+        const newBonus =
+          credits.monthlyCredits >= toDeduct
+            ? credits.bonusCredits
+            : credits.bonusCredits - remaining
+
+        const newBalance = newMonthly + newBonus
+        await tx.userCredits.update({
+          where: { userId },
+          data: {
+            monthlyCredits: newMonthly,
+            bonusCredits: newBonus,
+            usedThisMonth: { increment: toDeduct },
+          },
+        })
+
+        await tx.creditTransaction.create({
+          data: {
+            userId,
+            type: 'usage',
+            amount: -Math.ceil(toDeduct / 60),
+            balanceAfter: Math.floor(newBalance / 60),
+            description,
+          },
+        })
+      })
+      return 'deducted'
+    } catch (err) {
+      if (err instanceof Error) {
+        if (err.message === 'ALREADY_DEDUCTED') return 'already_deducted'
+        if (err.message === 'INSUFFICIENT_CREDITS') return 'insufficient'
+      }
+      throw err
+    }
+  }
+
+  async saveJobOwner(
+    backendJobId: string,
+    userId: string,
+    estimatedDurationSeconds?: number,
+  ): Promise<void> {
     await db.transcriptionJob.upsert({
       where: { backendJobId },
-      create: { backendJobId, userId },
+      create: { backendJobId, userId, estimatedDurationSeconds },
       update: {},
     })
   }

@@ -1,3 +1,5 @@
+import type { CreditService } from '@/server/domains/credit/credit.service'
+import { db } from '@/server/lib/database'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
@@ -22,13 +24,20 @@ const MAX_FILE_SIZE_MB = parseInt(
 const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024
 
 export class TranscriptionService {
-  constructor(private repository: TranscriptionRepository) {}
+  constructor(
+    private repository: TranscriptionRepository,
+    private creditService: CreditService,
+  ) {}
 
   async transcribe(
     file: File,
     config: TranscribeConfig,
     userId: string,
+    durationSeconds?: number,
+    skipCreditCheck = false,
   ): Promise<TranscribeResponse> {
+    if (!skipCreditCheck)
+      await this.checkCreditsAvailable(userId, durationSeconds)
     this.validateAudioFile(file)
 
     try {
@@ -41,7 +50,7 @@ export class TranscriptionService {
     }
 
     const response = await this.repository.uploadAudio(file, config)
-    await this.repository.saveJobOwner(response.job_id, userId)
+    await this.repository.saveJobOwner(response.job_id, userId, durationSeconds)
     return response
   }
 
@@ -49,6 +58,7 @@ export class TranscriptionService {
     url: string,
     config: TranscribeConfig,
     userId: string,
+    skipCreditCheck = false,
   ): Promise<TranscribeResponse> {
     if (!YOUTUBE_URL_REGEX.test(url)) {
       throw new ApiError(
@@ -58,8 +68,21 @@ export class TranscriptionService {
       )
     }
 
+    let estimatedDuration: number | undefined
+
+    if (!skipCreditCheck) {
+      await this.checkCreditsAvailable(userId)
+      const info = await this.repository.getYoutubeInfo(url)
+      estimatedDuration = info.duration_seconds
+      await this.checkCreditsAvailable(userId, estimatedDuration)
+    }
+
     const response = await this.repository.uploadFromYoutubeUrl(url, config)
-    await this.repository.saveJobOwner(response.job_id, userId)
+    await this.repository.saveJobOwner(
+      response.job_id,
+      userId,
+      estimatedDuration,
+    )
     return response
   }
 
@@ -67,6 +90,7 @@ export class TranscriptionService {
     url: string,
     config: TranscribeConfig,
     userId: string,
+    skipCreditCheck = false,
   ): Promise<TranscribeResponse> {
     if (!SPOTIFY_URL_REGEX.test(url)) {
       throw new ApiError(
@@ -75,6 +99,8 @@ export class TranscriptionService {
         'URL Spotify invalide',
       )
     }
+
+    if (!skipCreditCheck) await this.checkCreditsAvailable(userId)
 
     const response = await this.repository.uploadFromSpotifyUrl(url, config)
     await this.repository.saveJobOwner(response.job_id, userId)
@@ -87,14 +113,59 @@ export class TranscriptionService {
       throw new ApiError('FORBIDDEN', HTTP_STATUS.FORBIDDEN, 'Access denied')
     }
     try {
-      return await this.repository.getJobStatus(jobId)
+      const job = await this.repository.getJobStatus(jobId)
+
+      if (
+        job.status === 'completed' &&
+        job.results != null &&
+        job.results.duration_seconds > 0
+      ) {
+        await this.repository.atomicDeductCredits(
+          jobId,
+          userId,
+          job.results.duration_seconds,
+          `Transcription (${Math.ceil(job.results.duration_seconds)}s)`,
+        )
+      } else if (job.status === 'failed' && job.progress > 0) {
+        await this.deductPartialCredits(jobId, userId, job.progress)
+      }
+
+      return job
     } catch (error) {
+      if (error instanceof ApiError) throw error
       throw new ApiError(
         'NOT_FOUND',
         HTTP_STATUS.NOT_FOUND,
         'Job not found or expired',
       )
     }
+  }
+
+  private async deductPartialCredits(
+    jobId: string,
+    userId: string,
+    progressPercent: number,
+  ): Promise<void> {
+    try {
+      const dbJob = await db.transcriptionJob.findUnique({
+        where: { backendJobId: jobId },
+        select: { estimatedDurationSeconds: true, creditsDeducted: true },
+      })
+      if (!dbJob || dbJob.creditsDeducted || !dbJob.estimatedDurationSeconds)
+        return
+
+      const partial = Math.ceil(
+        (progressPercent / 100) * dbJob.estimatedDurationSeconds,
+      )
+      if (partial <= 0) return
+
+      await this.repository.atomicDeductCredits(
+        jobId,
+        userId,
+        partial,
+        `Transcription interrompue à ${progressPercent}% (${partial}s)`,
+      )
+    } catch {}
   }
 
   async downloadPartition(jobId: string, userId: string): Promise<Blob> {
@@ -177,6 +248,33 @@ export class TranscriptionService {
         'VALIDATION_ERROR',
         HTTP_STATUS.BAD_REQUEST,
         `Extension de fichier invalide. Extensions acceptées : ${validExtensions.join(', ')}`,
+      )
+    }
+  }
+
+  private async checkCreditsAvailable(
+    userId: string,
+    durationSeconds?: number,
+  ): Promise<void> {
+    const balance = await this.creditService.getUserCreditsBalance(userId)
+    if (balance.remainingCredits <= 0) {
+      throw new ApiError(
+        'INSUFFICIENT_CREDITS',
+        HTTP_STATUS.PAYMENT_REQUIRED,
+        'Crédits insuffisants pour lancer une transcription',
+      )
+    }
+    if (
+      durationSeconds &&
+      durationSeconds > 0 &&
+      balance.remainingCredits < durationSeconds
+    ) {
+      const remainingMinutes = Math.floor(balance.remainingCredits / 60)
+      const neededMinutes = Math.ceil(durationSeconds / 60)
+      throw new ApiError(
+        'INSUFFICIENT_CREDITS',
+        HTTP_STATUS.PAYMENT_REQUIRED,
+        `Crédits insuffisants : ${neededMinutes} min nécessaires, ${remainingMinutes} min disponibles`,
       )
     }
   }

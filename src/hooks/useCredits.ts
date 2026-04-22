@@ -36,5 +36,11 @@ export function useCredits(): UseCreditsResult {
       .finally(() => setLoading(false))
   }, [tick])
 
+  useEffect(() => {
+    const handler = () => setTick((t) => t + 1)
+    window.addEventListener('credits-refresh', handler)
+    return () => window.removeEventListener('credits-refresh', handler)
+  }, [])
+
   return { credits, loading, refetch: () => setTick((t) => t + 1) }
 }

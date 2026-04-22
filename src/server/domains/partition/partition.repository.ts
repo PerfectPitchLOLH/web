@@ -140,4 +140,19 @@ export class PartitionRepository {
     })
     return count > 0
   }
+
+  async findSimilarByTitle(
+    userId: string,
+    title: string,
+  ): Promise<{ id: string; title: string }[]> {
+    return db.savedPartition.findMany({
+      where: {
+        userId,
+        title: { contains: title, mode: 'insensitive' },
+      },
+      select: { id: true, title: true },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    })
+  }
 }

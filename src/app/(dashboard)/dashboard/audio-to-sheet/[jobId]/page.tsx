@@ -1,25 +1,19 @@
 'use client'
 
 import { Loader2 } from 'lucide-react'
-import { useParams, useRouter } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
-import { toast } from 'sonner'
+import { useParams } from 'next/navigation'
 
 import { TranscriptionFailedView } from '@/components/audio-to-sheet/TranscriptionFailedView'
 import { TranscriptionProcessingView } from '@/components/audio-to-sheet/TranscriptionProcessingView'
 import { TranscriptionResultView } from '@/components/audio-to-sheet/TranscriptionResultView'
+import { useJobActions } from '@/hooks/useJobActions'
 import { useJobProgress } from '@/hooks/useJobProgress'
+import { useJobSession } from '@/hooks/useJobSession'
 import { useSvgContent } from '@/hooks/useSvgContent'
-import {
-  clearSession,
-  readSession,
-  writeSession,
-} from '@/lib/transcription-session'
 
 export default function JobPage() {
   const params = useParams()
   const jobId = params.jobId as string
-  const router = useRouter()
 
   const {
     progress,
@@ -30,61 +24,12 @@ export default function JobPage() {
     isInitialLoading,
   } = useJobProgress(jobId)
   const svgContent = useSvgContent(results, jobId, status)
-
-  const [savedPartitionId, setSavedPartitionId] = useState<string | null>(null)
-  const [jobTitle, setJobTitle] = useState<string | null>(null)
-  const [isCancelling, setIsCancelling] = useState(false)
-
-  useEffect(() => {
-    const session = readSession()
-    if (session?.jobId === jobId) {
-      setSavedPartitionId(session.savedPartitionId ?? null)
-      setJobTitle(session.title ?? null)
-    }
-  }, [jobId])
-
-  useEffect(() => {
-    if (results?.title) setJobTitle(results.title)
-  }, [results])
-
-  useEffect(() => {
-    if (!status) return
-    const session = readSession()
-    if (session?.jobId === jobId) {
-      writeSession({ ...session, status })
-    }
-  }, [status, jobId])
-
-  const handleCancel = useCallback(async () => {
-    setIsCancelling(true)
-    try {
-      await fetch(`/api/transcription/${jobId}`, { method: 'DELETE' })
-    } finally {
-      clearSession()
-      router.push('/dashboard/audio-to-sheet')
-    }
-  }, [jobId, router])
-
-  const handleReset = useCallback(() => {
-    clearSession()
-    router.push('/dashboard/audio-to-sheet')
-  }, [router])
-
-  const handleSaved = useCallback((partitionId: string) => {
-    setSavedPartitionId(partitionId)
-    const session = readSession()
-    if (session) writeSession({ ...session, savedPartitionId: partitionId })
-    toast.success('Partition sauvegardée !', {
-      description: 'Retrouvez-la dans votre bibliothèque.',
-      action: {
-        label: 'Voir →',
-        onClick: () => {
-          window.location.href = '/dashboard/partitions'
-        },
-      },
-      duration: 6000,
-    })
-  }, [])
+  const { savedPartitionId, jobTitle, handleSaved } = useJobSession(
+    jobId,
+    results,
+    status,
+  )
+  const { isCancelling, handleCancel, handleReset } = useJobActions(jobId)
 
   const resolvedTitle = results?.title ?? jobTitle ?? null
 

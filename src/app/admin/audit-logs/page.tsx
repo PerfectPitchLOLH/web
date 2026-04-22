@@ -1,14 +1,11 @@
 'use client'
 
-import { AlertCircle } from 'lucide-react'
-
 import {
   AuditLogsHeader,
   AuditLogsTable,
   AuditLogsTableSkeleton,
 } from '@/components/admin/audit-logs'
 import { Pagination } from '@/components/admin/shared/Pagination'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Card,
   CardContent,
@@ -16,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { InlineAlert } from '@/components/ui/inline-alert'
 import { useAuditLogs } from '@/hooks/admin'
 import { formatTimestamp } from '@/lib/admin/auditLogUtils'
 
@@ -26,12 +24,7 @@ export default function AuditLogsPage() {
     <div className="space-y-8">
       <AuditLogsHeader />
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="size-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      {error && <InlineAlert message={error} />}
 
       <Card>
         <CardHeader>

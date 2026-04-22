@@ -18,7 +18,11 @@ import type {
 import { useJobProgress } from './useJobProgress'
 
 interface UseTranscriptionReturn {
-  transcribe: (file: File, config: TranscribeConfig) => Promise<string | null>
+  transcribe: (
+    file: File,
+    config: TranscribeConfig,
+    durationSeconds?: number,
+  ) => Promise<string | null>
   transcribeFromYoutube: (
     url: string,
     videoTitle: string,
@@ -108,7 +112,7 @@ export function useTranscription(): UseTranscriptionReturn {
   }, [results])
 
   const transcribe = useCallback(
-    async (file: File, config: TranscribeConfig) => {
+    async (file: File, config: TranscribeConfig, durationSeconds?: number) => {
       try {
         setError(null)
         setSessionToResume(null)
@@ -116,6 +120,9 @@ export function useTranscription(): UseTranscriptionReturn {
         const formData = new FormData()
         formData.append('file', file)
         formData.append('config', JSON.stringify(config))
+        if (durationSeconds !== undefined && isFinite(durationSeconds)) {
+          formData.append('duration_seconds', durationSeconds.toString())
+        }
 
         const response = await fetch('/api/transcription', {
           method: 'POST',

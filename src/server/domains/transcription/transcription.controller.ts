@@ -18,7 +18,11 @@ import { SPOTIFY_URL_REGEX, YOUTUBE_URL_REGEX } from './transcription.types'
 export class TranscriptionController {
   constructor(private service: TranscriptionService) {}
 
-  async uploadAudio(userId: string, request: NextRequest) {
+  async uploadAudio(
+    userId: string,
+    request: NextRequest,
+    skipCreditCheck = false,
+  ) {
     try {
       const formData = await request.formData()
       const file = formData.get('file') as File
@@ -43,14 +47,29 @@ export class TranscriptionController {
       }
 
       const config: TranscribeConfig = JSON.parse(configStr)
-      const response = await this.service.transcribe(file, config, userId)
+      const durationSecondsStr = formData.get('duration_seconds') as
+        | string
+        | null
+      const durationSeconds =
+        durationSecondsStr !== null ? parseFloat(durationSecondsStr) : undefined
+      const response = await this.service.transcribe(
+        file,
+        config,
+        userId,
+        durationSeconds,
+        skipCreditCheck,
+      )
       return createSuccessResponse(response, HTTP_STATUS.CREATED)
     } catch (error) {
       return handleApiError(error)
     }
   }
 
-  async uploadYoutubeUrl(userId: string, request: NextRequest) {
+  async uploadYoutubeUrl(
+    userId: string,
+    request: NextRequest,
+    skipCreditCheck = false,
+  ) {
     try {
       const body = (await request.json()) as YoutubeTranscribeRequest
 
@@ -76,6 +95,7 @@ export class TranscriptionController {
         body.url,
         body.config,
         userId,
+        skipCreditCheck,
       )
       return createSuccessResponse(response, HTTP_STATUS.CREATED)
     } catch (error) {
@@ -83,7 +103,11 @@ export class TranscriptionController {
     }
   }
 
-  async uploadSpotifyUrl(userId: string, request: NextRequest) {
+  async uploadSpotifyUrl(
+    userId: string,
+    request: NextRequest,
+    skipCreditCheck = false,
+  ) {
     try {
       const body = (await request.json()) as SpotifyTranscribeRequest
 
@@ -109,6 +133,7 @@ export class TranscriptionController {
         body.url,
         body.config,
         userId,
+        skipCreditCheck,
       )
       return createSuccessResponse(response, HTTP_STATUS.CREATED)
     } catch (error) {

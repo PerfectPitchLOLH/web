@@ -30,8 +30,8 @@ export class CreditService {
       })
     }
 
-    const totalCredits = credits.monthlyCredits + credits.bonusCredits
-    const remainingCredits = totalCredits - credits.usedThisMonth
+    const remainingCredits = credits.monthlyCredits + credits.bonusCredits
+    const totalCredits = remainingCredits + credits.usedThisMonth
     const usagePercent =
       totalCredits > 0 ? (credits.usedThisMonth / totalCredits) * 100 : 0
 
@@ -116,6 +116,39 @@ export class CreditService {
     })
 
     return this.getUserCreditsBalance(userId)
+  }
+
+  async deductCreditsInSeconds(
+    userId: string,
+    seconds: number,
+    description: string,
+  ): Promise<void> {
+    if (seconds <= 0) return
+
+    try {
+      const updatedCredits = await this.repository.consumeCredits(
+        userId,
+        seconds,
+      )
+      const newBalance =
+        updatedCredits.monthlyCredits + updatedCredits.bonusCredits
+      await this.repository.createTransaction({
+        userId,
+        type: CREDIT_TRANSACTION_TYPES.USAGE,
+        amount: -Math.ceil(seconds / 60),
+        balanceAfter: Math.floor(newBalance / 60),
+        description,
+      })
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Insufficient credits') {
+        throw new ApiError(
+          'INSUFFICIENT_CREDITS',
+          HTTP_STATUS.PAYMENT_REQUIRED,
+          'Crédits insuffisants',
+        )
+      }
+      throw error
+    }
   }
 
   async deductCredits(

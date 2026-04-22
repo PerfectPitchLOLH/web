@@ -1,6 +1,5 @@
 'use client'
 
-import { AlertCircle } from 'lucide-react'
 import { useState } from 'react'
 
 import { Pagination } from '@/components/admin/shared/Pagination'
@@ -13,7 +12,6 @@ import {
   UserTable,
   UserTableSkeleton,
 } from '@/components/admin/users'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Card,
   CardContent,
@@ -21,6 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { InlineAlert } from '@/components/ui/inline-alert'
 import {
   useCurrentUser,
   useUserActions,
@@ -86,12 +85,7 @@ export default function UsersManagement() {
     <div className="space-y-8">
       <UserManagementHeader />
 
-      {displayError && (
-        <Alert variant="destructive">
-          <AlertCircle className="size-4" />
-          <AlertDescription>{displayError}</AlertDescription>
-        </Alert>
-      )}
+      {displayError && <InlineAlert message={displayError} />}
 
       <UserFilters
         search={search}

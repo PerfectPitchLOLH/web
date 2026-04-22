@@ -9,5 +9,9 @@ export const maxDuration = 300
 export async function POST(request: NextRequest) {
   const auth = await validateApiAuth(request)
   if (!auth.ok) return auth.response
-  return transcriptionController.uploadYoutubeUrl(auth.session.user.id, request)
+  return transcriptionController.uploadYoutubeUrl(
+    auth.session.user.id,
+    request,
+    auth.session.devMode?.isActive ?? false,
+  )
 }

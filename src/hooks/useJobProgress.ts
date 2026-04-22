@@ -57,8 +57,12 @@ export function useJobProgress(jobId: string | null): UseJobProgressReturn {
   const RECONNECT_DELAY = 2000
 
   const fetchCurrentStatus = useCallback(async (id: string) => {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
     try {
-      const response = await fetch(`/api/transcription/${id}`)
+      const response = await fetch(`/api/transcription/${id}`, {
+        signal: controller.signal,
+      })
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.data) {
@@ -70,10 +74,14 @@ export function useJobProgress(jobId: string | null): UseJobProgressReturn {
           statusRef.current = job.status
           setProgress(job.status === 'completed' ? 100 : (job.progress ?? 0))
           if (job.error) setError(job.error)
+          if (job.status === 'completed') {
+            window.dispatchEvent(new Event('credits-refresh'))
+          }
         }
       }
     } catch {
     } finally {
+      clearTimeout(timeoutId)
       setIsInitialLoading(false)
     }
   }, [])

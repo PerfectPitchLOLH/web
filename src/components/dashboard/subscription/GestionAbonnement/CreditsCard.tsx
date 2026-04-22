@@ -3,6 +3,7 @@ import { Zap } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCredits } from '@/hooks/useCredits'
+import { computeUsagePercent } from '@/lib/credits'
 import { cn } from '@/lib/utils'
 
 export function CreditsCard() {
@@ -20,11 +21,10 @@ export function CreditsCard() {
 
   if (!credits) return null
 
-  const usagePercent =
-    credits.totalCredits > 0
-      ? Math.round((credits.usedThisMonth / credits.totalCredits) * 100)
-      : 0
-  const remaining = Math.max(0, credits.monthlyCredits - credits.usedThisMonth)
+  const remaining = credits.remainingCredits
+  const usagePercent = Math.round(
+    computeUsagePercent(credits.totalCredits - remaining, credits.totalCredits),
+  )
 
   return (
     <div className="rounded-xl border border-border bg-card p-6 space-y-4">
@@ -36,10 +36,13 @@ export function CreditsCard() {
       <div className="space-y-3">
         <div className="flex items-baseline gap-1">
           <span className="text-3xl font-bold">
-            {Math.round(remaining / 60)}
+            {remaining < 60
+              ? Math.floor(remaining)
+              : Math.floor(remaining / 60)}
           </span>
           <span className="text-muted-foreground text-sm">
-            / {Math.round(credits.monthlyCredits / 60)} min
+            {remaining < 60 ? 's' : 'min'} /{' '}
+            {Math.round(credits.monthlyCredits / 60)} min
           </span>
         </div>
 

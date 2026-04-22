@@ -1,13 +1,13 @@
 'use client'
 
 import { FileAudio, Upload } from 'lucide-react'
-import { useCallback, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { useAudioDropzone } from '@/hooks/useAudioDropzone'
 
 interface AudioDropzoneProps {
   selectedFile: File | null
-  onFileSelect: (file: File) => void
+  onFileSelect: (file: File, durationSeconds?: number) => void
   onFileRemove: () => void
 }
 
@@ -16,18 +16,15 @@ export function AudioDropzone({
   onFileSelect,
   onFileRemove,
 }: AudioDropzoneProps) {
-  const [isDragOver, setIsDragOver] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault()
-      setIsDragOver(false)
-      const file = e.dataTransfer.files[0]
-      if (file) onFileSelect(file)
-    },
-    [onFileSelect],
-  )
+  const {
+    isDragOver,
+    fileInputRef,
+    handleDrop,
+    handleDragOver,
+    handleDragLeave,
+    openFilePicker,
+    handleInputChange,
+  } = useAudioDropzone(onFileSelect)
 
   return (
     <>
@@ -36,18 +33,12 @@ export function AudioDropzone({
         type="file"
         accept="audio/*"
         className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0]
-          if (f) onFileSelect(f)
-        }}
+        onChange={handleInputChange}
       />
       <div
-        onClick={() => !selectedFile && fileInputRef.current?.click()}
-        onDragOver={(e) => {
-          e.preventDefault()
-          setIsDragOver(true)
-        }}
-        onDragLeave={() => setIsDragOver(false)}
+        onClick={() => !selectedFile && openFilePicker()}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`flex-1 min-h-48 flex flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all cursor-pointer ${
           isDragOver

@@ -38,8 +38,11 @@ const makeTranscribeResponse = (overrides = {}): TranscribeResponse => ({
 describe('TranscriptionService - Deep Tests', () => {
   let service: TranscriptionService
   let mockRepo: TranscriptionRepository
+  let mockCreditService: any
 
   beforeEach(() => {
+    vi.clearAllMocks()
+
     mockRepo = {
       uploadAudio: vi.fn(),
       uploadFromYoutubeUrl: vi.fn(),
@@ -50,10 +53,17 @@ describe('TranscriptionService - Deep Tests', () => {
       healthCheck: vi.fn(),
       saveJobOwner: vi.fn(),
       verifyJobOwner: vi.fn(),
+      atomicDeductCredits: vi.fn().mockResolvedValue('already_deducted'),
     } as any
 
-    service = new TranscriptionService(mockRepo)
-    vi.clearAllMocks()
+    mockCreditService = {
+      getUserCreditsBalance: vi
+        .fn()
+        .mockResolvedValue({ remainingCredits: 3600 }),
+      deductCreditsInSeconds: vi.fn().mockResolvedValue(undefined),
+    }
+
+    service = new TranscriptionService(mockRepo, mockCreditService)
   })
 
   describe('transcribe', () => {
@@ -613,6 +623,213 @@ describe('TranscriptionService - Deep Tests', () => {
       )
 
       await expect(service.checkHealth()).rejects.toThrow('Backend unreachable')
+    })
+  })
+
+  describe('credit pre-check', () => {
+    it('should block transcribe() when no credits remain', async () => {
+      mockCreditService.getUserCreditsBalance.mockResolvedValue({
+        remainingCredits: 0,
+      })
+
+      await expect(
+        service.transcribe(makeFile(), makeConfig(), 'user-broke'),
+      ).rejects.toMatchObject({
+        code: 'INSUFFICIENT_CREDITS',
+        statusCode: 402,
+      })
+
+      expect(mockRepo.uploadAudio).not.toHaveBeenCalled()
+    })
+
+    it('should block transcribeFromYoutube() when no credits remain', async () => {
+      mockCreditService.getUserCreditsBalance.mockResolvedValue({
+        remainingCredits: 0,
+      })
+
+      await expect(
+        service.transcribeFromYoutube(
+          'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          makeConfig(),
+          'user-broke',
+        ),
+      ).rejects.toMatchObject({ code: 'INSUFFICIENT_CREDITS', statusCode: 402 })
+
+      expect(mockRepo.uploadFromYoutubeUrl).not.toHaveBeenCalled()
+    })
+
+    it('should block transcribeFromSpotify() when no credits remain', async () => {
+      mockCreditService.getUserCreditsBalance.mockResolvedValue({
+        remainingCredits: 0,
+      })
+
+      await expect(
+        service.transcribeFromSpotify(
+          'https://open.spotify.com/track/abc123',
+          makeConfig(),
+          'user-broke',
+        ),
+      ).rejects.toMatchObject({ code: 'INSUFFICIENT_CREDITS', statusCode: 402 })
+    })
+
+    it('should allow transcription when credits are available', async () => {
+      mockCreditService.getUserCreditsBalance.mockResolvedValue({
+        remainingCredits: 60,
+      })
+      vi.mocked(mockRepo.validateConfig).mockResolvedValue({ valid: true })
+      vi.mocked(mockRepo.uploadAudio).mockResolvedValue(
+        makeTranscribeResponse(),
+      )
+      vi.mocked(mockRepo.saveJobOwner).mockResolvedValue(undefined)
+
+      await expect(
+        service.transcribe(makeFile(), makeConfig(), 'user-1'),
+      ).resolves.toBeDefined()
+    })
+
+    it('should allow transcription when credits are exactly 1 second', async () => {
+      mockCreditService.getUserCreditsBalance.mockResolvedValue({
+        remainingCredits: 1,
+      })
+      vi.mocked(mockRepo.validateConfig).mockResolvedValue({ valid: true })
+      vi.mocked(mockRepo.uploadAudio).mockResolvedValue(
+        makeTranscribeResponse(),
+      )
+      vi.mocked(mockRepo.saveJobOwner).mockResolvedValue(undefined)
+
+      await expect(
+        service.transcribe(makeFile(), makeConfig(), 'user-1'),
+      ).resolves.toBeDefined()
+    })
+  })
+
+  describe('credit post-deduct in getJob()', () => {
+    const makeCompletedJob = (durationSeconds = 227) => ({
+      job_id: 'job-done',
+      status: 'completed' as const,
+      progress: 100,
+      current_step: 'svg' as const,
+      created_at: '2024-01-01T00:00:00Z',
+      results: {
+        partition_svg_url: '/api/transcription/job-done/download',
+        duration_seconds: durationSeconds,
+      },
+    })
+
+    it('should deduct credits when job completes for first time', async () => {
+      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
+      vi.mocked(mockRepo.getJobStatus).mockResolvedValue(
+        makeCompletedJob(180) as any,
+      )
+      vi.mocked(mockRepo.atomicDeductCredits).mockResolvedValue(
+        'deducted' as const,
+      )
+
+      await service.getJob('job-done', 'user-1')
+
+      expect(mockRepo.atomicDeductCredits).toHaveBeenCalledWith(
+        'job-done',
+        'user-1',
+        180,
+        expect.any(String),
+      )
+      expect(mockCreditService.deductCreditsInSeconds).toHaveBeenCalledWith(
+        'user-1',
+        180,
+        expect.stringContaining('180'),
+      )
+    })
+
+    it('should NOT deduct credits when already deducted (idempotence)', async () => {
+      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
+      vi.mocked(mockRepo.getJobStatus).mockResolvedValue(
+        makeCompletedJob(180) as any,
+      )
+      vi.mocked(mockRepo.atomicDeductCredits).mockResolvedValue(
+        'already_deducted',
+      )
+
+      await service.getJob('job-done', 'user-1')
+
+      expect(mockCreditService.deductCreditsInSeconds).not.toHaveBeenCalled()
+    })
+
+    it('should NOT deduct credits when job is still processing', async () => {
+      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
+      vi.mocked(mockRepo.getJobStatus).mockResolvedValue({
+        job_id: 'job-1',
+        status: 'processing' as const,
+        progress: 50,
+        current_step: 'transcription' as const,
+        created_at: '2024-01-01T00:00:00Z',
+      } as any)
+
+      await service.getJob('job-1', 'user-1')
+
+      expect(mockRepo.atomicDeductCredits).not.toHaveBeenCalled()
+      expect(mockCreditService.deductCreditsInSeconds).not.toHaveBeenCalled()
+    })
+
+    it('should NOT deduct credits when duration_seconds is 0', async () => {
+      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
+      vi.mocked(mockRepo.getJobStatus).mockResolvedValue(
+        makeCompletedJob(0) as any,
+      )
+
+      await service.getJob('job-done', 'user-1')
+
+      expect(mockRepo.atomicDeductCredits).not.toHaveBeenCalled()
+      expect(mockCreditService.deductCreditsInSeconds).not.toHaveBeenCalled()
+    })
+
+    it('should NOT deduct credits when job failed', async () => {
+      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
+      vi.mocked(mockRepo.getJobStatus).mockResolvedValue({
+        job_id: 'job-fail',
+        status: 'failed' as const,
+        progress: 30,
+        current_step: 'preprocessing' as const,
+        created_at: '2024-01-01T00:00:00Z',
+        error: 'Processing failed',
+      } as any)
+
+      await service.getJob('job-fail', 'user-1')
+
+      expect(mockCreditService.deductCreditsInSeconds).not.toHaveBeenCalled()
+    })
+
+    it('should still return job details even after deducting credits', async () => {
+      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
+      vi.mocked(mockRepo.getJobStatus).mockResolvedValue(
+        makeCompletedJob(60) as any,
+      )
+      vi.mocked(mockRepo.atomicDeductCredits).mockResolvedValue(
+        'deducted' as const,
+      )
+
+      const result = await service.getJob('job-done', 'user-1')
+
+      expect(result.status).toBe('completed')
+      expect(result.results?.duration_seconds).toBe(60)
+    })
+
+    it('should pass correct duration to atomicDeductCredits', async () => {
+      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
+      vi.mocked(mockRepo.getJobStatus).mockResolvedValue(
+        makeCompletedJob(347) as any,
+      )
+      vi.mocked(mockRepo.atomicDeductCredits).mockResolvedValue(
+        'deducted' as const,
+      )
+
+      await service.getJob('job-done', 'user-1')
+
+      expect(mockRepo.atomicDeductCredits).toHaveBeenCalledWith('job-done', 347)
+      expect(mockCreditService.deductCreditsInSeconds).toHaveBeenCalledWith(
+        'user-1',
+        347,
+        expect.any(String),
+      )
     })
   })
 })

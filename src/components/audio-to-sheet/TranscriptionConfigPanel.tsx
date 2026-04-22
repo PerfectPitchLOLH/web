@@ -1,9 +1,9 @@
 'use client'
 
-import { ChevronRight, Loader2, Music, XCircle } from 'lucide-react'
+import { ChevronRight, CreditCard, Loader2, Music } from 'lucide-react'
 
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { InlineAlert } from '@/components/ui/inline-alert'
 import {
   Select,
   SelectContent,
@@ -25,6 +25,7 @@ interface TranscriptionConfigPanelProps {
   hasSource: boolean
   isProcessing: boolean
   error: string | null
+  outOfCredits?: boolean
   onTranscribe: () => void
 }
 
@@ -34,6 +35,7 @@ export function TranscriptionConfigPanel({
   hasSource,
   isProcessing,
   error,
+  outOfCredits = false,
   onTranscribe,
 }: TranscriptionConfigPanelProps) {
   const handleInstrumentChange = (v: string) => {
@@ -175,16 +177,23 @@ export function TranscriptionConfigPanel({
           </div>
         </div>
 
-        {error && (
-          <Alert variant="destructive" className="py-2">
-            <XCircle className="h-4 w-4" />
-            <AlertDescription className="text-xs">{error}</AlertDescription>
-          </Alert>
+        {outOfCredits && (
+          <InlineAlert
+            message="Crédits insuffisants."
+            icon={<CreditCard className="h-4 w-4" />}
+            compact
+            action={{
+              label: 'Acheter des crédits',
+              href: '/dashboard/subscription',
+            }}
+          />
         )}
+
+        {!outOfCredits && error && <InlineAlert message={error} compact />}
       </div>
 
       <Button
-        disabled={!hasSource || isProcessing}
+        disabled={!hasSource || isProcessing || outOfCredits}
         className="w-full h-10"
         onClick={onTranscribe}
       >

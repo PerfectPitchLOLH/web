@@ -104,4 +104,15 @@ export class PartitionController {
       return handleApiError(error)
     }
   }
+
+  async checkSimilarTitle(userId: string, request: NextRequest) {
+    try {
+      const { searchParams } = new URL(request.url)
+      const title = searchParams.get('title') ?? ''
+      const data = await this.service.findSimilarByTitle(userId, title)
+      return createSuccessResponse(data)
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
 }

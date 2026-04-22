@@ -1,15 +1,16 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 
-import { INSTRUMENT_TO_STEM } from '@/components/audio-to-sheet/audio-to-sheet.constants'
 import { AudioDropzone } from '@/components/audio-to-sheet/AudioDropzone'
 import { ResumeBanner } from '@/components/audio-to-sheet/ResumeBanner'
+import { SimilarPartitionDialog } from '@/components/audio-to-sheet/SimilarPartitionDialog'
 import { SpotifyInput } from '@/components/audio-to-sheet/SpotifyInput'
 import { TranscriptionConfigPanel } from '@/components/audio-to-sheet/TranscriptionConfigPanel'
 import { YoutubeInput } from '@/components/audio-to-sheet/YoutubeInput'
 import { Button } from '@/components/ui/button'
+import { useCredits } from '@/hooks/useCredits'
+import { useTranscribeSubmit } from '@/hooks/useTranscribeSubmit'
 import { useTranscription } from '@/hooks/useTranscription'
 import type {
   InputSource,
@@ -26,7 +27,6 @@ const DEFAULT_CONFIG: TranscribeConfig = {
 type UrlTab = 'youtube' | 'spotify'
 
 export default function AudioToSheetPage() {
-  const router = useRouter()
   const {
     transcribe,
     transcribeFromYoutube,
@@ -36,10 +36,25 @@ export default function AudioToSheetPage() {
     reset,
   } = useTranscription()
 
+  const { credits } = useCredits()
+  const outOfCredits = credits !== null && credits.remainingCredits <= 0
+
   const [inputSource, setInputSource] = useState<InputSource>(null)
   const [config, setConfig] = useState<TranscribeConfig>(DEFAULT_CONFIG)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [urlTab, setUrlTab] = useState<UrlTab>('youtube')
+
+  const {
+    isSubmitting,
+    handleTranscribe,
+    similarPartitions,
+    similarDialogOpen,
+    setSimilarDialogOpen,
+    handleSimilarConfirm,
+  } = useTranscribeSubmit(inputSource, config, {
+    transcribe,
+    transcribeFromYoutube,
+    transcribeFromSpotify,
+  })
 
   const handleYoutubeSelect = useCallback((url: string, videoTitle: string) => {
     setInputSource({ type: 'youtube', url, videoTitle })
@@ -62,45 +77,14 @@ export default function AudioToSheetPage() {
     setInputSource(null)
   }
 
-  const handleTranscribe = async () => {
-    if (!inputSource) return
-
-    const configToSend: TranscribeConfig = {
-      ...config,
-      ...(config.instrument_mode === 'multiple' && {
-        target_stem: INSTRUMENT_TO_STEM[config.instrument_type],
-      }),
-    }
-
-    setIsSubmitting(true)
-    try {
-      let jobId: string | null = null
-      if (inputSource.type === 'file') {
-        jobId = await transcribe(inputSource.file, configToSend)
-      } else if (inputSource.type === 'youtube') {
-        jobId = await transcribeFromYoutube(
-          inputSource.url,
-          inputSource.videoTitle,
-          configToSend,
-        )
-      } else if (inputSource.type === 'spotify') {
-        jobId = await transcribeFromSpotify(
-          inputSource.url,
-          inputSource.trackTitle,
-          configToSend,
-        )
-      }
-
-      if (jobId) {
-        router.push(`/dashboard/audio-to-sheet/${jobId}`)
-      }
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   return (
     <div className="flex flex-1 flex-col min-h-0 overflow-auto">
+      <SimilarPartitionDialog
+        open={similarDialogOpen}
+        onOpenChange={setSimilarDialogOpen}
+        similarPartitions={similarPartitions}
+        onConfirm={handleSimilarConfirm}
+      />
       {sessionToResume && (
         <div className="px-6 pt-4 shrink-0">
           <ResumeBanner
@@ -129,7 +113,9 @@ export default function AudioToSheetPage() {
                 selectedFile={
                   inputSource?.type === 'file' ? inputSource.file : null
                 }
-                onFileSelect={(file) => setInputSource({ type: 'file', file })}
+                onFileSelect={(file, durationSeconds) =>
+                  setInputSource({ type: 'file', file, durationSeconds })
+                }
                 onFileRemove={() => setInputSource(null)}
               />
             </div>
@@ -189,6 +175,7 @@ export default function AudioToSheetPage() {
           hasSource={inputSource !== null}
           isProcessing={isSubmitting}
           error={error}
+          outOfCredits={outOfCredits}
           onTranscribe={handleTranscribe}
         />
       </div>

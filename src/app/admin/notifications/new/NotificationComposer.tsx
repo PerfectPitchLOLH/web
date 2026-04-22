@@ -1,9 +1,8 @@
-import { AlertCircle, Loader2, Send } from 'lucide-react'
+import { Loader2, Send } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -12,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { InlineAlert } from '@/components/ui/inline-alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -136,12 +136,7 @@ export function NotificationComposer({ data, onChange }: Props) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="size-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+        {error && <InlineAlert message={error} />}
 
         <div className="space-y-2">
           <Label htmlFor="type">Type</Label>

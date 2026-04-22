@@ -137,7 +137,7 @@ export type SpotifyTranscribeRequest = {
 }
 
 export type InputSource =
-  | { type: 'file'; file: File }
+  | { type: 'file'; file: File; durationSeconds?: number }
   | { type: 'youtube'; url: string; videoTitle: string }
   | { type: 'spotify'; url: string; trackTitle: string }
   | null

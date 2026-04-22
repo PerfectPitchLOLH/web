@@ -1,10 +1,9 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import { AlertCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { InlineAlert } from '@/components/ui/inline-alert'
 
 type Props = {
   error?: string
@@ -33,10 +32,7 @@ export function FormError({ error }: Props) {
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
         >
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <InlineAlert message={error} />
         </motion.div>
       )}
     </AnimatePresence>

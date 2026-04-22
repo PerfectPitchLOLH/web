@@ -1,9 +1,9 @@
 'use client'
 
-import { CheckCircle2, Loader2, Music, StopCircle, XCircle } from 'lucide-react'
+import { CheckCircle2, Loader2, Music, StopCircle } from 'lucide-react'
 
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { InlineAlert } from '@/components/ui/inline-alert'
 import { Progress } from '@/components/ui/progress'
 import {
   PROCESSING_STEP_LABELS,
@@ -136,12 +136,7 @@ export function TranscriptionProcessingView({
           )}
         </Button>
 
-        {error && (
-          <Alert variant="destructive">
-            <XCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+        {error && <InlineAlert message={error} />}
       </div>
     </div>
   )

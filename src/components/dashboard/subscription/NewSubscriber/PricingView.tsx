@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 
-import { AdditionalCreditsSection } from '@/components/credits/AdditionalCreditsSection'
 import { Button } from '@/components/ui/button'
 import { useSubscription } from '@/hooks/useSubscription'
 
@@ -47,10 +46,6 @@ export function PricingView() {
         </div>
 
         <ComparisonTable />
-
-        <div id="credits">
-          <AdditionalCreditsSection />
-        </div>
 
         <div className="mt-20 text-center">
           <div className="inline-block p-8 rounded-2xl border border-border bg-card/50 backdrop-blur">
