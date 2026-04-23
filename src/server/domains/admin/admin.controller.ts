@@ -24,7 +24,7 @@ export class AdminController {
 
   async getDashboardStats(request: NextRequest) {
     const authResult = await validateApiAuth(request)
-    if (authResult.response) return authResult.response
+    if (!authResult.ok) return authResult.response
 
     const { session } = authResult
 
@@ -55,7 +55,7 @@ export class AdminController {
 
   async getUsers(request: NextRequest) {
     const authResult = await validateApiAuth(request)
-    if (authResult.response) return authResult.response
+    if (!authResult.ok) return authResult.response
 
     const { session } = authResult
 
@@ -103,7 +103,7 @@ export class AdminController {
 
   async updateUserRole(request: NextRequest) {
     const authResult = await validateApiAuth(request)
-    if (authResult.response) return authResult.response
+    if (!authResult.ok) return authResult.response
 
     const { session } = authResult
 
@@ -166,7 +166,7 @@ export class AdminController {
 
   async suspendUser(request: NextRequest) {
     const authResult = await validateApiAuth(request)
-    if (authResult.response) return authResult.response
+    if (!authResult.ok) return authResult.response
 
     const { session } = authResult
 
@@ -232,7 +232,7 @@ export class AdminController {
 
   async deleteUser(request: NextRequest) {
     const authResult = await validateApiAuth(request)
-    if (authResult.response) return authResult.response
+    if (!authResult.ok) return authResult.response
 
     const { session } = authResult
 
@@ -298,7 +298,7 @@ export class AdminController {
 
   async getAuditLogs(request: NextRequest) {
     const authResult = await validateApiAuth(request)
-    if (authResult.response) return authResult.response
+    if (!authResult.ok) return authResult.response
 
     const { session } = authResult
 

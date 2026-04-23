@@ -1,20 +1,27 @@
 import { NextRequest } from 'next/server'
 
-import { auth } from '@/server/lib/auth'
 import { db } from '@/server/lib/database'
+import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
+import { validateApiAuth } from '@/server/shared/middleware/auth.middleware'
 import {
+  createErrorResponse,
   createSuccessResponse,
   handleApiError,
 } from '@/server/shared/utils/api.utils'
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
+  const auth = await validateApiAuth(request)
+  if (!auth.ok) return auth.response
+  if (auth.session.user.role !== 'admin') {
+    return createErrorResponse(
+      'FORBIDDEN',
+      undefined,
+      undefined,
+      HTTP_STATUS.FORBIDDEN,
+    )
+  }
+
   try {
-    const session = await auth()
-
-    if (!session?.user || session.user.role !== 'admin') {
-      return new Response('Unauthorized', { status: 401 })
-    }
-
     const plans = await db.subscriptionPlan.findMany({
       where: { isActive: true },
       select: {

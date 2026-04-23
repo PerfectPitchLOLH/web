@@ -21,12 +21,14 @@ export function DashboardShell({ children, session }: DashboardShellProps) {
       <SidebarProvider>
         <ImpersonationBanner />
         <DevModeBox />
-        <div className="flex min-h-screen w-full">
+        <div className="flex h-screen overflow-hidden w-full">
           <AppSidebar />
-          <div className="flex flex-1 flex-col">
+          <div className="flex flex-1 flex-col min-h-0">
             <DashboardTopbar />
             <EmailVerificationBanner />
-            <main className="flex-1">{children}</main>
+            <main className="flex-1 min-h-0 overflow-auto flex flex-col">
+              {children}
+            </main>
           </div>
         </div>
       </SidebarProvider>

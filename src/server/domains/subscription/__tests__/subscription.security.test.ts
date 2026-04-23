@@ -616,26 +616,26 @@ describe('Subscription Domain - Security Tests', () => {
       vi.mocked(mockRepository.findPlanByStripePriceId).mockResolvedValue({
         id: 'plan_junior',
         stripePriceId: 'price_junior_monthly',
+        name: 'Junior',
         transcriptionMinutes: 10,
       } as any)
 
-      vi.mocked(stripe.subscriptions.retrieve).mockResolvedValue({
-        id: 'sub_stripe_123',
-        items: {
-          data: [{ id: 'si_123' } as any],
-        },
+      vi.mocked(mockRepository.findCustomerByUserId).mockResolvedValue({
+        userId: 'user_123',
+        stripeCustomerId: 'cus_123',
       } as any)
 
-      vi.mocked(stripe.subscriptions.update).mockResolvedValue({
-        id: 'sub_stripe_123',
+      vi.mocked(stripe.checkout.sessions.create).mockResolvedValue({
+        id: 'cs_downgrade',
+        url: 'https://checkout.stripe.com/cs_downgrade',
       } as any)
 
       await service.upgradeSubscription('user_123', 'price_junior_monthly')
 
-      expect(stripe.subscriptions.update).toHaveBeenCalledWith(
-        'sub_stripe_123',
+      expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          proration_behavior: 'create_prorations',
+          customer: 'cus_123',
+          mode: 'subscription',
         }),
       )
     })
@@ -1067,17 +1067,19 @@ describe('Subscription Domain - Security Tests', () => {
       vi.mocked(mockRepository.findPlanByStripePriceId).mockResolvedValue({
         id: 'plan_pro',
         stripePriceId: 'price_pro_monthly',
+        name: 'Pro',
       } as any)
 
-      vi.mocked(stripe.subscriptions.retrieve).mockResolvedValue({
-        id: 'sub_stripe_race',
-        items: {
-          data: [{ id: 'si_race' } as any],
-        },
+      vi.mocked(mockRepository.findCustomerByUserId).mockResolvedValue({
+        userId: 'user_race',
+        stripeCustomerId: 'cus_race',
       } as any)
 
-      vi.mocked(stripe.subscriptions.update)
-        .mockResolvedValueOnce({ id: 'sub_stripe_race' } as any)
+      vi.mocked(stripe.checkout.sessions.create)
+        .mockResolvedValueOnce({
+          id: 'cs_race_1',
+          url: 'https://checkout.stripe.com/cs_race_1',
+        } as any)
         .mockRejectedValueOnce(new Error('Concurrent modification detected'))
 
       await service.upgradeSubscription('user_race', 'price_pro_monthly')

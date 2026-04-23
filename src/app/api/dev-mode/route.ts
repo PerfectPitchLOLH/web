@@ -1,66 +1,22 @@
 import { NextRequest } from 'next/server'
 
 import { devModeController } from '@/server/domains/dev-mode'
-import { auth } from '@/server/lib/auth'
-import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
-import {
-  createErrorResponse,
-  handleApiError,
-} from '@/server/shared/utils/api.utils'
+import { validateApiAuth } from '@/server/shared/middleware/auth.middleware'
 
 export async function GET(request: NextRequest) {
-  try {
-    const session = await auth()
-
-    if (!session?.user) {
-      return createErrorResponse(
-        'UNAUTHORIZED',
-        'Authentication required',
-        null,
-        HTTP_STATUS.UNAUTHORIZED,
-      )
-    }
-
-    return devModeController.getStatus(request, session.user.role)
-  } catch (error) {
-    return handleApiError(error)
-  }
+  const auth = await validateApiAuth(request)
+  if (!auth.ok) return auth.response
+  return devModeController.getStatus(request, auth.session.user.role)
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const session = await auth()
-
-    if (!session?.user) {
-      return createErrorResponse(
-        'UNAUTHORIZED',
-        'Authentication required',
-        null,
-        HTTP_STATUS.UNAUTHORIZED,
-      )
-    }
-
-    return devModeController.activate(request, session.user.role)
-  } catch (error) {
-    return handleApiError(error)
-  }
+  const auth = await validateApiAuth(request)
+  if (!auth.ok) return auth.response
+  return devModeController.activate(request, auth.session.user.role)
 }
 
 export async function DELETE(request: NextRequest) {
-  try {
-    const session = await auth()
-
-    if (!session?.user) {
-      return createErrorResponse(
-        'UNAUTHORIZED',
-        'Authentication required',
-        null,
-        HTTP_STATUS.UNAUTHORIZED,
-      )
-    }
-
-    return devModeController.deactivate(request, session.user.role)
-  } catch (error) {
-    return handleApiError(error)
-  }
+  const auth = await validateApiAuth(request)
+  if (!auth.ok) return auth.response
+  return devModeController.deactivate(request, auth.session.user.role)
 }

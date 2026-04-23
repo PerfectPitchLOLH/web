@@ -3,59 +3,39 @@
 import { Calendar, TrendingUp, Wallet } from 'lucide-react'
 import Link from 'next/link'
 
+import { CreditBalanceCardSkeleton } from '@/components/dashboard/credits/CreditBalanceCardSkeleton'
 import { Button } from '@/components/ui/button'
 import { useCredits } from '@/hooks/useCredits'
-import { cn } from '@/lib/utils'
+import {
+  computeUsagePercent,
+  formatLocalDate,
+  getCreditProgressColor,
+  getNextRefillDate,
+  secondsToMinutes,
+} from '@/lib/credits'
+import { cn, formatCredits } from '@/lib/utils'
 
 export function CreditBalanceCard() {
   const { credits, loading } = useCredits()
 
-  if (loading) {
-    return (
-      <div className="rounded-2xl border border-border/50 bg-gradient-to-br from-card via-card to-card/50 p-6 backdrop-blur-sm shadow-lg shadow-black/5 animate-pulse">
-        <div className="h-6 w-48 bg-muted rounded mb-4" />
-        <div className="h-16 w-full bg-muted rounded mb-4" />
-        <div className="h-4 w-32 bg-muted rounded" />
-      </div>
-    )
-  }
-
+  if (loading) return <CreditBalanceCardSkeleton />
   if (!credits) return null
 
-  const monthlyMinutes = Math.floor(credits.monthlyCredits / 60)
-  const bonusMinutes = Math.floor(credits.bonusCredits / 60)
-  const totalMinutes = Math.floor(credits.totalCredits / 60)
-  const remainingMinutes = Math.floor(credits.remainingCredits / 60)
-  const usedMinutes = Math.floor(credits.usedThisMonth / 60)
+  const monthlyMinutes = secondsToMinutes(credits.monthlyCredits)
+  const bonusMinutes = secondsToMinutes(credits.bonusCredits)
+  const totalMinutes = secondsToMinutes(credits.totalCredits)
 
-  const usagePercent = totalMinutes > 0 ? (usedMinutes / totalMinutes) * 100 : 0
+  const usagePercent = computeUsagePercent(
+    credits.usedThisMonth,
+    credits.totalCredits,
+  )
   const remainingPercent = 100 - usagePercent
+  const progressColor = getCreditProgressColor(
+    credits.remainingCredits,
+    credits.totalCredits,
+  )
 
-  const getProgressColor = () => {
-    if (remainingPercent > 50) return 'bg-green-500'
-    if (remainingPercent > 20) return 'bg-orange-500'
-    return 'bg-red-500'
-  }
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Non défini'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    })
-  }
-
-  const getNextRefillDate = () => {
-    if (!credits.lastMonthlyRefill) {
-      return 'Prochain renouvellement'
-    }
-    const lastRefill = new Date(credits.lastMonthlyRefill)
-    const nextRefill = new Date(lastRefill)
-    nextRefill.setMonth(nextRefill.getMonth() + 1)
-    return nextRefill
-  }
+  const nextRefill = getNextRefillDate(credits.lastMonthlyRefill)
 
   return (
     <div
@@ -76,7 +56,8 @@ export function CreditBalanceCard() {
           <div>
             <h3 className="font-semibold text-lg">Minutes de transcription</h3>
             <p className="text-sm text-muted-foreground">
-              {remainingMinutes} / {totalMinutes} minutes restantes
+              {formatCredits(credits.remainingCredits)} / {totalMinutes} min
+              restantes
             </p>
           </div>
         </div>
@@ -87,7 +68,7 @@ export function CreditBalanceCard() {
           <div
             className={cn(
               'absolute inset-y-0 left-0 rounded-full transition-all duration-500',
-              getProgressColor(),
+              progressColor,
             )}
             style={{ width: `${remainingPercent}%` }}
           />
@@ -123,10 +104,7 @@ export function CreditBalanceCard() {
       <div className="flex items-center justify-between mb-4 text-sm">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Calendar className="size-4" />
-          <span>
-            Prochain renouvellement :{' '}
-            {formatDate(getNextRefillDate().toString())}
-          </span>
+          <span>Prochain renouvellement : {formatLocalDate(nextRefill)}</span>
         </div>
       </div>
 

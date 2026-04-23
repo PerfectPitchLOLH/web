@@ -1,5 +1,6 @@
 import * as LucideIcons from 'lucide-react'
 
+import type { NotificationFormData } from '@/components/admin/notifications/NotificationComposer'
 import {
   Card,
   CardContent,
@@ -7,8 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-
-import type { NotificationFormData } from './page'
 
 type Props = {
   data: NotificationFormData

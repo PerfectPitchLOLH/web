@@ -1,19 +1,10 @@
+import { NextRequest } from 'next/server'
+
 import { notificationController } from '@/server/domains/notification'
-import { auth } from '@/server/lib/auth'
-import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
-import { createErrorResponse } from '@/server/shared/utils/api.utils'
+import { validateApiAuth } from '@/server/shared/middleware/auth.middleware'
 
-export async function POST() {
-  const session = await auth()
-
-  if (!session?.user?.id) {
-    return createErrorResponse(
-      'UNAUTHORIZED',
-      undefined,
-      undefined,
-      HTTP_STATUS.UNAUTHORIZED,
-    )
-  }
-
-  return notificationController.markAllAsRead(session.user.id)
+export async function POST(request: NextRequest) {
+  const auth = await validateApiAuth(request)
+  if (!auth.ok) return auth.response
+  return notificationController.markAllAsRead(auth.session.user.id)
 }

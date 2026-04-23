@@ -64,27 +64,20 @@ export async function checkAdminRateLimit(
 
       auditLogger.logRateLimitExceeded(identifier, pathname, identifier)
 
-      return NextResponse.json(
-        createErrorResponse(
-          'RATE_LIMIT_EXCEEDED',
-          'Too many requests. Please try again later.',
-          {
-            limit,
-            reset: new Date(reset).toISOString(),
-            remaining,
-          },
-          HTTP_STATUS.TOO_MANY_REQUESTS,
-        ),
-        {
-          status: HTTP_STATUS.TOO_MANY_REQUESTS,
-          headers: {
-            'X-RateLimit-Limit': limit.toString(),
-            'X-RateLimit-Remaining': remaining.toString(),
-            'X-RateLimit-Reset': reset.toString(),
-            'Retry-After': Math.ceil((reset - Date.now()) / 1000).toString(),
-          },
-        },
+      const response = createErrorResponse(
+        'RATE_LIMIT_EXCEEDED',
+        'Too many requests. Please try again later.',
+        { limit, reset: new Date(reset).toISOString(), remaining },
+        HTTP_STATUS.TOO_MANY_REQUESTS,
       )
+      response.headers.set('X-RateLimit-Limit', limit.toString())
+      response.headers.set('X-RateLimit-Remaining', remaining.toString())
+      response.headers.set('X-RateLimit-Reset', reset.toString())
+      response.headers.set(
+        'Retry-After',
+        Math.ceil((reset - Date.now()) / 1000).toString(),
+      )
+      return response
     }
 
     return null
@@ -109,27 +102,20 @@ export async function checkAuthRateLimit(
 
       auditLogger.logRateLimitExceeded(identifier, pathname, identifier)
 
-      return NextResponse.json(
-        createErrorResponse(
-          'RATE_LIMIT_EXCEEDED',
-          'Too many authentication attempts. Please try again later.',
-          {
-            limit,
-            reset: new Date(reset).toISOString(),
-            remaining,
-          },
-          HTTP_STATUS.TOO_MANY_REQUESTS,
-        ),
-        {
-          status: HTTP_STATUS.TOO_MANY_REQUESTS,
-          headers: {
-            'X-RateLimit-Limit': limit.toString(),
-            'X-RateLimit-Remaining': remaining.toString(),
-            'X-RateLimit-Reset': reset.toString(),
-            'Retry-After': Math.ceil((reset - Date.now()) / 1000).toString(),
-          },
-        },
+      const response = createErrorResponse(
+        'RATE_LIMIT_EXCEEDED',
+        'Too many authentication attempts. Please try again later.',
+        { limit, reset: new Date(reset).toISOString(), remaining },
+        HTTP_STATUS.TOO_MANY_REQUESTS,
       )
+      response.headers.set('X-RateLimit-Limit', limit.toString())
+      response.headers.set('X-RateLimit-Remaining', remaining.toString())
+      response.headers.set('X-RateLimit-Reset', reset.toString())
+      response.headers.set(
+        'Retry-After',
+        Math.ceil((reset - Date.now()) / 1000).toString(),
+      )
+      return response
     }
 
     return null

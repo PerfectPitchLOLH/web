@@ -1,35 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 
 import { permissionService } from '@/server/domains/permission'
-import { auth } from '@/server/lib/auth'
-import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
+import { validateApiAuth } from '@/server/shared/middleware/auth.middleware'
 import {
-  createErrorResponse,
   createSuccessResponse,
   handleApiError,
 } from '@/server/shared/utils/api.utils'
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
+  const auth = await validateApiAuth(request)
+  if (!auth.ok) return auth.response
+
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        createErrorResponse(
-          'UNAUTHORIZED',
-          'Non authentifié',
-          undefined,
-          HTTP_STATUS.UNAUTHORIZED,
-        ),
-        { status: HTTP_STATUS.UNAUTHORIZED },
-      )
-    }
-
     const context = await permissionService.getUserPermissionContext(
-      session.user.id,
+      auth.session.user.id,
     )
-
-    return NextResponse.json(createSuccessResponse(context))
+    return createSuccessResponse(context)
   } catch (error) {
     return handleApiError(error)
   }

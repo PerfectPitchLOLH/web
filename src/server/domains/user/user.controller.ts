@@ -21,8 +21,8 @@ export class UserController {
   constructor(private service: UserService) {}
 
   async getUsers(request: NextRequest) {
-    const { response } = await validateApiAuth(request)
-    if (response) return response
+    const authResult = await validateApiAuth(request)
+    if (!authResult.ok) return authResult.response
 
     try {
       const { searchParams } = request.nextUrl
@@ -65,8 +65,8 @@ export class UserController {
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
   ) {
-    const { response } = await validateApiAuth(request)
-    if (response) return response
+    const authResult = await validateApiAuth(request)
+    if (!authResult.ok) return authResult.response
 
     try {
       const { id } = await params
@@ -87,8 +87,8 @@ export class UserController {
   }
 
   async createUser(request: NextRequest) {
-    const { response } = await validateApiAuth(request)
-    if (response) return response
+    const authResult = await validateApiAuth(request)
+    if (!authResult.ok) return authResult.response
 
     try {
       const body = await request.json()
@@ -120,8 +120,8 @@ export class UserController {
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
   ) {
-    const { response } = await validateApiAuth(request)
-    if (response) return response
+    const authResult = await validateApiAuth(request)
+    if (!authResult.ok) return authResult.response
 
     try {
       const { id } = await params
@@ -155,8 +155,8 @@ export class UserController {
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
   ) {
-    const { response } = await validateApiAuth(request)
-    if (response) return response
+    const authResult = await validateApiAuth(request)
+    if (!authResult.ok) return authResult.response
 
     try {
       const { id } = await params

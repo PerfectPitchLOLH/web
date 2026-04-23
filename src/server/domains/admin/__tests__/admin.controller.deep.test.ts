@@ -85,6 +85,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Authorization', () => {
       it('should allow admin to get dashboard stats', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -123,6 +124,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should reject non-admin user', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockUserSession,
         } as any)
 
@@ -142,6 +144,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should log unauthorized access attempt', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockUserSession,
         } as any)
 
@@ -183,6 +186,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Edge Cases - IP Address Extraction', () => {
       it('should extract IP from X-Forwarded-For header', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockUserSession,
         } as any)
 
@@ -205,6 +209,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should extract IP from X-Real-IP header', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockUserSession,
         } as any)
 
@@ -227,6 +232,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle missing IP headers', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockUserSession,
         } as any)
 
@@ -252,6 +258,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Service Errors', () => {
       it('should handle service throwing error', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -271,6 +278,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle service throwing ApiError', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -298,6 +306,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Query Parameter Parsing', () => {
       it('should parse all filters correctly', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -329,6 +338,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle missing query parameters', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -359,6 +369,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle special characters in search', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -386,6 +397,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle Unicode in search query', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -413,6 +425,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle invalid page number', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -428,6 +441,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle invalid limit', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -443,6 +457,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle emailVerified=false', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -474,6 +489,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Authorization', () => {
       it('should reject non-admin user', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockUserSession,
         } as any)
 
@@ -494,6 +510,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Success Cases', () => {
       it('should update user role successfully', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -518,6 +535,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should pass correct parameters to service', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -551,6 +569,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Validation Errors', () => {
       it('should reject empty userId', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -571,6 +590,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should reject invalid role', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -590,6 +610,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle missing userId', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -608,6 +629,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle missing role', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -628,6 +650,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Edge Cases - Request Body', () => {
       it('should handle malformed JSON', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -647,6 +670,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle empty request body', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -663,6 +687,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle very large userId', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -682,6 +707,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle SQL injection in userId', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -707,6 +733,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Authorization', () => {
       it('should reject non-admin user', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockUserSession,
         } as any)
 
@@ -729,6 +756,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Service Errors', () => {
       it('should handle user not found', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -754,6 +782,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle forbidden action', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -785,6 +814,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Success Cases', () => {
       it('should suspend user successfully', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -812,6 +842,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Validation Errors', () => {
       it('should reject empty userId', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -830,6 +861,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should reject missing userId', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -848,6 +880,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Authorization', () => {
       it('should reject non-admin user', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockUserSession,
         } as any)
 
@@ -871,6 +904,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Success Cases', () => {
       it('should delete user successfully', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -896,6 +930,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Validation Errors', () => {
       it('should reject empty userId', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -916,6 +951,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Authorization', () => {
       it('should reject non-admin user', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockUserSession,
         } as any)
 
@@ -937,6 +973,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Service Errors', () => {
       it('should handle root admin deletion attempt', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -967,6 +1004,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Query Parameter Parsing', () => {
       it('should parse all filters correctly', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -1001,6 +1039,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle missing filters', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -1031,6 +1070,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle invalid date formats', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -1046,6 +1086,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle very old dates', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -1071,6 +1112,7 @@ describe('AdminController - Deep Tests', () => {
 
       it('should handle future dates', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockAdminSession,
         } as any)
 
@@ -1098,6 +1140,7 @@ describe('AdminController - Deep Tests', () => {
     describe('Authorization', () => {
       it('should reject non-admin user', async () => {
         vi.mocked(validateApiAuth).mockResolvedValue({
+          ok: true,
           session: mockUserSession,
         } as any)
 
@@ -1117,6 +1160,7 @@ describe('AdminController - Deep Tests', () => {
   describe('Concurrency', () => {
     it('should handle multiple concurrent requests', async () => {
       vi.mocked(validateApiAuth).mockResolvedValue({
+        ok: true,
         session: mockAdminSession,
       } as any)
 
@@ -1146,7 +1190,7 @@ describe('AdminController - Deep Tests', () => {
         requests.map((req) => controller.getDashboardStats(req)),
       )
 
-      responses.forEach((response) => {
+      responses.forEach((response: NextResponse) => {
         expect(response.status).toBe(HTTP_STATUS.OK)
       })
 
@@ -1157,6 +1201,7 @@ describe('AdminController - Deep Tests', () => {
   describe('Error Recovery', () => {
     it('should recover from transient errors', async () => {
       vi.mocked(validateApiAuth).mockResolvedValue({
+        ok: true,
         session: mockAdminSession,
       } as any)
 
@@ -1201,6 +1246,7 @@ describe('AdminController - Deep Tests', () => {
   describe('Rate Limiting Scenarios', () => {
     it('should handle high request volume', async () => {
       vi.mocked(validateApiAuth).mockResolvedValue({
+        ok: true,
         session: mockAdminSession,
       } as any)
 
@@ -1227,7 +1273,7 @@ describe('AdminController - Deep Tests', () => {
       )
       const duration = Date.now() - startTime
 
-      responses.forEach((response) => {
+      responses.forEach((response: NextResponse) => {
         expect([200, 429]).toContain(response.status)
       })
 
@@ -1238,6 +1284,7 @@ describe('AdminController - Deep Tests', () => {
   describe('User Session Edge Cases', () => {
     it('should handle user with no name', async () => {
       vi.mocked(validateApiAuth).mockResolvedValue({
+        ok: true,
         session: {
           user: {
             id: 'user123',
@@ -1265,6 +1312,7 @@ describe('AdminController - Deep Tests', () => {
 
     it('should handle admin with no name', async () => {
       vi.mocked(validateApiAuth).mockResolvedValue({
+        ok: true,
         session: {
           user: {
             id: 'admin123',

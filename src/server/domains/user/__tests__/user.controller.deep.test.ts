@@ -30,6 +30,7 @@ describe('UserController - Deep Tests', () => {
     vi.clearAllMocks()
 
     vi.mocked(validateApiAuth).mockResolvedValue({
+      ok: true,
       session: {
         user: { id: 'user-1', email: 'test@test.com', role: 'admin' },
       },

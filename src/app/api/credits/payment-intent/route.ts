@@ -3,9 +3,7 @@ import { NextRequest } from 'next/server'
 import { creditService } from '@/server/domains/credit'
 import { CreditController } from '@/server/domains/credit/credit.controller'
 import { paymentService } from '@/server/domains/payment'
-import { auth } from '@/server/lib/auth'
-import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
-import { createErrorResponse } from '@/server/shared/utils/api.utils'
+import { validateApiAuth } from '@/server/shared/middleware/auth.middleware'
 
 const creditControllerWithPayment = new CreditController(
   creditService,
@@ -13,20 +11,11 @@ const creditControllerWithPayment = new CreditController(
 )
 
 export async function POST(request: NextRequest) {
-  const session = await auth()
-
-  if (!session?.user?.id || !session?.user?.email) {
-    return createErrorResponse(
-      'UNAUTHORIZED',
-      undefined,
-      undefined,
-      HTTP_STATUS.UNAUTHORIZED,
-    )
-  }
-
+  const auth = await validateApiAuth(request)
+  if (!auth.ok) return auth.response
   return creditControllerWithPayment.createBundlePurchaseCheckout(
-    session.user.id,
-    session.user.email,
+    auth.session.user.id,
+    auth.session.user.email,
     request,
   )
 }

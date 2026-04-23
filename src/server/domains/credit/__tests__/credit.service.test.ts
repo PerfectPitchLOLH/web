@@ -30,7 +30,7 @@ describe('CreditService', () => {
     it('devrait retourner le solde avec alertes si crédits existent', async () => {
       const mockCredits = {
         userId: 'user-1',
-        monthlyCredits: 20,
+        monthlyCredits: 15,
         bonusCredits: 10,
         usedThisMonth: 5,
         lastMonthlyRefill: new Date('2026-04-01'),
@@ -43,7 +43,7 @@ describe('CreditService', () => {
 
       expect(result).toEqual({
         userId: 'user-1',
-        monthlyCredits: 20,
+        monthlyCredits: 15,
         bonusCredits: 10,
         totalCredits: 30,
         usedThisMonth: 5,
@@ -59,8 +59,8 @@ describe('CreditService', () => {
     it("devrait détecter low balance à 80% d'utilisation", async () => {
       const mockCredits = {
         userId: 'user-1',
-        monthlyCredits: 20,
-        bonusCredits: 5,
+        monthlyCredits: 0,
+        bonusCredits: 4,
         usedThisMonth: 21,
         lastMonthlyRefill: new Date('2026-04-01'),
         updatedAt: new Date(),
@@ -77,8 +77,8 @@ describe('CreditService', () => {
     it("devrait détecter outOfCredits à 100% d'utilisation", async () => {
       const mockCredits = {
         userId: 'user-1',
-        monthlyCredits: 20,
-        bonusCredits: 5,
+        monthlyCredits: 0,
+        bonusCredits: 0,
         usedThisMonth: 25,
         lastMonthlyRefill: new Date('2026-04-01'),
         updatedAt: new Date(),
@@ -404,6 +404,91 @@ describe('CreditService', () => {
       expect(result.transactions).toHaveLength(1)
       expect(result.total).toBe(1)
       expect(result.totalPages).toBe(1)
+    })
+  })
+
+  describe('deductCreditsInSeconds', () => {
+    const makeCredits = (monthly: number, bonus: number) => ({
+      userId: 'user-1',
+      monthlyCredits: monthly,
+      bonusCredits: bonus,
+      usedThisMonth: 0,
+      lastMonthlyRefill: new Date(),
+      updatedAt: new Date(),
+    })
+
+    it('should consume seconds and record a transaction', async () => {
+      const updatedCredits = makeCredits(3420, 0)
+      mockRepository.consumeCredits = vi.fn().mockResolvedValue(updatedCredits)
+      mockRepository.createTransaction = vi.fn().mockResolvedValue({})
+
+      await service.deductCreditsInSeconds(
+        'user-1',
+        180,
+        'Transcription (180s)',
+      )
+
+      expect(mockRepository.consumeCredits).toHaveBeenCalledWith('user-1', 180)
+      expect(mockRepository.createTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'user-1',
+          type: 'usage',
+          amount: -3,
+          description: 'Transcription (180s)',
+        }),
+      )
+    })
+
+    it('should ceil fractional minutes in transaction amount (227s = -4min)', async () => {
+      mockRepository.consumeCredits = vi
+        .fn()
+        .mockResolvedValue(makeCredits(0, 0))
+      mockRepository.createTransaction = vi.fn().mockResolvedValue({})
+
+      await service.deductCreditsInSeconds(
+        'user-1',
+        227,
+        'Transcription (227s)',
+      )
+
+      expect(mockRepository.createTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({ amount: -4 }),
+      )
+    })
+
+    it('should do nothing when seconds is 0', async () => {
+      await service.deductCreditsInSeconds('user-1', 0, 'zero')
+
+      expect(mockRepository.consumeCredits).not.toHaveBeenCalled()
+      expect(mockRepository.createTransaction).not.toHaveBeenCalled()
+    })
+
+    it('should do nothing when seconds is negative', async () => {
+      await service.deductCreditsInSeconds('user-1', -10, 'negative')
+
+      expect(mockRepository.consumeCredits).not.toHaveBeenCalled()
+    })
+
+    it('should throw INSUFFICIENT_CREDITS when repository throws', async () => {
+      mockRepository.consumeCredits = vi
+        .fn()
+        .mockRejectedValue(new Error('Insufficient credits'))
+
+      await expect(
+        service.deductCreditsInSeconds('user-1', 600, 'Transcription (600s)'),
+      ).rejects.toMatchObject({ code: 'INSUFFICIENT_CREDITS', statusCode: 402 })
+    })
+
+    it('should compute balanceAfter in minutes (floor)', async () => {
+      const updatedCredits = makeCredits(1800, 0)
+      mockRepository.consumeCredits = vi.fn().mockResolvedValue(updatedCredits)
+      mockRepository.createTransaction = vi.fn().mockResolvedValue({})
+
+      await service.deductCreditsInSeconds('user-1', 60, 'Transcription (60s)')
+
+      expect(mockRepository.createTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({ balanceAfter: 30 }),
+      )
     })
   })
 })

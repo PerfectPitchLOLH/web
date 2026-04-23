@@ -5,6 +5,7 @@ import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import {
   createErrorResponse,
   createSuccessResponse,
+  handleApiError,
 } from '@/server/shared/utils/api.utils'
 
 const TTL_HOURS = 72
@@ -40,11 +41,6 @@ export async function GET(request: NextRequest) {
       ttlHours: TTL_HOURS,
     })
   } catch (error) {
-    return createErrorResponse(
-      'INTERNAL_ERROR',
-      'Erreur lors du nettoyage des webhooks',
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      HTTP_STATUS.INTERNAL_SERVER_ERROR,
-    )
+    return handleApiError(error)
   }
 }
