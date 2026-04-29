@@ -20,7 +20,8 @@ export class AuthRepository {
         name: data.name,
         password: data.hashedPassword,
         role: 'user',
-      },
+        termsAcceptedAt: new Date(),
+      } as any,
     })
   }
 

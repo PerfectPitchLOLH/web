@@ -15,6 +15,7 @@ export const signUpSchema = z.object({
     .trim()
     .min(2, 'Name must be at least 2 characters')
     .max(100, 'Name too long'),
+  acceptTerms: z.literal(true, { message: 'Vous devez accepter les CGU' }),
 })
 
 export const signInSchema = z.object({

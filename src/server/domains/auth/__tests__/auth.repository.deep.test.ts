@@ -139,6 +139,7 @@ describe('AuthRepository - Deep Tests', () => {
           name: '',
           password: 'password',
           hashedPassword: 'hashed',
+          acceptTerms: true as const,
         }
 
         const mockUser = createMockUser({ email: userData.email, name: '' })
@@ -156,6 +157,7 @@ describe('AuthRepository - Deep Tests', () => {
           name: longName,
           password: 'password',
           hashedPassword: 'hashed',
+          acceptTerms: true as const,
         }
 
         vi.mocked(db.user.create).mockRejectedValue(
@@ -172,6 +174,7 @@ describe('AuthRepository - Deep Tests', () => {
           name: specialName,
           password: 'password',
           hashedPassword: 'hashed',
+          acceptTerms: true as const,
         }
 
         const mockUser = createMockUser({ name: specialName })
@@ -189,6 +192,7 @@ describe('AuthRepository - Deep Tests', () => {
           name: unicodeName,
           password: 'password',
           hashedPassword: 'hashed',
+          acceptTerms: true as const,
         }
 
         const mockUser = createMockUser({ name: unicodeName })
@@ -206,6 +210,7 @@ describe('AuthRepository - Deep Tests', () => {
           name: xssName,
           password: 'password',
           hashedPassword: 'hashed',
+          acceptTerms: true as const,
         }
 
         const mockUser = createMockUser({ name: xssName })
@@ -222,6 +227,7 @@ describe('AuthRepository - Deep Tests', () => {
           name: 'Test',
           password: 'password',
           hashedPassword: 'null',
+          acceptTerms: true as const,
         }
 
         const mockUser = createMockUser({ password: 'null' })
@@ -335,6 +341,7 @@ describe('AuthRepository - Deep Tests', () => {
         name: 'Test',
         password: 'password',
         hashedPassword: 'hashed',
+        acceptTerms: true as const,
       }
 
       vi.mocked(db.user.create).mockRejectedValue(
@@ -363,6 +370,7 @@ describe('AuthRepository - Deep Tests', () => {
         name: 'Test',
         password: 'password',
         hashedPassword: 'hashed',
+        acceptTerms: true as const,
       }
 
       vi.mocked(db.user.create).mockRejectedValue(
@@ -378,6 +386,7 @@ describe('AuthRepository - Deep Tests', () => {
         name: null as any,
         password: 'password',
         hashedPassword: 'hashed',
+        acceptTerms: true as const,
       }
 
       vi.mocked(db.user.create).mockRejectedValue(
@@ -393,6 +402,7 @@ describe('AuthRepository - Deep Tests', () => {
         name: 'Test',
         password: 'password',
         hashedPassword: null as any,
+        acceptTerms: true as const,
       }
 
       vi.mocked(db.user.create).mockRejectedValue(
@@ -433,6 +443,7 @@ describe('AuthRepository - Deep Tests', () => {
         name: 'Test',
         password: 'password',
         hashedPassword: 'hashed',
+        acceptTerms: true as const,
       }
 
       vi.mocked(db.user.create).mockRejectedValue(new Error('Connection lost'))
@@ -498,6 +509,7 @@ describe('AuthRepository - Deep Tests', () => {
         name: 'Test',
         password: 'password',
         hashedPassword: 'hashed',
+        acceptTerms: true as const,
       }
 
       vi.mocked(db.user.create)
@@ -557,6 +569,7 @@ describe('AuthRepository - Deep Tests', () => {
         name: 'Test',
         password: 'password',
         hashedPassword: 'hashed',
+        acceptTerms: true as const,
       }
 
       const mockUser = createMockUser({ email })
@@ -574,6 +587,7 @@ describe('AuthRepository - Deep Tests', () => {
         name,
         password: 'password',
         hashedPassword: 'hashed',
+        acceptTerms: true as const,
       }
 
       const mockUser = createMockUser({ name })

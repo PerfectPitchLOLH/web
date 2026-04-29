@@ -3,6 +3,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 
+import { CookieConsentBanner } from '@/components/landing/CookieConsentBanner'
 import { SessionProvider } from '@/components/providers/SessionProvider'
 import { ThemeProvider } from '@/components/providers/themeProvider'
 import { JsonLdSchema } from '@/components/seo/json-ld-schema'
@@ -118,6 +119,7 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
             <TooltipProvider>{children}</TooltipProvider>
             <Toaster richColors position="bottom-right" />
+            <CookieConsentBanner />
           </ThemeProvider>
         </SessionProvider>
       </body>

@@ -69,6 +69,7 @@ describe('AuthService - Deep Tests', () => {
         email: 'TEST@TEST.COM',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       const mockUser = createMockUser({ email: signUpData.email })
@@ -92,6 +93,7 @@ describe('AuthService - Deep Tests', () => {
         email: longEmail,
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       const mockUser = createMockUser({ email: longEmail })
@@ -114,6 +116,7 @@ describe('AuthService - Deep Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: '测试用户',
+        acceptTerms: true as const,
       }
 
       const mockUser = createMockUser({ name: '测试用户' })
@@ -136,6 +139,7 @@ describe('AuthService - Deep Tests', () => {
         email: 'test@test.com',
         password: 'Abc123!@#$%^&*()',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       const mockUser = createMockUser()
@@ -158,6 +162,7 @@ describe('AuthService - Deep Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       const mockUser = createMockUser()
@@ -183,6 +188,7 @@ describe('AuthService - Deep Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       const mockUser = createMockUser()
@@ -212,6 +218,7 @@ describe('AuthService - Deep Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       const mockUser = createMockUser()
@@ -236,6 +243,7 @@ describe('AuthService - Deep Tests', () => {
         email: 'existing@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       const existingUser = createMockUser({ email: 'existing@test.com' })
@@ -839,6 +847,7 @@ describe('AuthService - Deep Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       const mockUser = createMockUser()
@@ -885,6 +894,7 @@ describe('AuthService - Deep Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       const mockUser = createMockUser()

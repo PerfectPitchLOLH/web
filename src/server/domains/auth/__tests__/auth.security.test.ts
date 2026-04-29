@@ -433,6 +433,7 @@ describe('Auth Security Tests', () => {
         email: 'test@test.com',
         password,
         name: 'Test User',
+        acceptTerms: true as const,
       })
 
       expect(hashPassword).toHaveBeenCalledWith(password)
@@ -503,6 +504,7 @@ describe('Auth Security Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       })
 
       const tokenCall = vi.mocked(mockRepository.createVerificationToken).mock
@@ -541,11 +543,13 @@ describe('Auth Security Tests', () => {
         email: 'test1@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       })
       await authService.signUp({
         email: 'test2@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       })
 
       const calls = vi.mocked(mockRepository.createVerificationToken).mock.calls
@@ -585,6 +589,7 @@ describe('Auth Security Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       })
 
       const tokenCall = vi.mocked(mockRepository.createVerificationToken).mock
@@ -917,6 +922,7 @@ describe('Auth Security Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       })
 
       expect(mockRepository.createUser).toHaveBeenCalledWith(

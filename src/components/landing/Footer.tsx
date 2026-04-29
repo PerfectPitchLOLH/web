@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export function Footer() {
   return (
     <footer className="border-t border-border py-12 px-4 sm:px-6 lg:px-8 bg-card/30">
@@ -148,7 +150,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-4">Company</h3>
+            <h3 className="font-semibold mb-4">Légal</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <a
@@ -163,40 +165,48 @@ export function Footer() {
                   href="#"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Careers
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Press Kit
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
                   Contact
                 </a>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  href="/legal/privacy"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Privacy Policy
-                </a>
+                  Politique de confidentialité
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  href="/legal/terms"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Terms of Service
-                </a>
+                  CGU
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/legal/cgv"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  CGV
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/legal/cookies"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Politique de cookies
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/legal/mentions"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Mentions légales
+                </Link>
               </li>
             </ul>
           </div>

@@ -75,6 +75,7 @@ describe('AuthRepository', () => {
         name: 'New User',
         password: 'password',
         hashedPassword: 'hashed_password',
+        acceptTerms: true as const,
       }
 
       const mockCreatedUser = createMockUser({

@@ -67,6 +67,7 @@ describe('AuthService', () => {
       email: 'test@test.com',
       password: 'Test123!@#',
       name: 'Test User',
+      acceptTerms: true as const,
     }
 
     it('should create new user successfully', async () => {

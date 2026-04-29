@@ -21,6 +21,7 @@ export function SignUpForm() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [acceptTerms, setAcceptTerms] = useState(false)
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,7 +45,7 @@ export function SignUpForm() {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, name, acceptTerms }),
       })
 
       const data = await response.json()
@@ -195,13 +196,46 @@ export function SignUpForm() {
               />
             </div>
 
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="acceptTerms"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                className="mt-0.5 h-4 w-4 cursor-pointer accent-primary"
+              />
+              <label
+                htmlFor="acceptTerms"
+                className="text-sm text-muted-foreground cursor-pointer leading-relaxed"
+              >
+                J&apos;accepte les{' '}
+                <Link
+                  href="/legal/terms"
+                  className="text-primary hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Conditions Générales d&apos;Utilisation
+                </Link>{' '}
+                et la{' '}
+                <Link
+                  href="/legal/privacy"
+                  className="text-primary hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Politique de confidentialité
+                </Link>
+              </label>
+            </div>
+
             <FormError error={error} />
 
             <Button
               type="submit"
               className="w-full"
               size="lg"
-              disabled={isLoading}
+              disabled={isLoading || !acceptTerms}
             >
               {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
               {isLoading ? 'Creating account...' : 'Create Account'}
