@@ -3,6 +3,8 @@
 import { Sparkles } from 'lucide-react'
 import { useState } from 'react'
 
+import { STRIPE_PRICES } from '@/lib/stripe.prices'
+
 import { CreditBundleCard } from './CreditBundleCard'
 import { CreditPurchaseModal } from './CreditPurchaseModal'
 
@@ -13,7 +15,7 @@ const CREDIT_BUNDLES = [
     minutes: 5,
     price: 4.99,
     pricePerMinute: 0.998,
-    priceId: process.env.NEXT_PUBLIC_STRIPE_CREDITS_SMALL_PRICE_ID || '',
+    priceId: STRIPE_PRICES.credits.small,
   },
   {
     id: 'medium' as const,
@@ -22,7 +24,7 @@ const CREDIT_BUNDLES = [
     price: 12.99,
     pricePerMinute: 0.866,
     discountPercent: 13,
-    priceId: process.env.NEXT_PUBLIC_STRIPE_CREDITS_MEDIUM_PRICE_ID || '',
+    priceId: STRIPE_PRICES.credits.medium,
   },
   {
     id: 'big' as const,
@@ -32,7 +34,7 @@ const CREDIT_BUNDLES = [
     pricePerMinute: 0.766,
     discountPercent: 23,
     bestValue: true,
-    priceId: process.env.NEXT_PUBLIC_STRIPE_CREDITS_BIG_PRICE_ID || '',
+    priceId: STRIPE_PRICES.credits.big,
   },
 ]
 

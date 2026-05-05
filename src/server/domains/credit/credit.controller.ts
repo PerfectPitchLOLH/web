@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 
+import { STRIPE_PRICES } from '@/lib/stripe.prices'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import {
   createSuccessResponse,
@@ -71,12 +72,7 @@ export class CreditController {
   }
 
   private getPriceId(bundleId: CreditBundleId): string {
-    const priceIds: Record<CreditBundleId, string> = {
-      small: process.env.STRIPE_CREDITS_SMALL_PRICE_ID || '',
-      medium: process.env.STRIPE_CREDITS_MEDIUM_PRICE_ID || '',
-      big: process.env.STRIPE_CREDITS_BIG_PRICE_ID || '',
-    }
-    return priceIds[bundleId]
+    return STRIPE_PRICES.credits[bundleId]
   }
 
   async purchaseBundle(userId: string, request: NextRequest) {

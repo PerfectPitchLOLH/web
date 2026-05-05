@@ -1,3 +1,5 @@
+import { STRIPE_PRICES } from '@/lib/stripe.prices'
+
 export const TIER_ORDER: Record<string, number> = {
   junior: 0,
   basic: 1,
@@ -37,9 +39,8 @@ export const PRICING_TIERS: PricingTierData[] = [
       sheetEditor: false,
       polyphony: false,
     },
-    monthlyPriceId:
-      process.env.NEXT_PUBLIC_STRIPE_JUNIOR_MONTHLY_PRICE_ID ?? '',
-    yearlyPriceId: process.env.NEXT_PUBLIC_STRIPE_JUNIOR_YEARLY_PRICE_ID ?? '',
+    monthlyPriceId: STRIPE_PRICES.plans.junior.monthly,
+    yearlyPriceId: STRIPE_PRICES.plans.junior.yearly,
   },
   {
     key: 'basic',
@@ -56,8 +57,8 @@ export const PRICING_TIERS: PricingTierData[] = [
       sheetEditor: false,
       polyphony: false,
     },
-    monthlyPriceId: process.env.NEXT_PUBLIC_STRIPE_BASIC_MONTHLY_PRICE_ID ?? '',
-    yearlyPriceId: process.env.NEXT_PUBLIC_STRIPE_BASIC_YEARLY_PRICE_ID ?? '',
+    monthlyPriceId: STRIPE_PRICES.plans.basic.monthly,
+    yearlyPriceId: STRIPE_PRICES.plans.basic.yearly,
   },
   {
     key: 'pro',
@@ -73,7 +74,7 @@ export const PRICING_TIERS: PricingTierData[] = [
       sheetEditor: true,
       polyphony: true,
     },
-    monthlyPriceId: process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID ?? '',
-    yearlyPriceId: process.env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PRICE_ID ?? '',
+    monthlyPriceId: STRIPE_PRICES.plans.pro.monthly,
+    yearlyPriceId: STRIPE_PRICES.plans.pro.yearly,
   },
 ]
