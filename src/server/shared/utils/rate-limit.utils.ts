@@ -52,13 +52,11 @@ export async function checkRateLimit(
   remaining: number
   reset: number
 }> {
-  const { success, limit, remaining, reset } = await limiter.limit(identifier)
-
-  return {
-    success,
-    limit,
-    remaining,
-    reset,
+  try {
+    const { success, limit, remaining, reset } = await limiter.limit(identifier)
+    return { success, limit, remaining, reset }
+  } catch {
+    return { success: true, limit: 0, remaining: 0, reset: 0 }
   }
 }
 
