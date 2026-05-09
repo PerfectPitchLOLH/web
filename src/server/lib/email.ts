@@ -7,7 +7,7 @@ export async function sendVerificationEmail(email: string, token: string) {
 
   try {
     await resend.emails.send({
-      from: 'Notavex <onboarding@resend.dev>',
+      from: 'Notavex <noreply@notavex.com>',
       to: email,
       subject: 'Verify your email address',
       html: `
@@ -48,7 +48,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
 
   try {
     await resend.emails.send({
-      from: 'Notavex <onboarding@resend.dev>',
+      from: 'Notavex <noreply@notavex.com>',
       to: email,
       subject: 'Reset your password',
       html: `
