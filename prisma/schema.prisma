@@ -235,6 +235,7 @@ model SubscriptionPlan {
   id                   String         @id @default(cuid())
   stripeProductId      String         @unique
   stripePriceId        String         @unique
+  stripeYearlyPriceId  String?        @unique
   name                 String
   description          String?
   monthlyPrice         Float

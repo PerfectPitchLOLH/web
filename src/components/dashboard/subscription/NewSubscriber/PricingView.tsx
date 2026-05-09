@@ -4,11 +4,16 @@ import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { useSubscription } from '@/hooks/useSubscription'
+import type { SubscriptionPlanDTO } from '@/server/domains/subscription/subscription.types'
 
 import { PricingTiersSection } from '../PricingTiersSection'
 import { ComparisonTable } from './ComparisonTable'
 
-export function PricingView() {
+type Props = {
+  plans: SubscriptionPlanDTO[]
+}
+
+export function PricingView({ plans }: Props) {
   const { createCheckoutSession } = useSubscription()
   const [loading, setLoading] = useState(false)
 
@@ -40,6 +45,7 @@ export function PricingView() {
         <div className="mb-16">
           <PricingTiersSection
             mode="subscribe"
+            plans={plans}
             onAction={handleSubscribe}
             loading={loading}
           />

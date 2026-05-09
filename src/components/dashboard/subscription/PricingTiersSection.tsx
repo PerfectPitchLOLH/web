@@ -17,8 +17,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
+import type { SubscriptionPlanDTO } from '@/server/domains/subscription/subscription.types'
 
-import { PRICING_TIERS, type PricingTierData, TIER_ORDER } from './constants'
+import { TIER_ORDER, TIER_UI_METADATA } from './constants'
 import { formatAmount } from './utils'
 
 type BillingCycle = 'monthly' | 'yearly'
@@ -37,7 +38,9 @@ type ManageMode = {
   loading: boolean
 }
 
-type Props = SubscribeMode | ManageMode
+type Props = (SubscribeMode | ManageMode) & {
+  plans: SubscriptionPlanDTO[]
+}
 
 type TierStatus = 'subscribe' | 'current' | 'upgrade' | 'downgrade'
 
@@ -87,23 +90,40 @@ function FeatureItem({
 }
 
 function PricingCard({
-  tier,
+  plan,
   billingCycle,
   index,
   tierStatus,
   onAction,
   loading,
 }: {
-  tier: PricingTierData
+  plan: SubscriptionPlanDTO
   billingCycle: BillingCycle
   index: number
   tierStatus: TierStatus
   onAction: (priceId: string) => void
   loading: boolean
 }) {
-  const price = billingCycle === 'yearly' ? tier.yearlyPrice : tier.monthlyPrice
+  const tierKey = plan.name.toLowerCase()
+  const meta = TIER_UI_METADATA[tierKey] ?? {
+    popular: false,
+    highlight: null,
+    features: {
+      fallingNotes: false,
+      historyDays: 30,
+      sheetEditor: false,
+      polyphony: false,
+    },
+  }
+
+  const price =
+    billingCycle === 'yearly'
+      ? (plan.yearlyPrice ?? plan.monthlyPrice * 12)
+      : plan.monthlyPrice
   const priceId =
-    billingCycle === 'yearly' ? tier.yearlyPriceId : tier.monthlyPriceId
+    billingCycle === 'yearly'
+      ? (plan.yearlyPriceId ?? plan.monthlyPriceId)
+      : plan.monthlyPriceId
 
   const isCurrent = tierStatus === 'current'
   const isDowngrade = tierStatus === 'downgrade'
@@ -115,7 +135,7 @@ function PricingCard({
         'group relative flex flex-col rounded-2xl border bg-card transition-all duration-300 animate-in fade-in-0 slide-in-from-bottom-4 animation-duration-[500ms]',
         isCurrent
           ? 'border-primary/60 shadow-lg shadow-primary/10'
-          : tier.popular && !isDowngrade
+          : meta.popular && !isDowngrade
             ? 'border-primary/50 shadow-lg shadow-primary/10 scale-105 z-10'
             : 'border-border hover:border-primary/30 hover:shadow-lg',
         isDowngrade && 'opacity-50',
@@ -130,29 +150,29 @@ function PricingCard({
           </Badge>
         </div>
       )}
-      {!isCurrent && tier.popular && !isDowngrade && (
+      {!isCurrent && meta.popular && !isDowngrade && (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2">
           <Badge className="bg-primary text-primary-foreground px-4 py-1 shadow-lg">
             <Sparkles className="size-3 mr-1" />
-            {tier.highlight}
+            {meta.highlight}
           </Badge>
         </div>
       )}
-      {!isCurrent && !tier.popular && tier.highlight && !isDowngrade && (
+      {!isCurrent && !meta.popular && meta.highlight && !isDowngrade && (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2">
           <Badge
             variant="outline"
             className="px-4 py-1 shadow-lg border-primary text-primary bg-background"
           >
-            {tier.highlight}
+            {meta.highlight}
           </Badge>
         </div>
       )}
 
       <div className="p-8">
         <div className="mb-6">
-          <h3 className="text-2xl font-bold mb-2">{tier.name}</h3>
-          <p className="text-sm text-muted-foreground">{tier.description}</p>
+          <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+          <p className="text-sm text-muted-foreground">{plan.description}</p>
         </div>
 
         <div className="mb-8">
@@ -160,7 +180,7 @@ function PricingCard({
             <>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-semibold text-muted-foreground line-through">
-                  {formatAmount(tier.monthlyPrice * 12)}
+                  {formatAmount(plan.monthlyPrice * 12)}
                 </span>
               </div>
               <div className="flex items-baseline gap-2 mt-1">
@@ -191,7 +211,7 @@ function PricingCard({
         ) : (
           <Button
             size="lg"
-            variant={tier.popular || isUpgrade ? 'default' : 'outline'}
+            variant={meta.popular || isUpgrade ? 'default' : 'outline'}
             className="w-full mb-8 group-hover:scale-105 transition-transform"
             onClick={() => onAction(priceId)}
             disabled={loading || !priceId}
@@ -204,10 +224,10 @@ function PricingCard({
             ) : isUpgrade ? (
               <>
                 <ArrowUp className="size-4 mr-2" />
-                Passer à {tier.name}
+                Passer à {plan.name}
               </>
             ) : (
-              `Commencer avec ${tier.name}`
+              `Commencer avec ${plan.name}`
             )}
           </Button>
         )}
@@ -216,36 +236,36 @@ function PricingCard({
           <FeatureItem
             icon={Clock}
             label="Transcription"
-            value={`${tier.features.transcriptionMinutes} min/mois`}
+            value={`${plan.transcriptionMinutes} min/mois`}
           />
           <FeatureItem
             icon={Music}
             label="Touches qui tombent"
-            value={tier.features.fallingNotes}
+            value={meta.features.fallingNotes}
           />
           <FeatureItem
             icon={Calendar}
             label="Historique"
             value={
-              tier.features.historyDays === 'unlimited'
+              meta.features.historyDays === 'unlimited'
                 ? 'Illimité'
-                : `${tier.features.historyDays} jours`
+                : `${meta.features.historyDays} jours`
             }
           />
           <FeatureItem
             icon={Edit}
             label="Éditeur de partition"
-            value={tier.features.sheetEditor}
+            value={meta.features.sheetEditor}
           />
           <FeatureItem
             icon={Layers}
             label="Polyphonie"
-            value={tier.features.polyphony}
+            value={meta.features.polyphony}
           />
         </div>
       </div>
 
-      {(tier.popular || isCurrent) && (
+      {(meta.popular || isCurrent) && (
         <div className="absolute inset-0 -z-10 rounded-2xl bg-linear-to-br from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
       )}
     </div>
@@ -253,8 +273,8 @@ function PricingCard({
 }
 
 function getTierStatus(
-  tierKey: string,
-  tierIndex: number,
+  plan: SubscriptionPlanDTO,
+  index: number,
   props: Props,
 ): TierStatus {
   if (props.mode === 'subscribe') return 'subscribe'
@@ -263,8 +283,8 @@ function getTierStatus(
       props.currentPlan.toLowerCase().includes(k),
     ) ?? ''
   const currentIndex = TIER_ORDER[normalizedCurrent] ?? -1
-  if (tierIndex === currentIndex) return 'current'
-  if (tierIndex > currentIndex) return 'upgrade'
+  if (index === currentIndex) return 'current'
+  if (index > currentIndex) return 'upgrade'
   return 'downgrade'
 }
 
@@ -276,6 +296,12 @@ export function PricingTiersSection(props: Props) {
         : 'monthly'
       : 'monthly'
   const [billingCycle, setBillingCycle] = useState<BillingCycle>(defaultCycle)
+
+  const sortedPlans = [...props.plans].sort(
+    (a, b) =>
+      (TIER_ORDER[a.name.toLowerCase()] ?? 99) -
+      (TIER_ORDER[b.name.toLowerCase()] ?? 99),
+  )
 
   return (
     <div className="space-y-8">
@@ -294,13 +320,13 @@ export function PricingTiersSection(props: Props) {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-        {PRICING_TIERS.map((tier, index) => (
+        {sortedPlans.map((plan, index) => (
           <PricingCard
-            key={tier.key}
-            tier={tier}
+            key={plan.id}
+            plan={plan}
             billingCycle={billingCycle}
             index={index}
-            tierStatus={getTierStatus(tier.key, index, props)}
+            tierStatus={getTierStatus(plan, index, props)}
             onAction={props.onAction}
             loading={props.loading}
           />

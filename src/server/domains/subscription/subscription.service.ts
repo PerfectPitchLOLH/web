@@ -13,6 +13,7 @@ import type {
   CreateCheckoutSessionResponse,
   CreatePortalSessionResponse,
   SubscriptionEntity,
+  SubscriptionPlanDTO,
   SubscriptionStatus,
   UserSubscriptionInfo,
 } from './subscription.types'
@@ -23,6 +24,20 @@ export class SubscriptionService {
     private creditService: CreditService,
     private creditPurchaseRepository: CreditPurchaseRepository,
   ) {}
+
+  async getPlans(): Promise<SubscriptionPlanDTO[]> {
+    const plans = await this.repository.findAllPlans()
+    return plans.map((plan) => ({
+      id: plan.id,
+      name: plan.name,
+      description: plan.description,
+      monthlyPrice: plan.monthlyPrice,
+      yearlyPrice: plan.yearlyPrice,
+      monthlyPriceId: plan.stripePriceId,
+      yearlyPriceId: plan.stripeYearlyPriceId,
+      transcriptionMinutes: plan.transcriptionMinutes,
+    }))
+  }
 
   async getUserSubscription(userId: string): Promise<UserSubscriptionInfo> {
     const subscription = await this.repository.findSubscriptionWithPlan(userId)

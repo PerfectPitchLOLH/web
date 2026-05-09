@@ -18,6 +18,7 @@ export type SubscriptionPlan = {
   id: string
   stripeProductId: string
   stripePriceId: string
+  stripeYearlyPriceId: string | null
   name: string
   description: string | null
   monthlyPrice: number
@@ -109,6 +110,17 @@ export type CreatePortalSessionRequest = {
 
 export type CreatePortalSessionResponse = {
   url: string
+}
+
+export type SubscriptionPlanDTO = {
+  id: string
+  name: string
+  description: string | null
+  monthlyPrice: number
+  yearlyPrice: number | null
+  monthlyPriceId: string
+  yearlyPriceId: string | null
+  transcriptionMinutes: number
 }
 
 export type UserSubscriptionInfo = {

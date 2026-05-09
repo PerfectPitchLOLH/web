@@ -19,6 +19,15 @@ type UpgradeSubscriptionRequest = {
 export class SubscriptionController {
   constructor(private service: SubscriptionService) {}
 
+  async getPlans() {
+    try {
+      const data = await this.service.getPlans()
+      return createSuccessResponse(data)
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
   async getUserSubscription(userId: string) {
     try {
       const data = await this.service.getUserSubscription(userId)

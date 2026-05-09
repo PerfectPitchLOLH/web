@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 
 import { AdditionalCreditsSection } from '@/components/credits/AdditionalCreditsSection'
 import type { SubscriptionInfo } from '@/hooks/useSubscription'
+import type { SubscriptionPlanDTO } from '@/server/domains/subscription/subscription.types'
 
 import { PricingTiersSection } from '../PricingTiersSection'
 import { getBillingInterval } from '../utils'
@@ -16,6 +17,7 @@ import { StatusBadge } from './StatusBadge'
 
 type Props = {
   subscription: SubscriptionInfo
+  plans: SubscriptionPlanDTO[]
   cancelSubscription: () => Promise<void>
   reactivateSubscription: () => Promise<void>
   upgradeSubscription: (priceId: string) => Promise<void>
@@ -24,6 +26,7 @@ type Props = {
 
 export function SubscriptionManagementView({
   subscription,
+  plans,
   cancelSubscription,
   reactivateSubscription,
   upgradeSubscription,
@@ -116,6 +119,7 @@ export function SubscriptionManagementView({
         </div>
         <PricingTiersSection
           mode="manage"
+          plans={plans}
           currentPlan={sub.plan.name}
           isYearly={isYearly}
           onAction={handleUpgrade}

@@ -22,16 +22,24 @@ const TEST = {
 
 const LIVE = {
   plans: {
-    junior: { monthly: 'price_LIVE_REPLACE', yearly: 'price_LIVE_REPLACE' },
-    basic: { monthly: 'price_LIVE_REPLACE', yearly: 'price_LIVE_REPLACE' },
-    pro: { monthly: 'price_LIVE_REPLACE', yearly: 'price_LIVE_REPLACE' },
+    junior: {
+      monthly: 'price_1TVABm98tB4JxI77HDtzakrX',
+      yearly: 'price_1TVABm98tB4JxI77Ol4MCCcZ',
+    },
+    basic: {
+      monthly: 'price_1TVABn98tB4JxI77ZcqtXdrK',
+      yearly: 'price_1TVABn98tB4JxI77aNPrsyBh',
+    },
+    pro: {
+      monthly: 'price_1TVABo98tB4JxI77z1hrUveV',
+      yearly: 'price_1TVABo98tB4JxI77G8BCVPLU',
+    },
   },
   credits: {
-    small: 'price_LIVE_REPLACE',
-    medium: 'price_LIVE_REPLACE',
-    big: 'price_LIVE_REPLACE',
+    small: 'price_1TVABp98tB4JxI77pmEUj2qh',
+    medium: 'price_1TVABp98tB4JxI77nPxKwN2C',
+    big: 'price_1TVABq98tB4JxI77bINCbfx7',
   },
 }
 
-export const STRIPE_PRICES =
-  process.env.NEXT_PUBLIC_STRIPE_MODE === 'live' ? LIVE : TEST
+export const STRIPE_PRICES = process.env.NODE_ENV === 'production' ? LIVE : TEST

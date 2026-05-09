@@ -171,7 +171,7 @@ export const UserMenu = memo(function UserMenu() {
         </DropdownMenuItem>
 
         <DropdownMenuItem asChild>
-          <Link href="/terms">
+          <Link href="/legal/terms">
             <FileText className="mr-2 size-4" />
             Conditions & Confidentialité
           </Link>

@@ -148,8 +148,10 @@ export class SubscriptionRepository {
   async findPlanByStripePriceId(
     stripePriceId: string,
   ): Promise<SubscriptionPlanEntity | null> {
-    const plan = await db.subscriptionPlan.findUnique({
-      where: { stripePriceId },
+    const plan = await db.subscriptionPlan.findFirst({
+      where: {
+        OR: [{ stripePriceId }, { stripeYearlyPriceId: stripePriceId }],
+      },
     })
 
     return plan as SubscriptionPlanEntity | null

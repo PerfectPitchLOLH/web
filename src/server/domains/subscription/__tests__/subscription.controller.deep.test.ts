@@ -62,6 +62,7 @@ describe('SubscriptionController - Deep Tests', () => {
             id: 'plan_pro',
             stripeProductId: 'prod_pro',
             stripePriceId: 'price_pro',
+            stripeYearlyPriceId: 'price_pro_yearly',
             name: 'Pro',
             description: 'Pro plan',
             monthlyPrice: 29.99,

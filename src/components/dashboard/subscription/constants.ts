@@ -1,4 +1,4 @@
-import { STRIPE_PRICES } from '@/lib/stripe.prices'
+import type { SubscriptionFeatures } from '@/server/domains/subscription/subscription.types'
 
 export const TIER_ORDER: Record<string, number> = {
   junior: 0,
@@ -6,75 +6,41 @@ export const TIER_ORDER: Record<string, number> = {
   pro: 2,
 }
 
-export type PricingTierData = {
-  key: string
-  name: string
-  description: string
-  monthlyPrice: number
-  yearlyPrice: number
-  popular?: boolean
-  highlight?: string
-  features: {
-    transcriptionMinutes: number
-    fallingNotes: boolean
-    historyDays: number | 'unlimited'
-    sheetEditor: boolean
-    polyphony: boolean
-  }
-  monthlyPriceId: string
-  yearlyPriceId: string
+export type TierUIMetadata = {
+  popular: boolean
+  highlight: string | null
+  features: Omit<SubscriptionFeatures, 'transcriptionMinutes'>
 }
 
-export const PRICING_TIERS: PricingTierData[] = [
-  {
-    key: 'junior',
-    name: 'Junior',
-    description: 'Parfait pour débuter avec la transcription musicale',
-    monthlyPrice: 9.99,
-    yearlyPrice: 99.99,
+export const TIER_UI_METADATA: Record<string, TierUIMetadata> = {
+  junior: {
+    popular: false,
+    highlight: null,
     features: {
-      transcriptionMinutes: 10,
       fallingNotes: true,
       historyDays: 30,
       sheetEditor: false,
       polyphony: false,
     },
-    monthlyPriceId: STRIPE_PRICES.plans.junior.monthly,
-    yearlyPriceId: STRIPE_PRICES.plans.junior.yearly,
   },
-  {
-    key: 'basic',
-    name: 'Basic',
-    description: 'Idéal pour les musiciens réguliers',
-    monthlyPrice: 14.99,
-    yearlyPrice: 149.99,
+  basic: {
     popular: true,
     highlight: 'Plus populaire',
     features: {
-      transcriptionMinutes: 20,
       fallingNotes: true,
       historyDays: 90,
       sheetEditor: false,
       polyphony: false,
     },
-    monthlyPriceId: STRIPE_PRICES.plans.basic.monthly,
-    yearlyPriceId: STRIPE_PRICES.plans.basic.yearly,
   },
-  {
-    key: 'pro',
-    name: 'Pro',
-    description: 'La puissance complète pour les professionnels',
-    monthlyPrice: 29.99,
-    yearlyPrice: 299.99,
+  pro: {
+    popular: false,
     highlight: 'Meilleure valeur',
     features: {
-      transcriptionMinutes: 50,
       fallingNotes: true,
-      historyDays: 'unlimited',
+      historyDays: 'unlimited' as const,
       sheetEditor: true,
       polyphony: true,
     },
-    monthlyPriceId: STRIPE_PRICES.plans.pro.monthly,
-    yearlyPriceId: STRIPE_PRICES.plans.pro.yearly,
   },
-]
+}
