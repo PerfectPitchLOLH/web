@@ -4,13 +4,12 @@ import { useEffect, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
-import { NavbarCTA } from './navbarCta'
 import { NavbarLanguageSelector } from './navbarLanguageSelector'
 import { NavbarLinks } from './navbarLinks'
 import { NavbarLogo } from './navbarLogo'
 import { NavbarThemeToggle } from './navbarThemeToggle'
 
-export function Navbar() {
+export function Navbar({ cta }: { cta?: React.ReactNode }) {
   const [isScrolled, setIsScrolled] = useState(false)
 
   useEffect(() => {
@@ -45,7 +44,7 @@ export function Navbar() {
             <div className="flex items-center gap-2 md:gap-3">
               <NavbarThemeToggle />
               <NavbarLanguageSelector />
-              <NavbarCTA className="hidden md:flex" />
+              {cta}
             </div>
           </div>
         </div>

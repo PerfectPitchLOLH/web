@@ -1,4 +1,5 @@
 import { Navbar } from '@/components/landing/navbar/Navbar'
+import { NavbarCTA } from '@/components/landing/navbar/navbarCta'
 
 export default function LandingLayout({
   children,
@@ -7,7 +8,7 @@ export default function LandingLayout({
 }) {
   return (
     <>
-      <Navbar />
+      <Navbar cta={<NavbarCTA className="hidden md:flex" />} />
       {children}
     </>
   )
