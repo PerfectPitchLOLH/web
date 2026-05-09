@@ -150,6 +150,7 @@ describe('Auth Security Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: sqlInjection,
+        acceptTerms: true as const,
       }
 
       const mockUser = {
@@ -175,6 +176,7 @@ describe('Auth Security Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: sqlInjection,
+        acceptTerms: true,
       })
     })
 
@@ -198,6 +200,7 @@ describe('Auth Security Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: xssPayload,
+        acceptTerms: true as const,
       }
 
       const mockUser = {
@@ -229,6 +232,7 @@ describe('Auth Security Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: xssPayload,
+        acceptTerms: true as const,
       }
 
       const mockUser = {
@@ -259,6 +263,7 @@ describe('Auth Security Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: xssPayload,
+        acceptTerms: true as const,
       }
 
       const mockUser = {
@@ -458,6 +463,7 @@ describe('Auth Security Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       vi.mocked(mockService.signUp).mockResolvedValue(mockUser)
@@ -878,6 +884,7 @@ describe('Auth Security Tests', () => {
         role: 'admin',
         isAdmin: true,
         isRootAdmin: true,
+        acceptTerms: true as const,
       }
 
       vi.mocked(mockService.signUp).mockResolvedValue(mockUser)
@@ -964,6 +971,7 @@ describe('Auth Security Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: '  Test User  ',
+        acceptTerms: true as const,
       }
 
       vi.mocked(mockService.signUp).mockResolvedValue(mockUser)
@@ -1005,6 +1013,7 @@ describe('Auth Security Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       vi.mocked(mockService.signUp).mockRejectedValue(
@@ -1028,6 +1037,7 @@ describe('Auth Security Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       vi.mocked(mockService.signUp).mockRejectedValue(

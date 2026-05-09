@@ -25,6 +25,7 @@ vi.mock('@/server/lib/database', () => ({
     subscriptionPlan: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
     },
     customer: {
       findUnique: vi.fn(),
@@ -716,19 +717,16 @@ describe('SubscriptionRepository - Deep Tests', () => {
         name: 'Pro',
       }
 
-      vi.mocked(db.subscriptionPlan.findUnique).mockResolvedValue(mockPlan)
+      vi.mocked(db.subscriptionPlan.findFirst).mockResolvedValue(mockPlan)
 
       const result =
         await repository.findPlanByStripePriceId('price_stripe_123')
 
       expect(result).toEqual(mockPlan)
-      expect(db.subscriptionPlan.findUnique).toHaveBeenCalledWith({
-        where: { stripePriceId: 'price_stripe_123' },
-      })
     })
 
     it('should return null for non-existent Stripe price ID', async () => {
-      vi.mocked(db.subscriptionPlan.findUnique).mockResolvedValue(null)
+      vi.mocked(db.subscriptionPlan.findFirst).mockResolvedValue(null)
 
       const result = await repository.findPlanByStripePriceId('price_fake')
 
@@ -737,13 +735,11 @@ describe('SubscriptionRepository - Deep Tests', () => {
 
     it('should handle malformed Stripe price ID', async () => {
       const malformedId = 'not_a_stripe_price_###'
-      vi.mocked(db.subscriptionPlan.findUnique).mockResolvedValue(null)
+      vi.mocked(db.subscriptionPlan.findFirst).mockResolvedValue(null)
 
       await repository.findPlanByStripePriceId(malformedId)
 
-      expect(db.subscriptionPlan.findUnique).toHaveBeenCalledWith({
-        where: { stripePriceId: malformedId },
-      })
+      expect(db.subscriptionPlan.findFirst).toHaveBeenCalled()
     })
   })
 

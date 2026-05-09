@@ -168,6 +168,7 @@ describe('AuthController - Deep Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: '  Test User  ',
+        acceptTerms: true as const,
       }
 
       vi.mocked(mockService.signUp).mockResolvedValue(mockUser)
@@ -190,6 +191,7 @@ describe('AuthController - Deep Tests', () => {
         email: longEmail,
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       const mockUser = {
@@ -269,6 +271,7 @@ describe('AuthController - Deep Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: '测试用户 🚀',
+        acceptTerms: true as const,
       }
 
       vi.mocked(mockService.signUp).mockResolvedValue(mockUser)
@@ -299,6 +302,7 @@ describe('AuthController - Deep Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: '<script>alert("xss")</script>',
+        acceptTerms: true as const,
       }
 
       vi.mocked(mockService.signUp).mockResolvedValue(mockUser)
@@ -351,6 +355,7 @@ describe('AuthController - Deep Tests', () => {
         isAdmin: true,
         role: 'admin',
         extraField: 'should be ignored',
+        acceptTerms: true as const,
       }
 
       vi.mocked(mockService.signUp).mockResolvedValue(mockUser)
@@ -1013,6 +1018,7 @@ describe('AuthController - Deep Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       vi.mocked(mockService.signUp).mockRejectedValue(
@@ -1036,6 +1042,7 @@ describe('AuthController - Deep Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       vi.mocked(mockService.signUp).mockResolvedValue(undefined as any)
@@ -1087,6 +1094,7 @@ describe('AuthController - Deep Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       vi.mocked(mockService.signUp).mockResolvedValue(mockUser)
@@ -1140,6 +1148,7 @@ describe('AuthController - Deep Tests', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       vi.mocked(mockService.signUp)

@@ -10,6 +10,7 @@ import { ImpersonationLogController } from '../impersonation-log.controller'
 import type { ImpersonationLogService } from '../impersonation-log.service'
 
 vi.mock('@/server/shared/middleware/auth.middleware')
+vi.mock('@/server/lib/database', () => ({ db: {} }))
 
 describe('ImpersonationLogController - Deep Tests', () => {
   let controller: ImpersonationLogController

@@ -14,6 +14,7 @@ describe('Auth Schemas', () => {
         email: 'test@example.com',
         password: 'Test123!@#',
         name: 'John Doe',
+        acceptTerms: true as const,
       }
       expect(() => signUpSchema.parse(valid)).not.toThrow()
     })
@@ -86,6 +87,7 @@ describe('Auth Schemas', () => {
         email: 'test@example.com',
         password: 'Test123!@#',
         name: '  John Doe  ',
+        acceptTerms: true as const,
       }
       const result = signUpSchema.parse(data)
       expect(result.name).toBe('John Doe')

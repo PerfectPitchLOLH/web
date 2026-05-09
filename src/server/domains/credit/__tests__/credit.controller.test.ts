@@ -9,6 +9,7 @@ import { CreditController } from '../credit.controller'
 import { CreditService } from '../credit.service'
 
 vi.mock('../credit.service')
+vi.mock('@/server/lib/database', () => ({ db: {} }))
 
 describe('CreditController', () => {
   let controller: CreditController

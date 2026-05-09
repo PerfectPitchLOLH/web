@@ -67,6 +67,7 @@ describe('AuthController', () => {
         email: 'test@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       vi.mocked(mockService.signUp).mockResolvedValue(mockUser)
@@ -130,6 +131,7 @@ describe('AuthController', () => {
         email: 'existing@test.com',
         password: 'Test123!@#',
         name: 'Test User',
+        acceptTerms: true as const,
       }
 
       vi.mocked(mockService.signUp).mockRejectedValue(

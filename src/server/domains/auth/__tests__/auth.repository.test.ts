@@ -97,6 +97,7 @@ describe('AuthRepository', () => {
           name: userData.name,
           password: userData.hashedPassword,
           role: 'user',
+          termsAcceptedAt: expect.any(Date),
         },
       })
     })

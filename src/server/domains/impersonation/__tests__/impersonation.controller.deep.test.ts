@@ -11,6 +11,7 @@ import { ImpersonationController } from '../impersonation.controller'
 import type { ImpersonationService } from '../impersonation.service'
 
 vi.mock('@/server/shared/middleware/auth.middleware')
+vi.mock('@/server/lib/database', () => ({ db: {} }))
 vi.mock('@/server/shared/utils/audit.logger', () => ({
   auditLogger: {
     logImpersonationStart: vi.fn(),

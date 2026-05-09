@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('@/server/lib/database', () => ({
+  db: {
+    transcriptionJob: {
+      findUnique: vi.fn(),
+    },
+  },
+}))
+
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
