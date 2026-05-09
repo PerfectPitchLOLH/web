@@ -115,7 +115,10 @@ export class TranscriptionService {
     try {
       const job = await this.repository.getJobStatus(jobId)
 
+      const isAdmin = await this.isAdminUser(userId)
+
       if (
+        !isAdmin &&
         job.status === 'completed' &&
         job.results != null &&
         job.results.duration_seconds > 0
@@ -126,7 +129,7 @@ export class TranscriptionService {
           job.results.duration_seconds,
           `Transcription (${Math.ceil(job.results.duration_seconds)}s)`,
         )
-      } else if (job.status === 'failed' && job.progress > 0) {
+      } else if (!isAdmin && job.status === 'failed' && job.progress > 0) {
         await this.deductPartialCredits(jobId, userId, job.progress)
       }
 
@@ -252,10 +255,19 @@ export class TranscriptionService {
     }
   }
 
+  private async isAdminUser(userId: string): Promise<boolean> {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { role: true, isRootAdmin: true },
+    })
+    return user?.role === 'admin' || user?.isRootAdmin === true
+  }
+
   private async checkCreditsAvailable(
     userId: string,
     durationSeconds?: number,
   ): Promise<void> {
+    if (await this.isAdminUser(userId)) return
     const balance = await this.creditService.getUserCreditsBalance(userId)
     if (balance.remainingCredits <= 0) {
       throw new ApiError(
