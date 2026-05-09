@@ -5,9 +5,13 @@ vi.mock('@/server/lib/database', () => ({
     transcriptionJob: {
       findUnique: vi.fn(),
     },
+    user: {
+      findUnique: vi.fn(),
+    },
   },
 }))
 
+import { db } from '@/server/lib/database'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
@@ -50,6 +54,11 @@ describe('TranscriptionService - Deep Tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+
+    vi.mocked(db.user.findUnique).mockResolvedValue({
+      role: 'user',
+      isRootAdmin: false,
+    } as any)
 
     mockRepo = {
       uploadAudio: vi.fn(),
