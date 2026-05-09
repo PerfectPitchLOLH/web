@@ -143,7 +143,6 @@ export class TranscriptionRepository {
   async getJobStatus(jobId: string): Promise<JobDetails> {
     const response = await this.callBackendAPI<any>(`/jobs/${jobId}`)
 
-    let musicxmlUrl: string | undefined
     let partitionUrl: string | undefined
 
     if (response.results) {

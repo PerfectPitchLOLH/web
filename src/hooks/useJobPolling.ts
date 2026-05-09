@@ -56,7 +56,7 @@ export function useJobPolling(jobId: string | null, enabled = true) {
       }
 
       retryCountRef.current = 0
-    } catch (err) {
+    } catch {
       retryCountRef.current++
 
       if (retryCountRef.current >= 5) {

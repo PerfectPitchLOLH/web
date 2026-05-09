@@ -186,6 +186,7 @@ describe('UserService - Deep Tests', () => {
         email: 'test@test.com',
         name: 'Test User',
         role: 'user' as const,
+        termsAcceptedAt: null,
       }
 
       vi.mocked(mockRepository.findByEmail).mockResolvedValue(null)
@@ -216,6 +217,7 @@ describe('UserService - Deep Tests', () => {
           email: 'test@test.com',
           name: 'New User',
           role: 'user',
+          termsAcceptedAt: null,
         }),
       ).rejects.toThrow(ApiError)
 
@@ -224,6 +226,7 @@ describe('UserService - Deep Tests', () => {
           email: 'test@test.com',
           name: 'New User',
           role: 'user',
+          termsAcceptedAt: null,
         })
       } catch (error) {
         expect(error).toBeInstanceOf(ApiError)
@@ -244,6 +247,7 @@ describe('UserService - Deep Tests', () => {
         email: 'TEST@TEST.COM',
         name: 'Test',
         role: 'user',
+        termsAcceptedAt: null,
       })
 
       expect(mockRepository.findByEmail).toHaveBeenCalledWith('TEST@TEST.COM')
@@ -261,6 +265,7 @@ describe('UserService - Deep Tests', () => {
         email: emailWithPlus,
         name: 'Test',
         role: 'user',
+        termsAcceptedAt: null,
       })
 
       expect(result.email).toBe(emailWithPlus)
@@ -279,6 +284,7 @@ describe('UserService - Deep Tests', () => {
         email: 'test@test.com',
         name: longName,
         role: 'user',
+        termsAcceptedAt: null,
       })
 
       expect(result.name).toBe(longName)
@@ -297,6 +303,7 @@ describe('UserService - Deep Tests', () => {
         email: 'test@test.com',
         name: unicodeName,
         role: 'user',
+        termsAcceptedAt: null,
       })
 
       expect(result.name).toBe(unicodeName)
@@ -315,6 +322,7 @@ describe('UserService - Deep Tests', () => {
         email: 'test@test.com',
         name: xssName,
         role: 'user',
+        termsAcceptedAt: null,
       })
 
       expect(mockRepository.create).toHaveBeenCalled()
@@ -580,12 +588,14 @@ describe('UserService - Deep Tests', () => {
         email: 'test@test.com',
         name: 'User1',
         role: 'user',
+        termsAcceptedAt: null,
       })
 
       const promise2 = service.createUser({
         email: 'test@test.com',
         name: 'User2',
         role: 'user',
+        termsAcceptedAt: null,
       })
 
       const results = await Promise.allSettled([promise1, promise2])

@@ -25,7 +25,7 @@ export const ProtectedSheetMusic = memo(function ProtectedSheetMusic({
   const [isRendering, setIsRendering] = useState(true)
   const [renderError, setRenderError] = useState<string | null>(null)
 
-  const { isOverlayVisible, suspiciousActivityCount } = useSheetProtection({
+  const { isOverlayVisible } = useSheetProtection({
     enabled: enableProtection,
     containerRef,
     onSuspiciousActivity: (type, count) => {

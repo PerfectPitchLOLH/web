@@ -38,7 +38,19 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
-  return NextResponse.next()
+  const response = NextResponse.next()
+
+  if (isAuthenticated && !req.cookies.get('nv_visited')) {
+    response.cookies.set('nv_visited', '1', {
+      maxAge: 365 * 24 * 60 * 60,
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    })
+  }
+
+  return response
 })
 
 export const config = {

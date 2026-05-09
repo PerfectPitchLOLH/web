@@ -203,6 +203,7 @@ describe('UserService', () => {
         email: 'newuser@test.com',
         name: 'New User',
         role: 'user' as const,
+        termsAcceptedAt: null,
       }
 
       const mockCreated = createMockUser({
@@ -227,6 +228,7 @@ describe('UserService', () => {
         email: 'existing@test.com',
         name: 'New User',
         role: 'user' as const,
+        termsAcceptedAt: null,
       }
 
       const existingUser = createMockUser({

@@ -195,7 +195,7 @@ export class TranscriptionService {
   ): Promise<ConfigValidationResponse> {
     try {
       return await this.repository.validateConfig(config)
-    } catch (error) {
+    } catch {
       return {
         valid: false,
         errors: ['Unable to validate configuration with backend'],
@@ -210,7 +210,7 @@ export class TranscriptionService {
     }
     try {
       await this.repository.cancelJob(jobId)
-    } catch (error) {
+    } catch {
       throw new ApiError(
         'NOT_FOUND',
         HTTP_STATUS.NOT_FOUND,

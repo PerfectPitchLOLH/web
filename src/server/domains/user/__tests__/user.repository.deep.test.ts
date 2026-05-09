@@ -218,6 +218,7 @@ describe('UserRepository - Deep Tests', () => {
           email: 'test@test.com',
           name: 'Test',
           role: 'user',
+          termsAcceptedAt: null,
         }),
       ).rejects.toThrow()
     })
@@ -246,6 +247,7 @@ describe('UserRepository - Deep Tests', () => {
           email: null as any,
           name: 'Test',
           role: 'user',
+          termsAcceptedAt: null,
         }),
       ).rejects.toThrow()
     })
@@ -262,6 +264,7 @@ describe('UserRepository - Deep Tests', () => {
         email: longEmail,
         name: 'Test',
         role: 'user',
+        termsAcceptedAt: null,
       })
 
       expect(result.email).toBe(longEmail)
@@ -279,6 +282,7 @@ describe('UserRepository - Deep Tests', () => {
         email: 'test@test.com',
         name: longName,
         role: 'user',
+        termsAcceptedAt: null,
       })
 
       expect(result.name).toBe(longName)
@@ -324,6 +328,7 @@ describe('UserRepository - Deep Tests', () => {
           email: 'test@test.com',
           name: 'Test',
           role: 'user',
+          termsAcceptedAt: null,
         }),
       ).rejects.toThrow('Transaction rolled back')
     })
@@ -480,6 +485,7 @@ describe('UserRepository - Deep Tests', () => {
         email: 'test@test.com',
         name: 'Test',
         role: 'user',
+        termsAcceptedAt: null,
       })
 
       expect(result).toHaveProperty('id')
@@ -497,6 +503,7 @@ describe('UserRepository - Deep Tests', () => {
         isRootAdmin: true,
         status: 'active',
         stripeCustomerId: 'cus_123',
+        termsAcceptedAt: null,
       }
 
       vi.mocked(db.user.create).mockResolvedValue({
@@ -524,6 +531,7 @@ describe('UserRepository - Deep Tests', () => {
         role: 'user',
         password: null,
         emailVerified: null,
+        termsAcceptedAt: null,
       })
 
       expect(result.password).toBeNull()

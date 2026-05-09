@@ -2,6 +2,18 @@
 
 ## ⚠ MANDATORY RULES — Check before every task
 
+### Database migrations
+
+- **NEVER use `prisma db push`** — use `prisma migrate dev` only
+- `prisma db push` skips the migration history → Vercel deploy breaks with P3005
+
+```bash
+# Correct workflow
+npx prisma migrate dev --name my_migration  # creates file in prisma/migrations/
+git add prisma/migrations/
+git commit && git push                       # Vercel picks it up automatically
+```
+
 ### Frontend
 
 - **page.tsx MUST be thin** — NEVER put `useState`, `useEffect`, data fetching, or any logic in `page.tsx`

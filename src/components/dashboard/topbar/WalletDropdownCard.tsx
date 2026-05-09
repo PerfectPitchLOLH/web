@@ -5,11 +5,7 @@ import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
 import { useCredits } from '@/hooks/useCredits'
-import {
-  computeUsagePercent,
-  getCreditProgressColor,
-  secondsToMinutes,
-} from '@/lib/credits'
+import { computeUsagePercent, getCreditProgressColor } from '@/lib/credits'
 import { cn, formatCredits } from '@/lib/utils'
 
 function WalletDropdownCardSkeleton() {
@@ -35,7 +31,6 @@ export function WalletDropdownCard() {
 
   const totalSeconds = credits?.totalCredits ?? 0
   const remainingSeconds = credits?.remainingCredits ?? 0
-  const totalMinutes = secondsToMinutes(totalSeconds)
   const usagePercent = computeUsagePercent(
     totalSeconds - remainingSeconds,
     totalSeconds,

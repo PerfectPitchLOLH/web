@@ -231,6 +231,7 @@ describe('UserRepository', () => {
         email: 'newuser@test.com',
         name: 'New User',
         role: 'user' as const,
+        termsAcceptedAt: null,
       }
 
       const mockCreated = createMockUser({
@@ -256,6 +257,7 @@ describe('UserRepository', () => {
         password: 'hashedpassword',
         emailVerified: new Date(),
         image: 'https://example.com/avatar.jpg',
+        termsAcceptedAt: null,
       }
 
       const mockCreated = createMockUser({
