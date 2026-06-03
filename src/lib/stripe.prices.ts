@@ -42,4 +42,5 @@ const LIVE = {
   },
 }
 
-export const STRIPE_PRICES = process.env.STRIPE_MODE === 'live' ? LIVE : TEST
+export const STRIPE_PRICES =
+  process.env.NEXT_PUBLIC_STRIPE_MODE === 'live' ? LIVE : TEST
