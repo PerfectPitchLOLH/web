@@ -3,9 +3,12 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 
-import { Navbar } from '@/components/landing/navbar/navbar'
-import { ThemeProvider } from '@/components/providers/theme-provider'
+import { CookieConsentBanner } from '@/components/landing/CookieConsentBanner'
+import { SessionProvider } from '@/components/providers/SessionProvider'
+import { ThemeProvider } from '@/components/providers/themeProvider'
 import { JsonLdSchema } from '@/components/seo/json-ld-schema'
+import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -112,10 +115,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <Navbar />
-          {children}
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            <TooltipProvider>{children}</TooltipProvider>
+            <Toaster richColors position="bottom-right" />
+            <CookieConsentBanner />
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   )

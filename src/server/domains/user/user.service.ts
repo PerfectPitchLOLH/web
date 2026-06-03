@@ -17,8 +17,8 @@ export class UserService {
     filters?: UserListFilters,
     pagination?: PaginationParams,
   ): Promise<PaginatedData<UserEntity>> {
-    const page = pagination?.page || 1
-    const limit = pagination?.limit || 10
+    const page = pagination?.page ?? 1
+    const limit = pagination?.limit ?? 10
 
     const [items, total] = await Promise.all([
       this.repository.findAll(filters, { page, limit }),
@@ -31,7 +31,7 @@ export class UserService {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: limit === 0 ? Infinity : Math.ceil(total / limit),
       },
     }
   }

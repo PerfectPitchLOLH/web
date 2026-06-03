@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,12 +7,371 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  role      String   @default("user")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String                 @id @default(cuid())
+  email                String                 @unique
+  name                 String
+  role                 String                 @default("user")
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  emailVerified        DateTime?
+  image                String?
+  password             String?
+  isRootAdmin          Boolean                @default(false)
+  deletedAt            DateTime?
+  status               String                 @default("active")
+  suspendedAt          DateTime?
+  stripeCustomerId     String?                @unique
+  bio                  String?
+  twoFactorEnabled     Boolean                @default(false)
+  twoFactorSecret      String?
+  twoFactorBackupCodes Json?
+  theme                String                 @default("system")
+  language             String                 @default("fr")
+  notificationPreferences Json?
+  termsAcceptedAt      DateTime?
+  accounts             Account[]
+  creditTransactions   CreditTransaction[]
+  creditPurchases      CreditPurchase[]
+  adminImpersonations  ImpersonationSession[] @relation("AdminImpersonations")
+  impersonatedSessions ImpersonationSession[] @relation("ImpersonatedUsers")
+  sessions             Session[]
+  userCredits          UserCredits?
+  customer             Customer?
+  subscriptions        Subscription[]
+  invoices             Invoice[]
+  notifications        Notification[]
+  savedPartitions      SavedPartition[]
+  transcriptionJobs    TranscriptionJob[]
 
   @@map("users")
+}
+
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  userName  String
+  action    String
+  resource  String
+  details   String?
+  ipAddress String?
+  userAgent String?
+  timestamp DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+model ImpersonationSession {
+  id           String             @id @default(cuid())
+  adminId      String
+  targetUserId String
+  startedAt    DateTime           @default(now())
+  endedAt      DateTime?
+  ip           String?
+  userAgent    String?
+  isActive     Boolean            @default(true)
+  logs         ImpersonationLog[]
+  admin        User               @relation("AdminImpersonations", fields: [adminId], references: [id], onDelete: Cascade)
+  targetUser   User               @relation("ImpersonatedUsers", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, isActive])
+  @@index([targetUserId])
+  @@map("impersonation_sessions")
+}
+
+model ImpersonationLog {
+  id                     String               @id @default(cuid())
+  impersonationSessionId String
+  action                 String
+  method                 String
+  path                   String
+  statusCode             Int?
+  requestBody            String?
+  responseBody           String?
+  ip                     String?
+  userAgent              String?
+  duration               Int?
+  timestamp              DateTime             @default(now())
+  session                ImpersonationSession @relation(fields: [impersonationSessionId], references: [id], onDelete: Cascade)
+
+  @@index([impersonationSessionId])
+  @@index([timestamp])
+  @@index([action])
+  @@map("impersonation_logs")
+}
+
+model UserCredits {
+  userId            String    @id
+  monthlyCredits    Int       @default(180)
+  bonusCredits      Int       @default(0)
+  usedThisMonth     Int       @default(0)
+  lastMonthlyRefill DateTime?
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditRefills     CreditRefill[]
+
+  @@index([userId])
+  @@map("user_credits")
+}
+
+model CreditTransaction {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String
+  amount       Int
+  balanceAfter Int
+  description  String
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("credit_transactions")
+}
+
+enum CreditType {
+  MONTHLY
+  BONUS
+}
+
+model CreditRefill {
+  id              String      @id @default(cuid())
+  userCreditsId   String
+  stripeInvoiceId String      @unique
+  amount          Int
+  type            CreditType
+  reason          String?
+  createdAt       DateTime    @default(now())
+  userCredits     UserCredits @relation(fields: [userCreditsId], references: [userId], onDelete: Cascade)
+
+  @@index([userCreditsId])
+  @@index([stripeInvoiceId])
+  @@map("credit_refills")
+}
+
+model CreditPurchase {
+  id                String   @id @default(cuid())
+  userId            String
+  stripePaymentIntentId String @unique
+  bundleId          String
+  bundleName        String
+  minutes           Int
+  amount            Int
+  currency          String   @default("eur")
+  status            String
+  creditsGranted    Boolean  @default(false)
+  creditsGrantedAt  DateTime?
+  invoicePdf        String?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stripePaymentIntentId])
+  @@index([status])
+  @@index([creditsGranted])
+  @@map("credit_purchases")
+}
+
+model Customer {
+  userId               String    @id
+  stripeCustomerId     String    @unique
+  email                String
+  name                 String?
+  defaultPaymentMethod String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([stripeCustomerId])
+  @@map("customers")
+}
+
+model SubscriptionPlan {
+  id                   String         @id @default(cuid())
+  stripeProductId      String         @unique
+  stripePriceId        String         @unique
+  stripeYearlyPriceId  String?        @unique
+  name                 String
+  description          String?
+  monthlyPrice         Float
+  yearlyPrice          Float?
+  transcriptionMinutes Int
+  isActive             Boolean        @default(true)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  subscriptions        Subscription[]
+
+  @@index([isActive])
+  @@map("subscription_plans")
+}
+
+model Subscription {
+  id                     String           @id @default(cuid())
+  userId                 String
+  planId                 String
+  stripeSubscriptionId   String           @unique
+  stripeCustomerId       String
+  status                 String
+  currentPeriodStart     DateTime
+  currentPeriodEnd       DateTime
+  cancelAtPeriodEnd      Boolean          @default(false)
+  canceledAt             DateTime?
+  trialStart             DateTime?
+  trialEnd               DateTime?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  user                   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                   SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([stripeSubscriptionId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+model Invoice {
+  id               String   @id @default(cuid())
+  userId           String
+  stripeInvoiceId  String   @unique
+  amount           Float
+  currency         String   @default("eur")
+  status           String
+  hostedInvoiceUrl String?
+  invoicePdf       String?
+  description      String?
+  createdAt        DateTime @default(now())
+  paidAt           DateTime?
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("invoices")
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  title       String
+  description String
+  icon        String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model TranscriptionJob {
+  id                       String   @id @default(cuid())
+  backendJobId             String   @unique
+  userId                   String
+  musicXmlContent          String?
+  svgContent               String?
+  durationSeconds          Float?
+  estimatedDurationSeconds Float?
+  creditsDeducted          Boolean  @default(false)
+  createdAt                DateTime @default(now())
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([backendJobId])
+  @@index([userId])
+  @@map("transcription_jobs")
+}
+
+model SavedPartition {
+  id               String   @id @default(cuid())
+  userId           String
+
+  title            String
+  originalFileName String?
+  instrument       String
+  partitionType    String
+  tags             String[] @default([])
+  notes            String?
+
+  transcribeConfig Json
+
+  musicXmlContent  String?
+  svgContent       String?
+
+  sourceJobId      String?
+  durationSeconds  Float?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([userId, instrument])
+  @@map("saved_partitions")
+}
+
+model WebhookEvent {
+  id              String    @id @default(cuid())
+  stripeEventId   String    @unique
+  eventType       String
+  payload         Json
+  processed       Boolean   @default(false)
+  processedAt     DateTime?
+  error           String?
+  retryCount      Int       @default(0)
+  createdAt       DateTime  @default(now())
+
+  @@index([stripeEventId])
+  @@index([processed])
+  @@index([createdAt])
+  @@map("webhook_events")
 }

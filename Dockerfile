@@ -1,9 +1,14 @@
 FROM node:24.13.0-slim AS base
 
+RUN apt-get update -y && apt-get install -y openssl
+
 FROM base AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+
 RUN --mount=type=cache,target=/root/.npm \
     npm ci
 
