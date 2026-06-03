@@ -5,7 +5,10 @@ const { Client } = pg
 
 async function warmUp(directUrl) {
   for (let attempt = 1; attempt <= 5; attempt++) {
-    const client = new Client({ connectionString: directUrl, connectionTimeoutMillis: 15000 })
+    const client = new Client({
+      connectionString: directUrl,
+      connectionTimeoutMillis: 15000,
+    })
     try {
       await client.connect()
       await client.query('SELECT 1')
@@ -14,12 +17,16 @@ async function warmUp(directUrl) {
     } catch {
       await client.end().catch(() => {})
       if (attempt < 5) {
-        process.stdout.write(`DB not ready (attempt ${attempt}/5), retrying in 3s...\n`)
+        process.stdout.write(
+          `DB not ready (attempt ${attempt}/5), retrying in 3s...\n`,
+        )
         await new Promise((r) => setTimeout(r, 3000))
       }
     }
   }
-  process.stdout.write('DB warm-up failed after 5 attempts, proceeding anyway\n')
+  process.stdout.write(
+    'DB warm-up failed after 5 attempts, proceeding anyway\n',
+  )
 }
 
 async function migrate() {
@@ -29,7 +36,9 @@ async function migrate() {
       return
     } catch {
       if (attempt < 3) {
-        process.stdout.write(`\nMigration failed (attempt ${attempt}/3), retrying in 10s...\n`)
+        process.stdout.write(
+          `\nMigration failed (attempt ${attempt}/3), retrying in 10s...\n`,
+        )
         await new Promise((r) => setTimeout(r, 10000))
       } else {
         process.exit(1)
