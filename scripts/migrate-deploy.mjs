@@ -1,4 +1,7 @@
+import { createHash } from 'crypto'
 import { execSync } from 'child_process'
+import { readFileSync, readdirSync } from 'fs'
+import { join } from 'path'
 import pg from 'pg'
 
 const { Client } = pg
@@ -29,6 +32,69 @@ async function warmUp(directUrl) {
   )
 }
 
+async function resolveFailedMigrations(directUrl) {
+  const client = new Client({
+    connectionString: directUrl,
+    connectionTimeoutMillis: 15000,
+  })
+  try {
+    await client.connect()
+    const { rows } = await client.query(
+      `UPDATE "_prisma_migrations"
+       SET rolled_back_at = NOW()
+       WHERE finished_at IS NULL AND rolled_back_at IS NULL
+       RETURNING migration_name`,
+    )
+    for (const row of rows) {
+      process.stdout.write(`Resolved failed migration: ${row.migration_name}\n`)
+    }
+    await client.end()
+  } catch (err) {
+    process.stderr.write(
+      `Warning: could not resolve failed migrations: ${err.message}\n`,
+    )
+    await client.end().catch(() => {})
+  }
+}
+
+async function syncChecksums(directUrl) {
+  const client = new Client({
+    connectionString: directUrl,
+    connectionTimeoutMillis: 15000,
+  })
+  try {
+    await client.connect()
+    const migrationsDir = join(
+      new URL('.', import.meta.url).pathname,
+      '../prisma/migrations',
+    )
+    const folders = readdirSync(migrationsDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
+
+    for (const folder of folders) {
+      const filePath = join(migrationsDir, folder, 'migration.sql')
+      let content
+      try {
+        content = readFileSync(filePath, 'utf8')
+      } catch {
+        continue
+      }
+      const checksum = createHash('sha256').update(content).digest('hex')
+      await client.query(
+        `UPDATE "_prisma_migrations"
+         SET checksum = $1
+         WHERE migration_name = $2 AND checksum != $1 AND finished_at IS NOT NULL`,
+        [checksum, folder],
+      )
+    }
+    await client.end()
+  } catch (err) {
+    process.stderr.write(`Warning: could not sync checksums: ${err.message}\n`)
+    await client.end().catch(() => {})
+  }
+}
+
 async function migrate() {
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
@@ -54,4 +120,6 @@ if (!directUrl) {
 }
 
 await warmUp(directUrl)
+await resolveFailedMigrations(directUrl)
+await syncChecksums(directUrl)
 await migrate()
