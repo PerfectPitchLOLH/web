@@ -6,12 +6,20 @@
 
 - **NEVER use `prisma db push`** — use `prisma migrate dev` only
 - `prisma db push` skips the migration history → Vercel deploy breaks with P3005
+- **NEVER modify an already-applied migration file** — Prisma checksums every file; editing one causes P3009 on all environments that already ran it
+- **DIRECT_URL must NOT have `channel_binding=require`** — Prisma's Rust CLI engine rejects it with "invalid domain character"; keep `channel_binding=require` only in `DATABASE_URL` (pooler, handled by `pg` driver)
 
 ```bash
 # Correct workflow
 npx prisma migrate dev --name my_migration  # creates file in prisma/migrations/
 git add prisma/migrations/
 git commit && git push                       # Vercel picks it up automatically
+```
+
+```
+# Env var split — why two URLs
+DATABASE_URL   = pooler URL (-pooler hostname) + channel_binding=require  → runtime (pg driver supports it)
+DIRECT_URL     = direct URL (no -pooler)      + sslmode=require only      → Prisma CLI (Rust engine)
 ```
 
 ### Frontend
