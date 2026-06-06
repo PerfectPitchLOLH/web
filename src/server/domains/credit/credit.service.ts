@@ -1,4 +1,5 @@
 import { db } from '@/server/lib/database'
+import { sendLowCreditsEmail, sendNoCreditsEmail } from '@/server/lib/email'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
@@ -132,13 +133,21 @@ export class CreditService {
       )
       const newBalance =
         updatedCredits.monthlyCredits + updatedCredits.bonusCredits
+      const remainingMinutes = Math.floor(newBalance / 60)
+
       await this.repository.createTransaction({
         userId,
         type: CREDIT_TRANSACTION_TYPES.USAGE,
         amount: -Math.ceil(seconds / 60),
-        balanceAfter: Math.floor(newBalance / 60),
+        balanceAfter: remainingMinutes,
         description,
       })
+
+      await this.sendCreditAlertIfNeeded(
+        userId,
+        newBalance,
+        updatedCredits.usedThisMonth,
+      )
     } catch (error) {
       if (error instanceof Error && error.message === 'Insufficient credits') {
         throw new ApiError(
@@ -366,5 +375,31 @@ export class CreditService {
     }
 
     return { success, failed, errors }
+  }
+
+  private async sendCreditAlertIfNeeded(
+    userId: string,
+    remainingSeconds: number,
+    usedThisMonthSeconds: number,
+  ): Promise<void> {
+    const user = await this.repository.findUserById(userId)
+    if (!user) return
+
+    if (remainingSeconds <= 0) {
+      await sendNoCreditsEmail(user.email, user.name)
+      return
+    }
+
+    const totalSeconds = remainingSeconds + usedThisMonthSeconds
+    const usagePercent =
+      totalSeconds > 0 ? (usedThisMonthSeconds / totalSeconds) * 100 : 0
+
+    if (usagePercent >= CREDIT_THRESHOLDS.WARNING_PERCENT) {
+      await sendLowCreditsEmail(
+        user.email,
+        user.name,
+        Math.floor(remainingSeconds / 60),
+      )
+    }
   }
 }

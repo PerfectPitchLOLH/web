@@ -105,6 +105,12 @@ export async function POST(request: NextRequest) {
           break
         }
 
+        case STRIPE_WEBHOOK_EVENTS.CUSTOMER_SUBSCRIPTION_TRIAL_WILL_END: {
+          const subscription = event.data.object as Stripe.Subscription
+          await subscriptionService.handleTrialWillEnd(subscription.id)
+          break
+        }
+
         case 'checkout.session.completed': {
           const session = event.data.object as Stripe.Checkout.Session
 

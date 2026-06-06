@@ -310,4 +310,13 @@ export class CreditRepository {
 
     return credits
   }
+
+  async findUserById(
+    userId: string,
+  ): Promise<{ email: string; name: string } | null> {
+    return db.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true },
+    })
+  }
 }
