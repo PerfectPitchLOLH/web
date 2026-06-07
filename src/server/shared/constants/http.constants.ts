@@ -53,6 +53,7 @@ export const ERROR_CODES = {
   JOB_NOT_COMPLETED: 'JOB_NOT_COMPLETED',
   PARTITION_ALREADY_SAVED: 'PARTITION_ALREADY_SAVED',
   MUSICXML_UNAVAILABLE: 'MUSICXML_UNAVAILABLE',
+  INVALID_DOWNGRADE: 'INVALID_DOWNGRADE',
 } as const
 
 export const ERROR_MESSAGES = {
@@ -93,4 +94,5 @@ export const ERROR_MESSAGES = {
   JOB_NOT_COMPLETED: 'Job is not completed',
   PARTITION_ALREADY_SAVED: 'Partition already saved',
   MUSICXML_UNAVAILABLE: 'MusicXML content unavailable',
+  INVALID_DOWNGRADE: 'Target plan must be lower than current plan',
 } as const

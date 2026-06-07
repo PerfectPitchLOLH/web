@@ -16,6 +16,10 @@ type UpgradeSubscriptionRequest = {
   priceId: string
 }
 
+type DowngradeSubscriptionRequest = {
+  priceId: string
+}
+
 export class SubscriptionController {
   constructor(private service: SubscriptionService) {}
 
@@ -112,6 +116,16 @@ export class SubscriptionController {
         error: error instanceof Error ? error.message : 'Unknown error',
         errorStack: error instanceof Error ? error.stack : undefined,
       })
+      return handleApiError(error)
+    }
+  }
+
+  async downgradeSubscription(userId: string, request: NextRequest) {
+    try {
+      const body = (await request.json()) as DowngradeSubscriptionRequest
+      await this.service.downgradeSubscription(userId, body.priceId)
+      return createSuccessResponse({ success: true }, HTTP_STATUS.OK)
+    } catch (error) {
       return handleApiError(error)
     }
   }

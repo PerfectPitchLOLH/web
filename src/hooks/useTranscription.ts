@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { useAnalytics } from '@/hooks/useAnalytics'
 import {
   clearSession,
   readSession,
@@ -49,6 +50,7 @@ interface UseTranscriptionReturn {
 }
 
 export function useTranscription(): UseTranscriptionReturn {
+  const { track } = useAnalytics()
   const [jobId, setJobId] = useState<string | null>(null)
   const [jobTitle, setJobTitle] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -56,6 +58,8 @@ export function useTranscription(): UseTranscriptionReturn {
   const [sessionToResume, setSessionToResume] =
     useState<TranscriptionSession | null>(null)
   const jobIdRef = useRef<string | null>(null)
+  const sourceRef = useRef<'file' | 'youtube' | 'spotify' | null>(null)
+  const completedJobIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     jobIdRef.current = jobId
@@ -111,6 +115,20 @@ export function useTranscription(): UseTranscriptionReturn {
     }
   }, [results])
 
+  useEffect(() => {
+    if (
+      jobId &&
+      status === 'completed' &&
+      completedJobIdRef.current !== jobId
+    ) {
+      completedJobIdRef.current = jobId
+      track({
+        name: 'transcription_completed',
+        properties: { source: sourceRef.current ?? 'file' },
+      })
+    }
+  }, [status, jobId, track])
+
   const transcribe = useCallback(
     async (file: File, config: TranscribeConfig, durationSeconds?: number) => {
       try {
@@ -143,6 +161,11 @@ export function useTranscription(): UseTranscriptionReturn {
         if (data.success && data.data) {
           const newJobId = data.data.job_id
           setJobId(newJobId)
+          sourceRef.current = 'file'
+          track({
+            name: 'transcription_started',
+            properties: { source: 'file' },
+          })
 
           if (typeof window !== 'undefined') {
             const title = file.name.replace(/\.[^/.]+$/, '')
@@ -165,7 +188,7 @@ export function useTranscription(): UseTranscriptionReturn {
       }
       return null
     },
-    [],
+    [track],
   )
 
   const transcribeFromYoutube = useCallback(
@@ -194,6 +217,11 @@ export function useTranscription(): UseTranscriptionReturn {
         if (data.success && data.data) {
           const newJobId = data.data.job_id
           setJobId(newJobId)
+          sourceRef.current = 'youtube'
+          track({
+            name: 'transcription_started',
+            properties: { source: 'youtube' },
+          })
 
           if (typeof window !== 'undefined') {
             const title = videoTitle
@@ -216,7 +244,7 @@ export function useTranscription(): UseTranscriptionReturn {
       }
       return null
     },
-    [],
+    [track],
   )
 
   const transcribeFromSpotify = useCallback(
@@ -245,6 +273,11 @@ export function useTranscription(): UseTranscriptionReturn {
         if (data.success && data.data) {
           const newJobId = data.data.job_id
           setJobId(newJobId)
+          sourceRef.current = 'spotify'
+          track({
+            name: 'transcription_started',
+            properties: { source: 'spotify' },
+          })
 
           if (typeof window !== 'undefined') {
             setJobTitle(trackTitle)
@@ -266,7 +299,7 @@ export function useTranscription(): UseTranscriptionReturn {
       }
       return null
     },
-    [],
+    [track],
   )
 
   const resumeSession = useCallback(() => {
@@ -283,6 +316,8 @@ export function useTranscription(): UseTranscriptionReturn {
     setJobTitle(null)
     setError(null)
     setSessionToResume(null)
+    sourceRef.current = null
+    completedJobIdRef.current = null
     clearSession()
   }, [])
 

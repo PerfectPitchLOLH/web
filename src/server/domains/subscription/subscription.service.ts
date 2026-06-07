@@ -759,6 +759,62 @@ export class SubscriptionService {
     }
   }
 
+  async downgradeSubscription(
+    userId: string,
+    newPriceId: string,
+  ): Promise<void> {
+    const subscription = await this.repository.findSubscriptionByUserId(userId)
+
+    if (
+      !subscription ||
+      !['active', 'trialing'].includes(subscription.status)
+    ) {
+      throw new ApiError(
+        'SUBSCRIPTION_NOT_FOUND',
+        HTTP_STATUS.NOT_FOUND,
+        'Aucun abonnement actif',
+      )
+    }
+
+    const currentPlan = await this.repository.findPlanById(subscription.planId)
+    const newPlan = await this.repository.findPlanByStripePriceId(newPriceId)
+
+    if (!newPlan) {
+      throw new ApiError(
+        'INVALID_PLAN',
+        HTTP_STATUS.BAD_REQUEST,
+        'Plan cible invalide',
+      )
+    }
+
+    if (currentPlan && newPlan.monthlyPrice >= currentPlan.monthlyPrice) {
+      throw new ApiError(
+        'INVALID_DOWNGRADE',
+        HTTP_STATUS.BAD_REQUEST,
+        'Le plan cible doit être inférieur au plan actuel',
+      )
+    }
+
+    const stripeSubscription = await stripe.subscriptions.retrieve(
+      subscription.stripeSubscriptionId,
+    )
+
+    const itemId = stripeSubscription.items.data[0]?.id
+
+    if (!itemId) {
+      throw new ApiError(
+        'SUBSCRIPTION_ITEM_NOT_FOUND',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        "Item d'abonnement introuvable",
+      )
+    }
+
+    await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+      items: [{ id: itemId, price: newPriceId }],
+      proration_behavior: 'create_prorations',
+    })
+  }
+
   async grantWelcomeCredits(userId: string, email: string): Promise<void> {
     await this.creditService.getUserCreditsBalance(userId)
 

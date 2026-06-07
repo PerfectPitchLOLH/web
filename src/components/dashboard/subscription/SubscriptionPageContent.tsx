@@ -13,6 +13,7 @@ export function SubscriptionPageContent() {
     cancelSubscription,
     reactivateSubscription,
     upgradeSubscription,
+    downgradeSubscription,
     openPortal,
   } = useSubscription()
   const { plans, loading: plansLoading } = usePlans()
@@ -28,6 +29,7 @@ export function SubscriptionPageContent() {
           cancelSubscription={cancelSubscription}
           reactivateSubscription={reactivateSubscription}
           upgradeSubscription={upgradeSubscription}
+          downgradeSubscription={downgradeSubscription}
           openPortal={openPortal}
         />
       </div>

@@ -17,9 +17,19 @@ export type SystemStats = {
   errorRate: number
 }
 
+export type MrrStats = {
+  mrr: number
+  arr: number
+  revenueThisMonth: number
+  newSubscribersThisMonth: number
+  churnedThisMonth: number
+  activeSubscriptions: number
+}
+
 export type AdminDashboardStats = {
   users: UserStats
   system: SystemStats
+  mrr: MrrStats
 }
 
 export type UserManagementFilters = {

@@ -6,6 +6,7 @@ import {
   RoleDistributionCard,
   SystemStatsCard,
 } from '@/components/admin/dashboard'
+import { MrrCard } from '@/components/admin/dashboard/MrrCard'
 import { StatCard } from '@/components/admin/shared/StatCard'
 import type { AdminDashboardStats } from '@/server/domains/admin'
 import { adminService } from '@/server/domains/admin'
@@ -26,6 +27,8 @@ export async function AdminDashboardContent() {
   return (
     <div className="space-y-8">
       <AdminDashboardHeader />
+
+      <MrrCard stats={stats.mrr} />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard

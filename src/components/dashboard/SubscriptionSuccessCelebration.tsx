@@ -7,9 +7,11 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import { Button } from '@/components/ui/button'
+import { useAnalytics } from '@/hooks/useAnalytics'
 
 export function SubscriptionSuccessCelebration() {
   const router = useRouter()
+  const { track } = useAnalytics()
   const [isVisible, setIsVisible] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -20,8 +22,9 @@ export function SubscriptionSuccessCelebration() {
     const url = new URL(window.location.href)
     if (url.searchParams.get('subscribed') === 'true') {
       setIsVisible(true)
+      track({ name: 'subscription_created' })
     }
-  }, [])
+  }, [track])
 
   useEffect(() => {
     if (!isVisible || !canvasRef.current) return

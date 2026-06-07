@@ -105,6 +105,14 @@ describe('AdminController - Deep Tests', () => {
             uptime: 3600,
             errorRate: 0.01,
           },
+          mrr: {
+            mrr: 0,
+            arr: 0,
+            revenueThisMonth: 0,
+            newSubscribersThisMonth: 0,
+            activeSubscriptions: 0,
+            churnedThisMonth: 0,
+          },
         }
 
         vi.mocked(mockService.getDashboardStats).mockResolvedValue(mockStats)
@@ -1180,6 +1188,14 @@ describe('AdminController - Deep Tests', () => {
           uptime: 3600,
           errorRate: 0.01,
         },
+        mrr: {
+          mrr: 0,
+          arr: 0,
+          revenueThisMonth: 0,
+          newSubscribersThisMonth: 0,
+          activeSubscriptions: 0,
+          churnedThisMonth: 0,
+        },
       })
 
       const requests = Array.from({ length: 10 }, () =>
@@ -1222,6 +1238,14 @@ describe('AdminController - Deep Tests', () => {
             averageResponseTime: 150,
             uptime: 3600,
             errorRate: 0.01,
+          },
+          mrr: {
+            mrr: 0,
+            arr: 0,
+            revenueThisMonth: 0,
+            newSubscribersThisMonth: 0,
+            activeSubscriptions: 0,
+            churnedThisMonth: 0,
           },
         })
 

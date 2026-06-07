@@ -11,9 +11,11 @@ import { FormError } from '@/components/auth/FormError'
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useAnalytics } from '@/hooks/useAnalytics'
 
 export function SignUpForm() {
   const router = useRouter()
+  const { track } = useAnalytics()
   const [email, setEmail] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
@@ -60,6 +62,8 @@ export function SignUpForm() {
         password,
         redirect: false,
       })
+
+      track({ name: 'signup_completed', properties: { method: 'email' } })
 
       router.push('/dashboard')
       router.refresh()
