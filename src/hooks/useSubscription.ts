@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 
+import { useAnalytics } from '@/hooks/useAnalytics'
+
 export type SubscriptionStatus =
   | 'active'
   | 'canceled'
@@ -47,6 +49,7 @@ export type SubscriptionInfo = {
 }
 
 export function useSubscription() {
+  const { track } = useAnalytics()
   const [data, setData] = useState<SubscriptionInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -75,6 +78,16 @@ export function useSubscription() {
   useEffect(() => {
     fetchSubscription()
   }, [])
+
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('payment') === 'success') {
+      track({ name: 'credit_purchased' })
+      url.searchParams.delete('payment')
+      url.searchParams.delete('session_id')
+      window.history.replaceState({}, '', url.pathname + url.search)
+    }
+  }, [track])
 
   const createCheckoutSession = async (priceId: string) => {
     const response = await fetch('/api/subscriptions', {
@@ -144,6 +157,21 @@ export function useSubscription() {
     await fetchSubscription()
   }
 
+  const downgradeSubscription = async (priceId: string) => {
+    const response = await fetch('/api/subscriptions/downgrade', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ priceId }),
+    })
+
+    if (!response.ok) {
+      const result = await response.json()
+      throw new Error(result.message || 'Failed to downgrade subscription')
+    }
+
+    await fetchSubscription()
+  }
+
   const upgradeSubscription = async (priceId: string) => {
     console.log("[FRONTEND] Tentative d'upgrade:", {
       priceId,
@@ -200,6 +228,7 @@ export function useSubscription() {
     openPortal,
     cancelSubscription,
     reactivateSubscription,
+    downgradeSubscription,
     upgradeSubscription,
   }
 }

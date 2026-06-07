@@ -75,6 +75,7 @@ export const STRIPE_WEBHOOK_EVENTS = {
   CUSTOMER_CREATED: 'customer.created',
   CUSTOMER_UPDATED: 'customer.updated',
   CUSTOMER_DELETED: 'customer.deleted',
+  CUSTOMER_SUBSCRIPTION_TRIAL_WILL_END: 'customer.subscription.trial_will_end',
 } as const
 
 export const SUBSCRIPTION_DEFAULTS = {

@@ -21,6 +21,7 @@ type Props = {
   cancelSubscription: () => Promise<void>
   reactivateSubscription: () => Promise<void>
   upgradeSubscription: (priceId: string) => Promise<void>
+  downgradeSubscription: (priceId: string) => Promise<void>
   openPortal: () => Promise<void>
 }
 
@@ -30,11 +31,13 @@ export function SubscriptionManagementView({
   cancelSubscription,
   reactivateSubscription,
   upgradeSubscription,
+  downgradeSubscription,
   openPortal,
 }: Props) {
   const [actionLoading, setActionLoading] = useState(false)
   const [portalLoading, setPortalLoading] = useState(false)
   const [upgradeLoading, setUpgradeLoading] = useState(false)
+  const [downgradeLoading, setDowngradeLoading] = useState(false)
 
   useEffect(() => {
     if (window.location.hash) {
@@ -75,6 +78,15 @@ export function SubscriptionManagementView({
       await upgradeSubscription(priceId)
     } finally {
       setUpgradeLoading(false)
+    }
+  }
+
+  const handleDowngrade = async (priceId: string) => {
+    setDowngradeLoading(true)
+    try {
+      await downgradeSubscription(priceId)
+    } finally {
+      setDowngradeLoading(false)
     }
   }
 
@@ -124,6 +136,8 @@ export function SubscriptionManagementView({
           isYearly={isYearly}
           onAction={handleUpgrade}
           loading={upgradeLoading}
+          onDowngrade={handleDowngrade}
+          downgradeLoading={downgradeLoading}
         />
       </div>
 

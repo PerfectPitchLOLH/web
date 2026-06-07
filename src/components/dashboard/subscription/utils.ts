@@ -23,3 +23,11 @@ export function formatAmount(amount: number, currency = 'eur') {
     currency: currency.toUpperCase(),
   }).format(amount)
 }
+
+export function getYearlySavingsMonths(
+  monthlyPrice: number,
+  yearlyPrice: number,
+) {
+  if (monthlyPrice <= 0) return 0
+  return Math.round((monthlyPrice * 12 - yearlyPrice) / monthlyPrice)
+}

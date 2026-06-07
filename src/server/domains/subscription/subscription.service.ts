@@ -1,5 +1,11 @@
 import Stripe from 'stripe'
 
+import {
+  sendPaymentFailedEmail,
+  sendSubscriptionCancelledEmail,
+  sendSubscriptionCreatedEmail,
+  sendTrialEndingEmail,
+} from '@/server/lib/email'
 import { stripe } from '@/server/lib/stripe'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
@@ -353,6 +359,11 @@ export class SubscriptionService {
       latestInvoice,
     )
 
+    const user = await this.repository.findUserById(userId)
+    if (user) {
+      await sendSubscriptionCreatedEmail(user.email, user.name, plan.name)
+    }
+
     return subscription
   }
 
@@ -439,6 +450,15 @@ export class SubscriptionService {
         await this.creditService.grantSubscriptionCredits(
           subscription.userId,
           0,
+        )
+      }
+
+      const user = await this.repository.findUserById(subscription.userId)
+      if (user) {
+        await sendSubscriptionCancelledEmail(
+          user.email,
+          user.name,
+          subscription.currentPeriodEnd,
         )
       }
     }
@@ -559,6 +579,32 @@ export class SubscriptionService {
       description: stripeInvoice.description ?? null,
       paidAt: null,
     })
+
+    const user = await this.repository.findUserById(customer.userId)
+    if (user) {
+      await sendPaymentFailedEmail(user.email, user.name)
+    }
+  }
+
+  async handleTrialWillEnd(stripeSubscriptionId: string): Promise<void> {
+    const stripeSubscription =
+      await stripe.subscriptions.retrieve(stripeSubscriptionId)
+
+    const customer = await this.repository.findCustomerByStripeId(
+      stripeSubscription.customer as string,
+    )
+
+    if (!customer) return
+
+    const user = await this.repository.findUserById(customer.userId)
+
+    if (user && stripeSubscription.trial_end) {
+      await sendTrialEndingEmail(
+        user.email,
+        user.name,
+        new Date(stripeSubscription.trial_end * 1000),
+      )
+    }
   }
 
   async cancelSubscription(userId: string): Promise<void> {
@@ -711,6 +757,62 @@ export class SubscriptionService {
         `Échec de la mise à jour de l'abonnement: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
       )
     }
+  }
+
+  async downgradeSubscription(
+    userId: string,
+    newPriceId: string,
+  ): Promise<void> {
+    const subscription = await this.repository.findSubscriptionByUserId(userId)
+
+    if (
+      !subscription ||
+      !['active', 'trialing'].includes(subscription.status)
+    ) {
+      throw new ApiError(
+        'SUBSCRIPTION_NOT_FOUND',
+        HTTP_STATUS.NOT_FOUND,
+        'Aucun abonnement actif',
+      )
+    }
+
+    const currentPlan = await this.repository.findPlanById(subscription.planId)
+    const newPlan = await this.repository.findPlanByStripePriceId(newPriceId)
+
+    if (!newPlan) {
+      throw new ApiError(
+        'INVALID_PLAN',
+        HTTP_STATUS.BAD_REQUEST,
+        'Plan cible invalide',
+      )
+    }
+
+    if (currentPlan && newPlan.monthlyPrice >= currentPlan.monthlyPrice) {
+      throw new ApiError(
+        'INVALID_DOWNGRADE',
+        HTTP_STATUS.BAD_REQUEST,
+        'Le plan cible doit être inférieur au plan actuel',
+      )
+    }
+
+    const stripeSubscription = await stripe.subscriptions.retrieve(
+      subscription.stripeSubscriptionId,
+    )
+
+    const itemId = stripeSubscription.items.data[0]?.id
+
+    if (!itemId) {
+      throw new ApiError(
+        'SUBSCRIPTION_ITEM_NOT_FOUND',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        "Item d'abonnement introuvable",
+      )
+    }
+
+    await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+      items: [{ id: itemId, price: newPriceId }],
+      proration_behavior: 'create_prorations',
+    })
   }
 
   async grantWelcomeCredits(userId: string, email: string): Promise<void> {

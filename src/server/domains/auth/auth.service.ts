@@ -1,6 +1,7 @@
 import {
   sendPasswordResetEmail,
   sendVerificationEmail,
+  sendWelcomeEmail,
 } from '@/server/lib/email'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils'
@@ -51,6 +52,7 @@ export class AuthService {
     )
 
     await sendVerificationEmail(user.email, verificationToken)
+    await sendWelcomeEmail(user.email, user.name)
 
     return {
       id: user.id,

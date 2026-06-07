@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { headers } from 'next/headers'
 
 import { CookieConsentBanner } from '@/components/landing/CookieConsentBanner'
+import { PostHogProvider } from '@/components/providers/PostHogProvider'
 import { SessionProvider } from '@/components/providers/SessionProvider'
 import { ThemeProvider } from '@/components/providers/themeProvider'
 import { JsonLdSchema } from '@/components/seo/json-ld-schema'
@@ -119,11 +120,13 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SessionProvider>
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-            <TooltipProvider>{children}</TooltipProvider>
-            <Toaster richColors position="bottom-right" />
-            <CookieConsentBanner />
-          </ThemeProvider>
+          <PostHogProvider>
+            <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+              <TooltipProvider>{children}</TooltipProvider>
+              <Toaster richColors position="bottom-right" />
+              <CookieConsentBanner />
+            </ThemeProvider>
+          </PostHogProvider>
         </SessionProvider>
       </body>
     </html>
