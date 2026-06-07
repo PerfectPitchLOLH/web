@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils'
 import { NavbarLanguageSelector } from './navbarLanguageSelector'
 import { NavbarLinks } from './navbarLinks'
 import { NavbarLogo } from './navbarLogo'
-import { NavbarThemeToggle } from './navbarThemeToggle'
 
 export function Navbar({ cta }: { cta?: React.ReactNode }) {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -42,7 +41,6 @@ export function Navbar({ cta }: { cta?: React.ReactNode }) {
             <NavbarLogo />
             <NavbarLinks className="hidden md:flex" />
             <div className="flex items-center gap-2 md:gap-3">
-              <NavbarThemeToggle />
               <NavbarLanguageSelector />
               {cta}
             </div>

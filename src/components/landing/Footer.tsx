@@ -1,31 +1,19 @@
 'use client'
 
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
+
+import { Link } from '@/i18n/navigation'
 
 const mono = { fontFamily: "'JetBrains Mono', monospace" }
 
-const columns = [
-  {
-    title: 'Produit',
-    links: ['Fonctionnalités', 'Comment ça marche', 'Tarifs', 'Démo', 'API'],
-    hrefs: ['#features', '#features', '#pricing', '#', '#'],
-  },
-  {
-    title: 'Ressources',
-    links: ['Documentation', 'Blog', 'Tutoriels', 'Changelog'],
-    hrefs: ['#', '#', '#', '#'],
-  },
-  {
-    title: 'Entreprise',
-    links: ['À propos', 'Carrières', 'Presse', 'Contact'],
-    hrefs: ['#', '#', '#', '#'],
-  },
-  {
-    title: 'Légal',
-    links: ['Confidentialité', 'CGU', 'Cookies', 'Mentions légales'],
-    hrefs: ['#', '#', '#', '#'],
-  },
-]
+const columnHrefs = [
+  ['#features', '/comment-ca-marche', '#pricing', '/demo'],
+  ['/docs', '/blog', '/tutoriels', '/changelog'],
+  ['/about', '/carrieres', '/presse', '/contact'],
+  ['/legal/privacy', '/legal/terms', '/legal/cookies', '/legal/mentions'],
+] as const
+
+const columnKeys = ['product', 'resources', 'company', 'legal'] as const
 
 function NotavexLogo() {
   return (
@@ -48,6 +36,14 @@ function NotavexLogo() {
 }
 
 export function Footer() {
+  const t = useTranslations('Footer')
+
+  const columns = columnKeys.map((key, i) => ({
+    title: t(`columns.${key}.title`),
+    links: t.raw(`columns.${key}.links`) as string[],
+    hrefs: columnHrefs[i],
+  }))
+
   return (
     <footer
       className="px-8 pb-10 pt-20"
@@ -70,7 +66,7 @@ export function Footer() {
               className="max-w-[230px] text-[14px] leading-[1.65] text-white/65"
               style={{ textWrap: 'pretty' } as React.CSSProperties}
             >
-              Du son brut. À la partition propre. En 30 secondes.
+              {t('tagline')}
             </p>
           </div>
 
@@ -102,9 +98,7 @@ export function Footer() {
           className="flex flex-wrap items-center justify-between gap-3.5 border-t pt-8"
           style={{ borderColor: 'rgba(255,255,255,0.08)' }}
         >
-          <span className="text-[13px] text-white/45">
-            © 2026 Notavex · Made with care in Paris
-          </span>
+          <span className="text-[13px] text-white/45">{t('copyright')}</span>
 
           <div className="flex gap-2.5">
             <SocialLink href="#" label="GitHub">
@@ -167,7 +161,7 @@ function SocialLink({
   children: React.ReactNode
 }) {
   return (
-    <Link
+    <a
       href={href}
       aria-label={label}
       className="flex h-[34px] w-[34px] items-center justify-center rounded-[6px] text-white/65 no-underline transition-colors hover:text-white/95"
@@ -180,6 +174,6 @@ function SocialLink({
       }}
     >
       {children}
-    </Link>
+    </a>
   )
 }

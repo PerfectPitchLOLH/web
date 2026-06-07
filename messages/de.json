@@ -1,0 +1,208 @@
+{
+  "Hero": {
+    "badge": "Polyphoner Engine — jetzt verfügbar",
+    "title": "Die Infrastruktur für\nMusiktranskription,",
+    "titleItalic": "im Dienst der Musiker.",
+    "ctaPrimary": "Jetzt starten →",
+    "ctaDemo": "Demo ansehen",
+    "socialProof": "Treten Sie {count}+ Musikern bei, die 5+ Stunden pro Transkription sparen",
+    "transcribedIn": "Transkribiert in"
+  },
+  "Pricing": {
+    "title": "Der Preis, den Ihre Noten",
+    "titleItalic": "verdienen.",
+    "subtitle": "Kaufen Sie Ihre Noten einzeln für je 9 € — oder abonnieren Sie ab 9,99 €/Monat. Ab 2 Noten rechnet sich Notavex Junior von selbst.",
+    "monthly": "Monatlich",
+    "yearly": "Jährlich",
+    "yearlyBadge": "−17%",
+    "pieceTitle": "Pro Stück",
+    "pieceLabel": "Pro Note",
+    "notavexLabel": "Notavex",
+    "recommended": "Empfohlen",
+    "mostPopular": "Am beliebtesten",
+    "choosePlan": "Plan wählen",
+    "tryFree": "Kostenlos testen",
+    "pickYourPlan": "Wählen Sie Ihren Plan",
+    "savingsMonthly": "Sparen Sie <strong>215 €/Monat</strong> im Vergleich zum Einzelkauf — bereits ab der 2. Note rentabel.",
+    "savingsYearly": "Sparen Sie <strong>2.600 €/Jahr</strong> mit dem jährlichen Junior-Plan — 27x günstiger als Einzelkauf.",
+    "estimatedMonthly": "geschätzt für 25 Noten/Monat",
+    "estimatedYearly": "geschätzt für 300 Noten/Jahr",
+    "perMonth": "/ Monat",
+    "perYear": "/ Jahr — 2 Monate gratis",
+    "negativeBullets": [
+      "9 € pro Note",
+      "Formate nur beim Kauf",
+      "Kein Cloud-Backup",
+      "Nur Standard-Support"
+    ],
+    "juniorFeatures": [
+      "10 Min. Transkription / Monat",
+      "Falling Notes inklusive",
+      "Alle Formate (PDF, MIDI, MusicXML, GP)",
+      "30-Tage-Verlauf",
+      "Cloud-Backup & Synchronisation",
+      "Standard-Support"
+    ],
+    "planFeatures": {
+      "transcription": "Transkription / Monat",
+      "fallingNotes": "Falling Notes",
+      "history": "Verlauf",
+      "editor": "Noteneditor",
+      "polyphony": "Polyphonie",
+      "historyValues": ["30 Tage", "90 Tage", "Unbegrenzt"]
+    }
+  },
+  "SocialProof": {
+    "statsLabels": {
+      "musicians": "Musiker",
+      "sheets": "Erstellte Noten",
+      "countries": "Länder"
+    },
+    "title": "Geliebt von Musikern auf der ganzen Welt",
+    "subtitle": "Über {count} Gitarristen, Pianisten, Geiger und Produzenten vertrauen täglich auf Notavex.",
+    "testimonials": [
+      {
+        "quote": "\"Ich habe in 3 Monaten über 400 € gespart. Notavex hat das Gitarrenlernen zugänglich und angenehm gemacht.\"",
+        "name": "Sarah M.",
+        "role": "Guitar Student",
+        "location": "Austin, TX"
+      },
+      {
+        "quote": "\"Ich verbrachte 4–5 Stunden mit Transkriptionen für Kunden. Jetzt dauert es Minuten. In einer Woche amortisiert.\"",
+        "name": "James K.",
+        "role": "Session Musician",
+        "location": "Nashville, TN"
+      },
+      {
+        "quote": "\"Ich erstelle Material für 30+ Schüler. Die Multi-Instrument-Trennung verändert alles beim Unterrichten von Orchestrierung.\"",
+        "name": "Dr. Lisa Chen",
+        "role": "Music Educator · Berklee",
+        "location": "Boston, MA"
+      },
+      {
+        "quote": "\"Die Präzision ist beeindruckend. Ich analysiere die Progressionen meiner Lieblingsproduzenten. Röntgenblick für Musik.\"",
+        "name": "Alex T.",
+        "role": "Electronic Music Producer",
+        "location": "Los Angeles, CA"
+      },
+      {
+        "quote": "\"Wir haben 20 Songs in 2 Monaten gelernt. Das individuelle Trennen von Bass-, Gitarren- und Schlagzeugspuren hat alles verändert.\"",
+        "name": "The Midnight Groove",
+        "role": "Cover Band",
+        "location": "Chicago, IL"
+      },
+      {
+        "quote": "\"Notavex hat subtile dynamische Nuancen erfasst, die ich nicht erwartet hatte. Ausgezeichnet für das Studium von Konzerten.\"",
+        "name": "Maria S.",
+        "role": "Violinist · NY Philharmonic",
+        "location": "New York, NY"
+      }
+    ]
+  },
+  "Footer": {
+    "tagline": "Rohklang. Saubere Noten. In 30 Sekunden.",
+    "copyright": "© 2026 Notavex · Mit Liebe in Paris gemacht",
+    "columns": {
+      "product": {
+        "title": "Produkt",
+        "links": ["Funktionen", "So funktioniert es", "Preise", "Demo"]
+      },
+      "resources": {
+        "title": "Ressourcen",
+        "links": ["Dokumentation", "Blog", "Tutorials", "Changelog"]
+      },
+      "company": {
+        "title": "Unternehmen",
+        "links": ["Über uns", "Karriere", "Presse", "Kontakt"]
+      },
+      "legal": {
+        "title": "Rechtliches",
+        "links": ["Datenschutz", "AGB", "Cookies", "Impressum"]
+      }
+    }
+  },
+  "Navbar": {
+    "overview": "Übersicht",
+    "features": "Funktionen",
+    "pricing": "Preise",
+    "tryFree": "Kostenlos testen"
+  },
+  "Features": {
+    "title": "Alles, was Sie brauchen, um",
+    "titleHighlight": "Audio in Musik zu verwandeln",
+    "items": [
+      {
+        "title": "Automatische Instrumentenerkennung",
+        "description": "Laden Sie beliebige Audiodateien hoch und unsere KI erkennt jedes Instrument — Klavier, Gitarre, Schlagzeug, Bass, Gesang, Streicher und mehr."
+      },
+      {
+        "title": "Funktioniert mit jeder Audioquelle",
+        "description": "YouTube-Links einfügen, MP3/WAV-Dateien hochladen oder direkt in der App aufnehmen. Keine Konvertierung nötig."
+      },
+      {
+        "title": "Ergebnisse in Sekunden",
+        "description": "Die meisten Songs werden in unter 60 Sekunden transkribiert. Keine stundenlange Wartezeit."
+      },
+      {
+        "title": "Bearbeiten und anpassen",
+        "description": "Verfeinern Sie generierte Transkriptionen mit unserem integrierten Notationseditor. Noten, Rhythmen und Dynamik anpassen."
+      },
+      {
+        "title": "Export in beliebiges Format",
+        "description": "Als PDF, MusicXML, MIDI oder Guitar Pro herunterladen. Kompatibel mit Finale, Sibelius, MuseScore und mehr."
+      },
+      {
+        "title": "Interaktive Wiedergabemodi",
+        "description": "Standardnotation, Gitarrentabulaturen oder Falling-Notes-Visualisierung für visuelle Lernende."
+      },
+      {
+        "title": "Von überall zugreifen",
+        "description": "Alle Transkriptionen in der Cloud gespeichert. Zugriff von Desktop, Tablet oder Mobilgerät."
+      },
+      {
+        "title": "Mit Ihrer Band teilen",
+        "description": "Transkriptionen mit Bandkollegen oder Schülern teilen. Gemeinsam an Arrangements arbeiten."
+      }
+    ]
+  },
+  "FAQ": {
+    "title": "Häufig gestellte Fragen",
+    "subtitle": "Alles, was Sie über KI-Musiktranskription wissen müssen",
+    "stillHaveQuestions": "Noch Fragen? Wir sind für Sie da.",
+    "contactSupport": "Support kontaktieren →",
+    "items": [
+      {
+        "question": "Wie funktioniert KI-Musiktranskription?",
+        "answer": "Notavex verwendet fortschrittliche KI-Algorithmen, um Audiodateien zu analysieren und einzelne Instrumente mithilfe von Stem-Separation-Technologie zu trennen. Die KI konvertiert jedes Instrument dann in präzise Notennotation unter Beibehaltung von Tonhöhe, Rhythmus und Dynamik."
+      },
+      {
+        "question": "Kann ich Musik von YouTube-Videos transkribieren?",
+        "answer": "Ja! Fügen Sie einfach eine YouTube-URL in Notavex ein und unsere KI extrahiert automatisch den Ton, trennt alle Instrumente und erstellt Noten. Dies funktioniert mit jedem öffentlichen YouTube-Video."
+      },
+      {
+        "question": "Welche Audioformate unterstützt Notavex?",
+        "answer": "Notavex unterstützt alle gängigen Audioformate wie MP3, WAV, FLAC, M4A, OGG und AAC. Sie können Dateien direkt von Ihrem Computer hochladen oder von YouTube, Spotify und SoundCloud importieren."
+      },
+      {
+        "question": "Wie genau ist die KI-Transkription?",
+        "answer": "Unsere KI erreicht bei den meisten Aufnahmen eine Genauigkeit von über 95%. Saubere Studioaufnahmen liefern nahezu perfekte Transkriptionen, während Live-Aufnahmen möglicherweise kleine manuelle Korrekturen erfordern."
+      },
+      {
+        "question": "Gibt es einen kostenlosen Plan?",
+        "answer": "Ja! Unser kostenloser Plan umfasst 3 Transkriptionen pro Monat, YouTube-Import, grundlegende Instrumententrennung und Notenexport. Perfekt für Studenten und Hobbymusiker."
+      },
+      {
+        "question": "Kann ich Noten in verschiedene Formate exportieren?",
+        "answer": "Absolut! Notavex exportiert in MusicXML, PDF, MIDI und proprietäre Formate für Sibelius, Finale und MuseScore. Dies gewährleistet Kompatibilität mit jeder Musiknotationssoftware."
+      },
+      {
+        "question": "Wie lange dauert die Transkription?",
+        "answer": "Die meisten Songs werden je nach Länge und Komplexität in 30–90 Sekunden transkribiert. Ein 3-minütiger Popsong dauert typischerweise 45 Sekunden, ein 10-minütiges Orchesterstück 2–3 Minuten."
+      },
+      {
+        "question": "Brauche ich Kenntnisse in Musiktheorie?",
+        "answer": "Keine Musiktheorie erforderlich! Notavex erledigt die gesamte technische Arbeit automatisch. Laden Sie einfach Ihr Audio hoch, wählen Sie die zu transkribierenden Instrumente und laden Sie professionelle Noten herunter. Für alle Niveaus geeignet."
+      }
+    ]
+  }
+}

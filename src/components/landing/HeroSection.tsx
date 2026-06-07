@@ -1,53 +1,25 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 
-import { AnimatedTooltip } from '@/components/ui/animated-tooltip'
 import { STATS } from '@/lib/constants'
-
-const musicians = [
-  {
-    id: 1,
-    name: 'Céline',
-    designation: 'Jazz Pianist',
-    image: '/users/celine.jpg',
-  },
-  {
-    id: 2,
-    name: 'Louis',
-    designation: 'Guitar Teacher',
-    image: '/users/louis.jpg',
-  },
-  {
-    id: 3,
-    name: 'Nathan',
-    designation: 'Classical Violinist',
-    image: '/users/nathan.jpg',
-  },
-  {
-    id: 4,
-    name: 'Shan',
-    designation: 'Music Producer',
-    image: '/users/shan.jpg',
-  },
-  { id: 5, name: 'Yafei', designation: 'Composer', image: '/users/yafei.jpg' },
-]
 
 const mono = { fontFamily: "'JetBrains Mono', monospace" }
 
 export function HeroSection() {
+  const t = useTranslations('Hero')
   const [waveHeights, setWaveHeights] = useState<number[]>([])
   const [gradShifted, setGradShifted] = useState(false)
 
   useEffect(() => {
     setWaveHeights(
       Array.from({ length: 90 }, (_, i) => {
-        const t = i / 90
+        const ratio = i / 90
         const noise = (Math.random() - 0.5) * 0.55
-        const h = Math.abs(Math.sin(t * Math.PI * 1.4) * 0.7 + noise)
+        const h = Math.abs(Math.sin(ratio * Math.PI * 1.4) * 0.7 + noise)
         return Math.max(0.06, Math.min(h, 0.96))
       }),
     )
@@ -137,9 +109,7 @@ export function HeroSection() {
       />
 
       <div className="relative z-[4] mx-auto w-full max-w-[1280px]">
-        {/* Two-column split */}
         <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.15fr] lg:gap-16 xl:gap-20">
-          {/* ── LEFT COLUMN ── */}
           <div className="flex flex-col items-start text-left">
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -163,7 +133,7 @@ export function HeroSection() {
                 className="text-xs font-medium tracking-[0.025em] text-white/70"
                 style={mono}
               >
-                Polyphonic engine — disponible maintenant
+                {t('badge')}
               </span>
             </motion.div>
 
@@ -181,9 +151,14 @@ export function HeroSection() {
                 } as React.CSSProperties
               }
             >
-              L&apos;infrastructure de
-              <br />
-              transcription musicale,
+              {t('title')
+                .split('\n')
+                .map((line, i) => (
+                  <span key={i}>
+                    {line}
+                    {i < t('title').split('\n').length - 1 && <br />}
+                  </span>
+                ))}
               <span
                 className="nv-grad-text block"
                 style={{
@@ -194,20 +169,9 @@ export function HeroSection() {
                   transition: 'background-position 1.2s ease',
                 }}
               >
-                au service des musiciens.
+                {t('titleItalic')}
               </span>
             </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="mb-10 max-w-[500px] text-[17px] leading-[1.65] text-white/72"
-              style={{ textWrap: 'pretty' } as React.CSSProperties}
-            >
-              Une API et une app pour convertir n&apos;importe quel audio en
-              partition, tablature et falling notes — avec une précision studio.
-            </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -219,7 +183,7 @@ export function HeroSection() {
                 href="/auth/signup"
                 className="inline-flex h-[46px] items-center gap-1.5 rounded-full bg-white px-6 text-[15px] font-semibold text-[#0a0612] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_36px_rgba(255,107,53,0.38)]"
               >
-                Démarrer maintenant →
+                {t('ctaPrimary')}
               </Link>
               <Link
                 href="#"
@@ -230,7 +194,7 @@ export function HeroSection() {
                   backdropFilter: 'blur(8px)',
                 }}
               >
-                Parler à l&apos;équipe
+                {t('ctaDemo')}
               </Link>
             </motion.div>
 
@@ -240,7 +204,6 @@ export function HeroSection() {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="flex flex-col items-start gap-3"
             >
-              <AnimatedTooltip items={musicians} />
               <p className="flex items-center gap-2 text-[13px] text-white/65">
                 <span
                   className="nv-pulse h-[7px] w-[7px] flex-shrink-0 rounded-full"
@@ -249,13 +212,11 @@ export function HeroSection() {
                     animation: 'nvCyanPulse 2.2s 0.4s ease-in-out infinite',
                   }}
                 />
-                Rejoignez {STATS.musicians}+ musiciens qui économisent 5+ heures
-                par transcription
+                {t('socialProof', { count: STATS.musicians })}
               </p>
             </motion.div>
           </div>
 
-          {/* ── RIGHT COLUMN — mock product ── */}
           <motion.div
             initial={{ opacity: 0, x: 32 }}
             animate={{ opacity: 1, x: 0 }}
@@ -264,7 +225,6 @@ export function HeroSection() {
             style={{ perspective: '1400px', height: 460 }}
             id="features"
           >
-            {/* Back card: waveform */}
             <div
               className="absolute rounded-[14px]"
               style={{
@@ -346,7 +306,6 @@ export function HeroSection() {
               </div>
             </div>
 
-            {/* Front card: sheet music */}
             <div
               className="absolute rounded-[14px]"
               style={{
@@ -402,7 +361,6 @@ export function HeroSection() {
               </div>
             </div>
 
-            {/* Chip: time */}
             <div
               className="absolute rounded-[14px] text-center"
               style={{
@@ -422,7 +380,7 @@ export function HeroSection() {
                 className="mb-1 block uppercase tracking-[0.07em] text-[#aaa]"
                 style={{ ...mono, fontSize: 9, fontWeight: 500 }}
               >
-                Transcrit en
+                {t('transcribedIn')}
               </span>
               <span className="block text-[20px] font-bold leading-none text-[#0a0612]">
                 28s
@@ -430,55 +388,6 @@ export function HeroSection() {
             </div>
           </motion.div>
         </div>
-
-        {/* People strip — full width below */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.75 }}
-          className="mt-20 flex flex-col items-center gap-6"
-        >
-          <span
-            className="uppercase tracking-[0.07em] text-white/45"
-            style={{ ...mono, fontSize: 11 }}
-          >
-            Ils font déjà confiance
-          </span>
-          <div className="flex flex-wrap items-center justify-center gap-8">
-            {musicians.map((m) => (
-              <div key={m.id} className="flex flex-col items-center gap-2.5">
-                <div
-                  className="overflow-hidden rounded-full"
-                  style={{
-                    width: 56,
-                    height: 56,
-                    border: '2px solid rgba(255,255,255,0.12)',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-                  }}
-                >
-                  <Image
-                    src={m.image}
-                    alt={m.name}
-                    width={56}
-                    height={56}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="text-center">
-                  <span className="block text-[13px] font-semibold text-white/85">
-                    {m.name}
-                  </span>
-                  <span
-                    className="block text-white/40"
-                    style={{ ...mono, fontSize: 10 }}
-                  >
-                    {m.designation}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
       </div>
     </section>
   )

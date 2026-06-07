@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { COLORS } from '@/lib/constants'
@@ -7,6 +8,7 @@ import { auth } from '@/server/lib/auth'
 
 export async function NavbarCTA({ className }: { className?: string }) {
   const session = await auth()
+  const t = await getTranslations('Navbar')
   let href: string
   if (session) {
     href = '/dashboard'
@@ -24,7 +26,7 @@ export async function NavbarCTA({ className }: { className?: string }) {
         background={COLORS.brand.primary}
         className="text-sm font-semibold cursor-pointer"
       >
-        Essayer gratuitement
+        {t('tryFree')}
       </ShimmerButton>
     </Link>
   )
