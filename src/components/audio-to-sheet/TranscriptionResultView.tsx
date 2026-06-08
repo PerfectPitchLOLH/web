@@ -1,10 +1,10 @@
 'use client'
 
 import { BookmarkCheck, BookmarkPlus, Loader2, Music2 } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import { useState } from 'react'
 
 import { SavePartitionDialog } from '@/components/partitions/SavePartitionDialog'
-import { ProtectedSheetMusic } from '@/components/sheet-music/ProtectedSheetMusic'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +16,16 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import type { TranscribeConfig } from '@/server/domains/transcription/transcription.types'
+
+const ProtectedSheetMusic = dynamic(
+  () =>
+    import('@/components/sheet-music/ProtectedSheetMusic').then(
+      (mod) => mod.ProtectedSheetMusic,
+    ),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> },
+)
 
 interface TranscriptionResultViewProps {
   selectedFile: File | null

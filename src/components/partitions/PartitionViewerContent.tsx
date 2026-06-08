@@ -1,10 +1,19 @@
 'use client'
 
+import dynamic from 'next/dynamic'
+
 import { PartitionDeleteDialog } from '@/components/partitions/PartitionDeleteDialog'
-import { PartitionSvgDisplay } from '@/components/partitions/PartitionSvgDisplay'
 import { PartitionViewerHeader } from '@/components/partitions/PartitionViewerHeader'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePartitionViewer } from '@/hooks/usePartitionViewer'
+
+const PartitionSvgDisplay = dynamic(
+  () =>
+    import('@/components/partitions/PartitionSvgDisplay').then(
+      (mod) => mod.PartitionSvgDisplay,
+    ),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> },
+)
 
 type Props = {
   id: string
