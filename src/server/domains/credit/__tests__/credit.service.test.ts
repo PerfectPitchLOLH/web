@@ -8,6 +8,10 @@ import { CreditRepository } from '../credit.repository'
 import { CreditService } from '../credit.service'
 
 vi.mock('../credit.repository')
+vi.mock('@/server/lib/email', () => ({
+  sendLowCreditsEmail: vi.fn(),
+  sendNoCreditsEmail: vi.fn(),
+}))
 vi.mock('@/server/lib/database', () => ({
   db: {
     subscription: {

@@ -18,6 +18,13 @@ import type {
   SubscriptionWithPlan,
 } from '../subscription.types'
 
+vi.mock('@/server/lib/email', () => ({
+  sendLowCreditsEmail: vi.fn(),
+  sendNoCreditsEmail: vi.fn(),
+}))
+
+vi.mock('@/server/lib/database', () => ({ db: {} }))
+
 vi.mock('@/server/lib/stripe', () => ({
   stripe: {
     customers: {
@@ -72,6 +79,7 @@ describe('SubscriptionService - Deep Tests', () => {
       createWebhookEvent: vi.fn(),
       markWebhookEventProcessed: vi.fn(),
       deleteOldWebhookEvents: vi.fn(),
+      findUserById: vi.fn().mockResolvedValue(null),
     } as any
 
     mockCreditService = {
