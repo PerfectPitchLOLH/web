@@ -23,6 +23,7 @@ export type CreateUserDTO = Omit<
   | 'theme'
   | 'language'
   | 'notificationPreferences'
+  | 'onboardingCompleted'
 > & {
   password?: string | null
   emailVerified?: Date | null

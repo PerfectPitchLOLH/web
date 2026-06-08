@@ -23,6 +23,7 @@ export class SettingsRepository {
         language: true,
         notificationPreferences: true,
         password: true,
+        onboardingCompleted: true,
       },
     })
 
@@ -39,6 +40,7 @@ export class SettingsRepository {
       notificationPreferences:
         (user.notificationPreferences as NotificationPreferences) ?? null,
       hasPassword: !!user.password,
+      onboardingCompleted: user.onboardingCompleted,
     }
   }
 
@@ -106,6 +108,13 @@ export class SettingsRepository {
     await db.user.update({
       where: { id },
       data,
+    })
+  }
+
+  async completeOnboarding(id: string): Promise<void> {
+    await db.user.update({
+      where: { id },
+      data: { onboardingCompleted: true },
     })
   }
 

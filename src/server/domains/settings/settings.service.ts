@@ -259,6 +259,18 @@ export class SettingsService {
     await this.repository.updateAppearance(userId, data)
   }
 
+  async completeOnboarding(userId: string): Promise<void> {
+    const user = await this.repository.findById(userId)
+
+    if (!user) {
+      throw new ApiError('NOT_FOUND', HTTP_STATUS.NOT_FOUND, 'User not found')
+    }
+
+    if (user.onboardingCompleted) return
+
+    await this.repository.completeOnboarding(userId)
+  }
+
   async exportData(userId: string): Promise<object> {
     const user = await this.repository.findById(userId)
 

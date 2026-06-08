@@ -127,3 +127,9 @@ export function useDeleteAccount() {
     apiCall('/api/settings/account', { method: 'DELETE' }),
   )
 }
+
+export function useCompleteOnboarding() {
+  return useMutation(() =>
+    apiCall('/api/settings/onboarding', { method: 'POST' }),
+  )
+}

@@ -39,6 +39,7 @@ export function CreditBalanceCard() {
 
   return (
     <div
+      data-onboarding-step="credits"
       className={cn(
         'group relative rounded-2xl border border-border/50',
         'bg-gradient-to-br from-card via-card to-card/50',

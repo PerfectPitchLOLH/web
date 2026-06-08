@@ -15,6 +15,7 @@ export type UserSettings = {
   language: string
   notificationPreferences: NotificationPreferences | null
   hasPassword: boolean
+  onboardingCompleted: boolean
 }
 
 export type UpdateProfileDTO = {

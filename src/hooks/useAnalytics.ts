@@ -27,6 +27,10 @@ type AnalyticsEvent =
       name: 'export_downloaded'
       properties?: { format: string; partitionId?: string }
     }
+  | {
+      name: 'onboarding_completed'
+      properties?: { skipped: boolean; lastStep: number }
+    }
 
 export function useAnalytics() {
   const track = ({ name, properties }: AnalyticsEvent) => {

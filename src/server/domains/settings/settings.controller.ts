@@ -106,6 +106,16 @@ export class SettingsController {
     }
   }
 
+  async completeOnboarding() {
+    try {
+      const session = await requireAuth()
+      await this.service.completeOnboarding(session.user.id)
+      return createSuccessResponse({ message: 'Onboarding completed' })
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
   async exportData() {
     try {
       const session = await requireAuth()

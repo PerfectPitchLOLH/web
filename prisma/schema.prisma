@@ -28,6 +28,7 @@ model User {
   theme                String                 @default("system")
   language             String                 @default("fr")
   notificationPreferences Json?
+  onboardingCompleted  Boolean                @default(false)
   termsAcceptedAt      DateTime?
   accounts             Account[]
   creditTransactions   CreditTransaction[]

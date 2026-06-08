@@ -51,6 +51,7 @@ function createMockSettings(
     language: 'fr',
     notificationPreferences: null,
     hasPassword: true,
+    onboardingCompleted: false,
     ...overrides,
   }
 }
@@ -69,6 +70,7 @@ describe('SettingsService', () => {
       getTwoFactorSecret: vi.fn(),
       updateNotifications: vi.fn(),
       updateAppearance: vi.fn(),
+      completeOnboarding: vi.fn(),
     } as any
 
     service = new SettingsService(mockRepository)
@@ -318,6 +320,44 @@ describe('SettingsService', () => {
         theme: 'dark',
         language: 'en',
       })
+    })
+  })
+
+  describe('completeOnboarding', () => {
+    it('should mark onboarding as completed', async () => {
+      vi.mocked(mockRepository.findById).mockResolvedValue(
+        createMockSettings({ onboardingCompleted: false }),
+      )
+      vi.mocked(mockRepository.completeOnboarding).mockResolvedValue(undefined)
+
+      await service.completeOnboarding('user123')
+
+      expect(mockRepository.completeOnboarding).toHaveBeenCalledWith('user123')
+    })
+
+    it('should be idempotent if onboarding already completed', async () => {
+      vi.mocked(mockRepository.findById).mockResolvedValue(
+        createMockSettings({ onboardingCompleted: true }),
+      )
+
+      await service.completeOnboarding('user123')
+
+      expect(mockRepository.completeOnboarding).not.toHaveBeenCalled()
+    })
+
+    it('should throw NOT_FOUND if user does not exist', async () => {
+      vi.mocked(mockRepository.findById).mockResolvedValue(null)
+
+      await expect(service.completeOnboarding('nonexistent')).rejects.toThrow(
+        ApiError,
+      )
+
+      try {
+        await service.completeOnboarding('nonexistent')
+      } catch (error) {
+        expect((error as ApiError).code).toBe('NOT_FOUND')
+        expect((error as ApiError).statusCode).toBe(HTTP_STATUS.NOT_FOUND)
+      }
     })
   })
 })
