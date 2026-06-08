@@ -25,6 +25,12 @@ function getClientIP(request: Request): string | null {
   return null
 }
 
+function isAuthOnlyPage(pathname: string): boolean {
+  return (
+    pathname.startsWith('/auth/signin') || pathname.startsWith('/auth/signup')
+  )
+}
+
 function isLandingPath(pathname: string): boolean {
   return (
     !pathname.startsWith('/dashboard') &&
@@ -48,7 +54,7 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/auth/signin', req.url))
   }
 
-  if (isAuthenticated && pathname.startsWith('/auth')) {
+  if (isAuthenticated && isAuthOnlyPage(pathname)) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 

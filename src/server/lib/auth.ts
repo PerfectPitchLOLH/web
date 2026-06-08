@@ -99,6 +99,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string
         session.user.role = token.role as string
         session.user.emailVerified = token.emailVerified as Date | null
+
+        if (!session.user.emailVerified) {
+          const freshUser = await authRepository.findEmailVerifiedById(
+            session.user.id,
+          )
+          session.user.emailVerified = freshUser?.emailVerified ?? null
+        }
       }
 
       const cookieStore = await cookies()
