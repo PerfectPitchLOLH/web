@@ -56,6 +56,7 @@ export const ERROR_CODES = {
   INVALID_DOWNGRADE: 'INVALID_DOWNGRADE',
   CAPTCHA_VERIFICATION_FAILED: 'CAPTCHA_VERIFICATION_FAILED',
   SUBSCRIPTION_PAST_DUE: 'SUBSCRIPTION_PAST_DUE',
+  EMAIL_SEND_FAILED: 'EMAIL_SEND_FAILED',
 } as const
 
 export const ERROR_MESSAGES = {
@@ -99,4 +100,6 @@ export const ERROR_MESSAGES = {
   INVALID_DOWNGRADE: 'Target plan must be lower than current plan',
   CAPTCHA_VERIFICATION_FAILED: 'Captcha verification failed',
   SUBSCRIPTION_PAST_DUE: 'Your subscription payment is past due',
+  EMAIL_SEND_FAILED:
+    "L'envoi du message a échoué. Veuillez réessayer plus tard.",
 } as const

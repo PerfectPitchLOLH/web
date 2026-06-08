@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -62,8 +63,8 @@ export function PricingView({ plans }: Props) {
               Notre équipe est là pour vous aider à choisir le plan qui vous
               convient
             </p>
-            <Button variant="outline" size="lg">
-              Contactez-nous
+            <Button asChild variant="outline" size="lg">
+              <Link href="/contact">Contactez-nous</Link>
             </Button>
           </div>
         </div>

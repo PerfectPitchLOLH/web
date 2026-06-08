@@ -32,6 +32,15 @@ function ctaButton(href: string, label: string): string {
   return `<a href="${href}" style="display: inline-block; background-color: #6366f1; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 500; margin: 8px 0;">${label}</a>`
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 async function send(to: string, subject: string, html: string): Promise<void> {
   try {
     await resend.emails.send({ from: FROM, to, subject, html })
@@ -260,4 +269,42 @@ export async function sendSubscriptionCancelledEmail(
       ${ctaButton(`${APP_URL}/dashboard/subscription`, 'Se réabonner')}
     `),
   )
+}
+
+export async function sendContactEmail(params: {
+  categoryLabel: string
+  message: string
+  senderName: string
+  senderEmail: string
+}): Promise<void> {
+  const adminEmail = process.env.ADMIN_EMAIL
+  if (!adminEmail) {
+    throw new Error('ADMIN_EMAIL is not configured')
+  }
+
+  const safeName = escapeHtml(params.senderName)
+  const safeMessage = escapeHtml(params.message).replace(/\n/g, '<br/>')
+
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: adminEmail,
+    replyTo: params.senderEmail,
+    subject: `[Contact — ${params.categoryLabel}] ${params.senderName}`,
+    html: baseTemplate(`
+      <h1 style="color: #111827; font-size: 22px; margin: 0 0 16px;">Nouveau message de contact</h1>
+      <p style="color: #374151; font-size: 15px; margin: 0 0 8px;">
+        <strong>Catégorie :</strong> ${escapeHtml(params.categoryLabel)}
+      </p>
+      <p style="color: #374151; font-size: 15px; margin: 0 0 8px;">
+        <strong>De :</strong> ${safeName} (${escapeHtml(params.senderEmail)})
+      </p>
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;" />
+      <p style="color: #374151; font-size: 15px; line-height: 1.6;">${safeMessage}</p>
+    `),
+  })
+
+  if (error) {
+    console.error('[email] Failed to send contact email:', error)
+    throw new Error('Failed to send contact email')
+  }
 }
