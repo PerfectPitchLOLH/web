@@ -1,5 +1,6 @@
 'use client'
 
+import * as Sentry from '@sentry/nextjs'
 import { motion } from 'framer-motion'
 import { Home, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
@@ -17,6 +18,7 @@ type Props = {
 export default function Error({ error, reset }: Props) {
   useEffect(() => {
     console.error(error)
+    Sentry.captureException(error)
   }, [error])
 
   return (
