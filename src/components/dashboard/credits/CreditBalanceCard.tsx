@@ -102,12 +102,14 @@ export function CreditBalanceCard() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-4 text-sm">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Calendar className="size-4" />
-          <span>Prochain renouvellement : {formatLocalDate(nextRefill)}</span>
+      {nextRefill && (
+        <div className="flex items-center justify-between mb-4 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Calendar className="size-4" />
+            <span>Prochain renouvellement : {formatLocalDate(nextRefill)}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex gap-2">
         <Button variant="outline" className="flex-1" asChild>
