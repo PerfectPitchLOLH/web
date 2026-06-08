@@ -1,4 +1,5 @@
 import type { CreditService } from '@/server/domains/credit/credit.service'
+import { SUBSCRIPTION_STATUS } from '@/server/domains/subscription'
 import { db } from '@/server/lib/database'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
@@ -263,11 +264,28 @@ export class TranscriptionService {
     return user?.role === 'admin' || user?.isRootAdmin === true
   }
 
+  private async hasPastDueSubscription(userId: string): Promise<boolean> {
+    const subscription = await db.subscription.findFirst({
+      where: { userId, status: SUBSCRIPTION_STATUS.PAST_DUE },
+      select: { id: true },
+    })
+    return subscription !== null
+  }
+
   private async checkCreditsAvailable(
     userId: string,
     durationSeconds?: number,
   ): Promise<void> {
     if (await this.isAdminUser(userId)) return
+
+    if (await this.hasPastDueSubscription(userId)) {
+      throw new ApiError(
+        'SUBSCRIPTION_PAST_DUE',
+        HTTP_STATUS.PAYMENT_REQUIRED,
+        'Votre abonnement a un paiement en retard. Mettez à jour votre moyen de paiement pour continuer à transcrire.',
+      )
+    }
+
     const balance = await this.creditService.getUserCreditsBalance(userId)
     if (balance.remainingCredits <= 0) {
       throw new ApiError(

@@ -54,6 +54,8 @@ export const ERROR_CODES = {
   PARTITION_ALREADY_SAVED: 'PARTITION_ALREADY_SAVED',
   MUSICXML_UNAVAILABLE: 'MUSICXML_UNAVAILABLE',
   INVALID_DOWNGRADE: 'INVALID_DOWNGRADE',
+  CAPTCHA_VERIFICATION_FAILED: 'CAPTCHA_VERIFICATION_FAILED',
+  SUBSCRIPTION_PAST_DUE: 'SUBSCRIPTION_PAST_DUE',
 } as const
 
 export const ERROR_MESSAGES = {
@@ -95,4 +97,6 @@ export const ERROR_MESSAGES = {
   PARTITION_ALREADY_SAVED: 'Partition already saved',
   MUSICXML_UNAVAILABLE: 'MusicXML content unavailable',
   INVALID_DOWNGRADE: 'Target plan must be lower than current plan',
+  CAPTCHA_VERIFICATION_FAILED: 'Captcha verification failed',
+  SUBSCRIPTION_PAST_DUE: 'Your subscription payment is past due',
 } as const

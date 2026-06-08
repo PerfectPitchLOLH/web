@@ -1,5 +1,6 @@
 import Stripe from 'stripe'
 
+import { db } from '@/server/lib/database'
 import {
   sendPaymentFailedEmail,
   sendSubscriptionCancelledEmail,
@@ -12,7 +13,8 @@ import { ApiError } from '@/server/shared/utils/api.utils'
 
 import type { CreditService } from '../credit/credit.service'
 import type { CreditPurchaseRepository } from '../credit-purchase/credit-purchase.repository'
-import { SUBSCRIPTION_STATUS } from './subscription.constants'
+import type { NotificationService } from '../notification/notification.service'
+import { DUNNING, SUBSCRIPTION_STATUS } from './subscription.constants'
 import type { SubscriptionRepository } from './subscription.repository'
 import type {
   CreateCheckoutSessionRequest,
@@ -29,6 +31,7 @@ export class SubscriptionService {
     private repository: SubscriptionRepository,
     private creditService: CreditService,
     private creditPurchaseRepository: CreditPurchaseRepository,
+    private notificationService: NotificationService,
   ) {}
 
   async getPlans(): Promise<SubscriptionPlanDTO[]> {
@@ -581,8 +584,61 @@ export class SubscriptionService {
     })
 
     const user = await this.repository.findUserById(customer.userId)
-    if (user) {
-      await sendPaymentFailedEmail(user.email, user.name)
+    if (!user) {
+      return
+    }
+
+    await sendPaymentFailedEmail(user.email, user.name)
+
+    await this.notificationService.createNotification({
+      userId: customer.userId,
+      type: 'security',
+      title: 'Échec de paiement',
+      description:
+        'Votre dernier paiement a échoué. Mettez à jour votre moyen de paiement pour éviter une interruption de votre abonnement.',
+      icon: 'CreditCard',
+      read: false,
+    })
+
+    await db.auditLog.create({
+      data: {
+        userId: customer.userId,
+        userName: user.name,
+        action: 'PAYMENT_FAILED',
+        resource: 'subscription',
+        details: `Échec du paiement de la facture Stripe ${stripeInvoiceId}`,
+        ipAddress: null,
+        userAgent: null,
+      },
+    })
+
+    const failedInvoiceCount = await db.invoice.count({
+      where: { userId: customer.userId, status: 'failed' },
+    })
+
+    if (failedInvoiceCount >= DUNNING.PAYMENT_FAILURE_THRESHOLD) {
+      const subscription = await this.repository.findSubscriptionByUserId(
+        customer.userId,
+      )
+
+      if (subscription) {
+        await this.repository.updateSubscriptionStatus(
+          subscription.stripeSubscriptionId,
+          SUBSCRIPTION_STATUS.PAST_DUE,
+        )
+
+        await db.auditLog.create({
+          data: {
+            userId: customer.userId,
+            userName: user.name,
+            action: 'SUBSCRIPTION_PAST_DUE',
+            resource: 'subscription',
+            details: `Abonnement passé en past_due après ${failedInvoiceCount} échecs de paiement`,
+            ipAddress: null,
+            userAgent: null,
+          },
+        })
+      }
     }
   }
 

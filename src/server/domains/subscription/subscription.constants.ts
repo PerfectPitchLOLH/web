@@ -82,3 +82,7 @@ export const SUBSCRIPTION_DEFAULTS = {
   TRIAL_DAYS: 7,
   CURRENCY: 'eur',
 } as const
+
+export const DUNNING = {
+  PAYMENT_FAILURE_THRESHOLD: 3,
+} as const
