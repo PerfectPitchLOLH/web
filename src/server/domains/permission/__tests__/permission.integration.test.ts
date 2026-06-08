@@ -180,13 +180,13 @@ describe('Permission Integration Tests', () => {
 
       const beforeUpgrade = await service.checkFeatureAccessForUser(
         'user-123',
-        'sheet_editor',
+        'polyphony',
       )
       expect(beforeUpgrade.hasAccess).toBe(false)
 
       const afterUpgrade = await service.checkFeatureAccessForUser(
         'user-123',
-        'sheet_editor',
+        'polyphony',
       )
       expect(afterUpgrade.hasAccess).toBe(true)
     })
@@ -468,7 +468,7 @@ describe('Permission Integration Tests', () => {
       })
 
       const context = await service.getUserPermissionContext('user-123')
-      const featureAccess = service.checkFeatureAccess(context, 'sheet_editor')
+      const featureAccess = service.checkFeatureAccess(context, 'polyphony')
 
       expect(context.isCanceled).toBe(true)
       expect(context.planTier).toBe('pro')
@@ -671,13 +671,13 @@ describe('Permission Integration Tests', () => {
 
       const freeUserAccess = await service.checkFeatureAccessForUser(
         'user-free',
-        'sheet_editor',
+        'polyphony',
       )
       expect(freeUserAccess.hasAccess).toBe(false)
 
       const proUserAccess = await service.checkFeatureAccessForUser(
         'user-pro',
-        'sheet_editor',
+        'polyphony',
       )
       expect(proUserAccess.hasAccess).toBe(true)
     })
@@ -780,20 +780,14 @@ describe('Permission Integration Tests', () => {
         isCanceled: false,
       }
 
-      const exportPdfCheck = service.checkFeatureAccess(context, 'export_pdf')
-      expect(exportPdfCheck.upgradeRequired).toBe('junior')
-
-      const exportMusicXmlCheck = service.checkFeatureAccess(
+      const aiRecommendationsCheck = service.checkFeatureAccess(
         context,
-        'export_musicxml',
+        'ai_recommendations',
       )
-      expect(exportMusicXmlCheck.upgradeRequired).toBe('basic')
+      expect(aiRecommendationsCheck.upgradeRequired).toBe('basic')
 
-      const sheetEditorCheck = service.checkFeatureAccess(
-        context,
-        'sheet_editor',
-      )
-      expect(sheetEditorCheck.upgradeRequired).toBe('pro')
+      const polyphonyCheck = service.checkFeatureAccess(context, 'polyphony')
+      expect(polyphonyCheck.upgradeRequired).toBe('pro')
     })
 
     it('should not recommend upgrade when feature is available on current plan but limit reached', () => {

@@ -38,7 +38,7 @@
     "juniorFeatures": [
       "10 Min. Transkription / Monat",
       "Falling Notes inklusive",
-      "Alle Formate (PDF, MIDI, MusicXML, GP)",
+      "Notation und Tabulatur inklusive",
       "30-Tage-Verlauf",
       "Cloud-Backup & Synchronisation",
       "Standard-Support"
@@ -47,7 +47,6 @@
       "transcription": "Transkription / Monat",
       "fallingNotes": "Falling Notes",
       "history": "Verlauf",
-      "editor": "Noteneditor",
       "polyphony": "Polyphonie",
       "historyValues": ["30 Tage", "90 Tage", "Unbegrenzt"]
     }

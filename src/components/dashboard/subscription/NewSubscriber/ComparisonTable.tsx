@@ -82,12 +82,6 @@ export function ComparisonTable() {
                 pro: 'Illimité',
               },
               {
-                feature: 'Éditeur de partition',
-                junior: false,
-                basic: false,
-                pro: true,
-              },
-              {
                 feature: 'Support polyphonie',
                 junior: false,
                 basic: false,

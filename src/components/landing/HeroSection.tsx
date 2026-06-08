@@ -334,7 +334,7 @@ export function HeroSection() {
               <StaffSVG />
 
               <div className="flex flex-wrap items-center gap-1.5">
-                {['MusicXML', 'MIDI', 'PDF', 'GP'].map((fmt) => (
+                {['Notation', 'Tablature'].map((fmt) => (
                   <span
                     key={fmt}
                     className="inline-flex h-[22px] items-center rounded px-2.5 text-[10px] font-medium text-white"
@@ -356,7 +356,7 @@ export function HeroSection() {
                     color: '#444',
                   }}
                 >
-                  EXPORT
+                  PARTITION
                 </span>
               </div>
             </div>

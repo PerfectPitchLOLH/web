@@ -39,7 +39,7 @@ export const TIER_UI_METADATA: Record<string, TierUIMetadata> = {
     features: {
       fallingNotes: true,
       historyDays: 'unlimited' as const,
-      sheetEditor: true,
+      sheetEditor: false,
       polyphony: true,
     },
   },

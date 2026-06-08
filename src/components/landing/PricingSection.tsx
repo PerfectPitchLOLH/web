@@ -133,7 +133,6 @@ export function PricingSection() {
     },
     { label: t('planFeatures.fallingNotes'), values: [true, true, true] },
     { label: t('planFeatures.history'), values: historyValues },
-    { label: t('planFeatures.editor'), values: [false, false, true] },
     { label: t('planFeatures.polyphony'), values: [false, false, true] },
   ]
 

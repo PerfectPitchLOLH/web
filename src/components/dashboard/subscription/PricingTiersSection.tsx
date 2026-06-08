@@ -6,7 +6,6 @@ import {
   Calendar,
   Check,
   Clock,
-  Edit,
   Layers,
   Loader2,
   Music,
@@ -286,11 +285,6 @@ function PricingCard({
                 ? 'Illimité'
                 : `${meta.features.historyDays} jours`
             }
-          />
-          <FeatureItem
-            icon={Edit}
-            label="Éditeur de partition"
-            value={meta.features.sheetEditor}
           />
           <FeatureItem
             icon={Layers}

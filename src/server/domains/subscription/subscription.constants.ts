@@ -46,7 +46,7 @@ export const PLAN_FEATURES: Record<SubscriptionPlanTier, SubscriptionFeatures> =
       transcriptionMinutes: 50,
       fallingNotes: true,
       historyDays: 'unlimited',
-      sheetEditor: true,
+      sheetEditor: false,
       polyphony: true,
     },
   } as const
