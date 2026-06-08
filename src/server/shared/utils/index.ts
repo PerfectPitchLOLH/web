@@ -1,4 +1,5 @@
 export * from './api.utils'
 export * from './audit.logger'
+export * from './captcha.utils'
 export * from './password.utils'
 export * from './rate-limit.utils'

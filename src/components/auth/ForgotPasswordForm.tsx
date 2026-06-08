@@ -1,5 +1,6 @@
 'use client'
 
+import { Turnstile } from '@marsidev/react-turnstile'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft, CheckCircle, Loader2, Mail } from 'lucide-react'
 import Link from 'next/link'
@@ -9,11 +10,14 @@ import { FormError } from '@/components/auth/FormError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,7 +28,7 @@ export function ForgotPasswordForm() {
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, captchaToken }),
       })
 
       if (!res.ok) {
@@ -69,13 +73,22 @@ export function ForgotPasswordForm() {
               autoFocus
             />
 
+            {TURNSTILE_SITE_KEY && (
+              <Turnstile
+                siteKey={TURNSTILE_SITE_KEY}
+                onSuccess={setCaptchaToken}
+                onExpire={() => setCaptchaToken('')}
+                options={{ theme: 'auto' }}
+              />
+            )}
+
             <FormError error={error} />
 
             <Button
               type="submit"
               className="w-full"
               size="lg"
-              disabled={isLoading}
+              disabled={isLoading || (!!TURNSTILE_SITE_KEY && !captchaToken)}
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
