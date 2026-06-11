@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react'
 import { TranscriptionFailedView } from '@/components/audio-to-sheet/TranscriptionFailedView'
 import { TranscriptionProcessingView } from '@/components/audio-to-sheet/TranscriptionProcessingView'
 import { TranscriptionResultView } from '@/components/audio-to-sheet/TranscriptionResultView'
+import { useAutoSavePartition } from '@/hooks/useAutoSavePartition'
 import { useJobActions } from '@/hooks/useJobActions'
 import { useJobProgress } from '@/hooks/useJobProgress'
 import { useJobSession } from '@/hooks/useJobSession'
@@ -33,6 +34,15 @@ export function JobPageContent({ jobId }: Props) {
 
   const resolvedTitle = results?.title ?? jobTitle ?? null
 
+  const { isAutoSaving, autoSaveFailed } = useAutoSavePartition({
+    jobId,
+    status,
+    results: results ?? null,
+    title: resolvedTitle ?? 'Transcription',
+    savedPartitionId,
+    onSaved: handleSaved,
+  })
+
   if (isInitialLoading) {
     return (
       <div className="flex flex-1 items-center justify-center gap-2.5 text-muted-foreground">
@@ -45,18 +55,12 @@ export function JobPageContent({ jobId }: Props) {
   if (status === 'completed' && results) {
     return (
       <TranscriptionResultView
-        selectedFile={null}
         svgContent={svgContent}
         savedPartitionId={savedPartitionId}
-        config={{
-          instrument_mode: 'single',
-          instrument_type: 'piano',
-          polyphonic: false,
-          partition_type: 'classique',
-        }}
         jobId={jobId}
         jobTitle={resolvedTitle}
-        durationSeconds={results.duration_seconds}
+        isAutoSaving={isAutoSaving}
+        autoSaveFailed={autoSaveFailed}
         onReset={handleReset}
         onSaved={handleSaved}
       />
