@@ -10,6 +10,10 @@ import { CreditService } from '../credit.service'
 
 vi.mock('../credit.service')
 vi.mock('@/server/lib/database', () => ({ db: {} }))
+vi.mock('@/server/lib/email', () => ({
+  sendLowCreditsEmail: vi.fn(),
+  sendNoCreditsEmail: vi.fn(),
+}))
 
 describe('CreditController', () => {
   let controller: CreditController

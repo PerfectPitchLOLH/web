@@ -46,7 +46,7 @@ export const PLAN_FEATURES: Record<SubscriptionPlanTier, SubscriptionFeatures> =
       transcriptionMinutes: 50,
       fallingNotes: true,
       historyDays: 'unlimited',
-      sheetEditor: true,
+      sheetEditor: false,
       polyphony: true,
     },
   } as const
@@ -75,9 +75,14 @@ export const STRIPE_WEBHOOK_EVENTS = {
   CUSTOMER_CREATED: 'customer.created',
   CUSTOMER_UPDATED: 'customer.updated',
   CUSTOMER_DELETED: 'customer.deleted',
+  CUSTOMER_SUBSCRIPTION_TRIAL_WILL_END: 'customer.subscription.trial_will_end',
 } as const
 
 export const SUBSCRIPTION_DEFAULTS = {
   TRIAL_DAYS: 7,
   CURRENCY: 'eur',
+} as const
+
+export const DUNNING = {
+  PAYMENT_FAILURE_THRESHOLD: 3,
 } as const

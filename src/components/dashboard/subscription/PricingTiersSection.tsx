@@ -1,11 +1,11 @@
 'use client'
 
 import {
+  ArrowDown,
   ArrowUp,
   Calendar,
   Check,
   Clock,
-  Edit,
   Layers,
   Loader2,
   Music,
@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils'
 import type { SubscriptionPlanDTO } from '@/server/domains/subscription/subscription.types'
 
 import { TIER_ORDER, TIER_UI_METADATA } from './constants'
-import { formatAmount } from './utils'
+import { formatAmount, getYearlySavingsMonths } from './utils'
 
 type BillingCycle = 'monthly' | 'yearly'
 
@@ -36,6 +36,8 @@ type ManageMode = {
   isYearly: boolean
   onAction: (priceId: string) => void
   loading: boolean
+  onDowngrade: (priceId: string) => void
+  downgradeLoading: boolean
 }
 
 type Props = (SubscribeMode | ManageMode) & {
@@ -96,6 +98,8 @@ function PricingCard({
   tierStatus,
   onAction,
   loading,
+  onDowngrade,
+  downgradeLoading,
 }: {
   plan: SubscriptionPlanDTO
   billingCycle: BillingCycle
@@ -103,6 +107,8 @@ function PricingCard({
   tierStatus: TierStatus
   onAction: (priceId: string) => void
   loading: boolean
+  onDowngrade?: (priceId: string) => void
+  downgradeLoading?: boolean
 }) {
   const tierKey = plan.name.toLowerCase()
   const meta = TIER_UI_METADATA[tierKey] ?? {
@@ -182,6 +188,16 @@ function PricingCard({
                 <span className="text-2xl font-semibold text-muted-foreground line-through">
                   {formatAmount(plan.monthlyPrice * 12)}
                 </span>
+                {plan.yearlyPrice && (
+                  <Badge className="bg-primary/10 text-primary border-0">
+                    Économisez{' '}
+                    {getYearlySavingsMonths(
+                      plan.monthlyPrice,
+                      plan.yearlyPrice,
+                    )}{' '}
+                    mois !
+                  </Badge>
+                )}
               </div>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-5xl font-bold tracking-tight">
@@ -207,7 +223,25 @@ function PricingCard({
             </span>
           </div>
         ) : isDowngrade ? (
-          <div className="h-12 mb-8" />
+          <Button
+            size="lg"
+            variant="outline"
+            className="w-full mb-8"
+            onClick={() => onDowngrade?.(priceId)}
+            disabled={downgradeLoading || !priceId}
+          >
+            {downgradeLoading ? (
+              <>
+                <Loader2 className="size-4 mr-2 animate-spin" />
+                Chargement...
+              </>
+            ) : (
+              <>
+                <ArrowDown className="size-4 mr-2" />
+                Rétrograder à {plan.name}
+              </>
+            )}
+          </Button>
         ) : (
           <Button
             size="lg"
@@ -251,11 +285,6 @@ function PricingCard({
                 ? 'Illimité'
                 : `${meta.features.historyDays} jours`
             }
-          />
-          <FeatureItem
-            icon={Edit}
-            label="Éditeur de partition"
-            value={meta.features.sheetEditor}
           />
           <FeatureItem
             icon={Layers}
@@ -329,6 +358,12 @@ export function PricingTiersSection(props: Props) {
             tierStatus={getTierStatus(plan, index, props)}
             onAction={props.onAction}
             loading={props.loading}
+            onDowngrade={
+              props.mode === 'manage' ? props.onDowngrade : undefined
+            }
+            downgradeLoading={
+              props.mode === 'manage' ? props.downgradeLoading : undefined
+            }
           />
         ))}
       </div>

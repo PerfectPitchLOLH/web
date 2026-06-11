@@ -20,6 +20,9 @@ describe('UserService', () => {
       update: vi.fn(),
       delete: vi.fn(),
       count: vi.fn(),
+      findActivationData: vi.fn(),
+      dismissActivationChecklist: vi.fn(),
+      markFallingNotesTried: vi.fn(),
     } as any
 
     service = new UserService(mockRepository)
@@ -449,6 +452,74 @@ describe('UserService', () => {
           HTTP_STATUS.INTERNAL_SERVER_ERROR,
         )
       }
+    })
+  })
+
+  describe('getActivationStatus', () => {
+    it('should map activation data to booleans', async () => {
+      vi.mocked(mockRepository.findActivationData).mockResolvedValue({
+        emailVerified: new Date(),
+        activationChecklistDismissedAt: null,
+        fallingNotesTriedAt: null,
+        transcriptionCount: 2,
+        partitionCount: 0,
+      })
+
+      const status = await service.getActivationStatus('user123')
+
+      expect(status).toEqual({
+        emailVerified: true,
+        hasTranscription: true,
+        hasSavedPartition: false,
+        triedFallingNotes: false,
+        dismissed: false,
+      })
+    })
+
+    it('should report dismissed and completed steps', async () => {
+      vi.mocked(mockRepository.findActivationData).mockResolvedValue({
+        emailVerified: null,
+        activationChecklistDismissedAt: new Date(),
+        fallingNotesTriedAt: new Date(),
+        transcriptionCount: 0,
+        partitionCount: 3,
+      })
+
+      const status = await service.getActivationStatus('user123')
+
+      expect(status).toEqual({
+        emailVerified: false,
+        hasTranscription: false,
+        hasSavedPartition: true,
+        triedFallingNotes: true,
+        dismissed: true,
+      })
+    })
+
+    it('should throw NOT_FOUND when user does not exist', async () => {
+      vi.mocked(mockRepository.findActivationData).mockResolvedValue(null)
+
+      await expect(service.getActivationStatus('ghost')).rejects.toThrow(
+        ApiError,
+      )
+    })
+  })
+
+  describe('dismissActivationChecklist', () => {
+    it('should delegate to repository', async () => {
+      await service.dismissActivationChecklist('user123')
+      expect(mockRepository.dismissActivationChecklist).toHaveBeenCalledWith(
+        'user123',
+      )
+    })
+  })
+
+  describe('markFallingNotesTried', () => {
+    it('should delegate to repository', async () => {
+      await service.markFallingNotesTried('user123')
+      expect(mockRepository.markFallingNotesTried).toHaveBeenCalledWith(
+        'user123',
+      )
     })
   })
 })

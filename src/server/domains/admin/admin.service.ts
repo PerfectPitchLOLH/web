@@ -17,15 +17,13 @@ export class AdminService {
   constructor(private repository: AdminRepository) {}
 
   async getDashboardStats(): Promise<AdminDashboardStats> {
-    const [users, system] = await Promise.all([
+    const [users, system, mrr] = await Promise.all([
       this.repository.getUserStats(),
       this.repository.getSystemStats(),
+      this.repository.getMrrStats(),
     ])
 
-    return {
-      users,
-      system,
-    }
+    return { users, system, mrr }
   }
 
   async getUsers(

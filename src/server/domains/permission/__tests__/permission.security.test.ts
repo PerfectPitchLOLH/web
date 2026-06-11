@@ -132,7 +132,7 @@ describe('Permission Security Tests', () => {
         isCanceled: false,
       }
 
-      const result = service.checkFeatureAccess(context, 'sheet_editor')
+      const result = service.checkFeatureAccess(context, 'polyphony')
 
       expect(result.hasAccess).toBe(false)
       expect(result.upgradeRequired).toBe('pro')
@@ -147,7 +147,7 @@ describe('Permission Security Tests', () => {
         isCanceled: false,
       }
 
-      const result = service.checkFeatureAccess(context, 'sheet_editor')
+      const result = service.checkFeatureAccess(context, 'polyphony')
 
       expect(result.hasAccess).toBe(false)
       expect(result.upgradeRequired).toBe('pro')
@@ -162,7 +162,7 @@ describe('Permission Security Tests', () => {
         isCanceled: false,
       }
 
-      const result = service.checkFeatureAccess(context, 'sheet_editor')
+      const result = service.checkFeatureAccess(context, 'polyphony')
 
       expect(result.hasAccess).toBe(false)
       expect(result.upgradeRequired).toBe('pro')

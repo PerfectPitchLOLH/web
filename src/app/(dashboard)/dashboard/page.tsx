@@ -1,7 +1,9 @@
 import { Suspense } from 'react'
 
+import { ActivationChecklist } from '@/components/dashboard/ActivationChecklist'
 import { CreditBalanceCard } from '@/components/dashboard/credits/CreditBalanceCard'
 import { DashboardWelcome } from '@/components/dashboard/DashboardWelcome'
+import { ResumeCard } from '@/components/dashboard/ResumeCard'
 import { SubscriptionSuccessCelebration } from '@/components/dashboard/SubscriptionSuccessCelebration'
 
 export default function DashboardPage() {
@@ -10,9 +12,11 @@ export default function DashboardPage() {
       <Suspense fallback={null}>
         <SubscriptionSuccessCelebration />
       </Suspense>
+      <ActivationChecklist />
+      <ResumeCard />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <CreditBalanceCard />
         <DashboardWelcome />
+        <CreditBalanceCard />
       </div>
     </div>
   )

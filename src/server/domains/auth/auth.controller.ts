@@ -15,6 +15,7 @@ import {
   getClientIP,
   getRateLimitIdentifier,
   rateLimiters,
+  verifyCaptchaToken,
 } from '@/server/shared/utils'
 
 import {
@@ -53,6 +54,17 @@ export class AuthController {
       }
 
       const body = await request.json()
+
+      const captchaValid = await verifyCaptchaToken(body.captchaToken, ip)
+      if (!captchaValid) {
+        return createErrorResponse(
+          'CAPTCHA_VERIFICATION_FAILED',
+          'Captcha verification failed',
+          undefined,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
+
       const validated = signUpSchema.parse(body)
       const user = await this.service.signUp(validated)
       return createSuccessResponse(
@@ -125,6 +137,17 @@ export class AuthController {
       const { email } = emailSchema.parse(body)
 
       const ip = getClientIP(request)
+
+      const captchaValid = await verifyCaptchaToken(body.captchaToken, ip)
+      if (!captchaValid) {
+        return createErrorResponse(
+          'CAPTCHA_VERIFICATION_FAILED',
+          'Captcha verification failed',
+          undefined,
+          HTTP_STATUS.BAD_REQUEST,
+        )
+      }
+
       const identifier = getRateLimitIdentifier(ip, email)
 
       const { success, reset } = await checkRateLimit(

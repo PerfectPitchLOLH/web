@@ -43,6 +43,7 @@ function createMockSettings(
     language: 'fr',
     notificationPreferences: null,
     hasPassword: true,
+    onboardingCompleted: false,
     ...overrides,
   }
 }
@@ -66,6 +67,7 @@ describe('SettingsController - Deep Tests', () => {
       disable2FA: vi.fn(),
       updateNotifications: vi.fn(),
       updateAppearance: vi.fn(),
+      completeOnboarding: vi.fn(),
       exportData: vi.fn(),
       deleteAccount: vi.fn(),
     } as any

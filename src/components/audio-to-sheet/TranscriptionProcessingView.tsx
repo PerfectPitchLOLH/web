@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2, Music, StopCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { InlineAlert } from '@/components/ui/inline-alert'
 import { Progress } from '@/components/ui/progress'
+import { useProcessingEta } from '@/hooks/useProcessingEta'
 import {
   PROCESSING_STEP_LABELS,
   type ProcessingStep,
@@ -28,6 +29,7 @@ export function TranscriptionProcessingView({
   onCancel,
 }: TranscriptionProcessingViewProps) {
   const currentStepIndex = currentStep ? STEPS.indexOf(currentStep) : -1
+  const eta = useProcessingEta(progress)
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center p-6 min-h-0">
@@ -47,9 +49,12 @@ export function TranscriptionProcessingView({
           <p className="font-semibold text-lg">Transcription en cours</p>
           <div className="space-y-1.5">
             <Progress value={progress} className="h-1" />
-            <p className="text-xs text-muted-foreground tabular-nums text-right">
-              {progress}%
-            </p>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                {eta ? `Temps restant : ${eta}` : 'Estimation du temps...'}
+              </span>
+              <span className="tabular-nums">{progress}%</span>
+            </div>
           </div>
         </div>
 
@@ -67,14 +72,14 @@ export function TranscriptionProcessingView({
                   <div
                     className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
                       isActive
-                        ? 'bg-orange-50 dark:bg-orange-950/30 border border-orange-300 dark:border-orange-700'
+                        ? 'bg-primary/10 border border-primary/40'
                         : 'bg-muted border border-border'
-                    } ${isCurrent ? 'ring-4 ring-orange-400/15' : ''}`}
+                    } ${isCurrent ? 'ring-4 ring-primary/15' : ''}`}
                   >
                     {isDone ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-orange-500" />
+                      <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
                     ) : isCurrent ? (
-                      <Loader2 className="h-3.5 w-3.5 text-orange-500 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
                     ) : StepIcon ? (
                       <StepIcon className="h-3.5 w-3.5 text-muted-foreground/30" />
                     ) : (
@@ -84,9 +89,7 @@ export function TranscriptionProcessingView({
                   {!isLast && (
                     <div
                       className={`w-px flex-1 min-h-5 my-1 transition-colors duration-700 ${
-                        isDone
-                          ? 'bg-orange-300/60 dark:bg-orange-700/40'
-                          : 'bg-border'
+                        isDone ? 'bg-primary/40' : 'bg-border'
                       }`}
                     />
                   )}
@@ -95,18 +98,16 @@ export function TranscriptionProcessingView({
                 <div className={`pt-1 ${isLast ? '' : 'pb-4'}`}>
                   <p
                     className={`text-sm font-medium leading-none transition-all duration-300 ${
-                      isActive
-                        ? 'text-orange-700 dark:text-orange-400'
-                        : 'text-muted-foreground/40'
+                      isActive ? 'text-primary' : 'text-muted-foreground/40'
                     }`}
                   >
                     {PROCESSING_STEP_LABELS[step]}
                   </p>
                   {isDone && (
-                    <p className="text-xs text-orange-400/70 mt-1">Terminé</p>
+                    <p className="text-xs text-primary/60 mt-1">Terminé</p>
                   )}
                   {isCurrent && (
-                    <p className="text-xs text-orange-400/60 mt-1 animate-pulse">
+                    <p className="text-xs text-primary/60 mt-1 animate-pulse">
                       En cours...
                     </p>
                   )}
@@ -116,25 +117,31 @@ export function TranscriptionProcessingView({
           })}
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full text-muted-foreground"
-          disabled={isCancelling}
-          onClick={onCancel}
-        >
-          {isCancelling ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Annulation...
-            </>
-          ) : (
-            <>
-              <StopCircle className="mr-2 h-4 w-4" />
-              Arrêter la transcription
-            </>
-          )}
-        </Button>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground text-center">
+            Vous pouvez quitter cette page — la transcription continue en
+            arrière-plan.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-muted-foreground"
+            disabled={isCancelling}
+            onClick={onCancel}
+          >
+            {isCancelling ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Annulation...
+              </>
+            ) : (
+              <>
+                <StopCircle className="mr-2 h-4 w-4" />
+                Arrêter la transcription
+              </>
+            )}
+          </Button>
+        </div>
 
         {error && <InlineAlert message={error} />}
       </div>

@@ -77,6 +77,44 @@ export class UserRepository {
     return true
   }
 
+  async findActivationData(userId: string): Promise<{
+    emailVerified: Date | null
+    activationChecklistDismissedAt: Date | null
+    fallingNotesTriedAt: Date | null
+    transcriptionCount: number
+    partitionCount: number
+  } | null> {
+    const [user, transcriptionCount, partitionCount] = await Promise.all([
+      db.user.findUnique({
+        where: { id: userId },
+        select: {
+          emailVerified: true,
+          activationChecklistDismissedAt: true,
+          fallingNotesTriedAt: true,
+        },
+      }),
+      db.transcriptionJob.count({ where: { userId } }),
+      db.savedPartition.count({ where: { userId } }),
+    ])
+
+    if (!user) return null
+    return { ...user, transcriptionCount, partitionCount }
+  }
+
+  async dismissActivationChecklist(userId: string): Promise<void> {
+    await db.user.update({
+      where: { id: userId },
+      data: { activationChecklistDismissedAt: new Date() },
+    })
+  }
+
+  async markFallingNotesTried(userId: string): Promise<void> {
+    await db.user.updateMany({
+      where: { id: userId, fallingNotesTriedAt: null },
+      data: { fallingNotesTriedAt: new Date() },
+    })
+  }
+
   async count(filters?: UserListFilters): Promise<number> {
     const where = {
       ...(filters?.role && { role: filters.role }),

@@ -4,12 +4,14 @@ import { Calendar, TrendingUp, Wallet } from 'lucide-react'
 import Link from 'next/link'
 
 import { CreditBalanceCardSkeleton } from '@/components/dashboard/credits/CreditBalanceCardSkeleton'
+import { ExpiringCreditsNotice } from '@/components/dashboard/credits/ExpiringCreditsNotice'
 import { Button } from '@/components/ui/button'
 import { useCredits } from '@/hooks/useCredits'
 import {
   computeUsagePercent,
   formatLocalDate,
   getCreditProgressColor,
+  getExpiringCredits,
   getNextRefillDate,
   secondsToMinutes,
 } from '@/lib/credits'
@@ -36,9 +38,11 @@ export function CreditBalanceCard() {
   )
 
   const nextRefill = getNextRefillDate(credits.lastMonthlyRefill)
+  const expiring = getExpiringCredits(credits)
 
   return (
     <div
+      data-onboarding-step="credits"
       className={cn(
         'group relative rounded-2xl border border-border/50',
         'bg-gradient-to-br from-card via-card to-card/50',
@@ -101,12 +105,21 @@ export function CreditBalanceCard() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-4 text-sm">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Calendar className="size-4" />
-          <span>Prochain renouvellement : {formatLocalDate(nextRefill)}</span>
+      {nextRefill && (
+        <div className="flex items-center justify-between mb-4 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Calendar className="size-4" />
+            <span>Prochain renouvellement : {formatLocalDate(nextRefill)}</span>
+          </div>
         </div>
-      </div>
+      )}
+
+      {expiring && (
+        <ExpiringCreditsNotice
+          minutes={expiring.minutes}
+          daysLeft={expiring.daysLeft}
+        />
+      )}
 
       <div className="flex gap-2">
         <Button variant="outline" className="flex-1" asChild>

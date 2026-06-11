@@ -2,52 +2,17 @@
 
 import { motion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
-const faqs = [
-  {
-    question: 'How does AI music transcription work?',
-    answer:
-      'Notavex uses advanced AI algorithms to analyze audio files and separate individual instruments using stem separation technology. The AI then converts each instrument into accurate sheet music notation, preserving pitch, rhythm, and dynamics.',
-  },
-  {
-    question: 'Can I transcribe music from YouTube videos?',
-    answer:
-      'Yes! Simply paste any YouTube URL into Notavex and our AI will automatically extract the audio, separate all instruments, and generate sheet music. This works with any public YouTube video including songs, tutorials, and live performances.',
-  },
-  {
-    question: 'What audio formats does Notavex support?',
-    answer:
-      'Notavex supports all common audio formats including MP3, WAV, FLAC, M4A, OGG, and AAC. You can upload files directly from your computer or import from YouTube, Spotify, and SoundCloud links.',
-  },
-  {
-    question: 'How accurate is the AI transcription?',
-    answer:
-      'Our AI achieves 95%+ accuracy on most recordings. Accuracy depends on audio quality, mixing clarity, and instrumentation complexity. Clean studio recordings produce near-perfect transcriptions, while live recordings may require minor manual adjustments.',
-  },
-  {
-    question: 'Is there a free plan available?',
-    answer:
-      'Yes! Our Free plan includes 3 transcriptions per month, YouTube import, basic instrument separation, and sheet music export. Perfect for students and hobbyists learning new songs.',
-  },
-  {
-    question: 'Can I export sheet music to different formats?',
-    answer:
-      'Absolutely! Notavex exports to MusicXML, PDF, MIDI, and proprietary formats for Sibelius, Finale, and MuseScore. This ensures compatibility with any music notation software you use.',
-  },
-  {
-    question: 'How long does transcription take?',
-    answer:
-      'Most songs are transcribed in 30-90 seconds depending on length and complexity. A 3-minute pop song typically takes 45 seconds, while a 10-minute orchestral piece may take 2-3 minutes.',
-  },
-  {
-    question: 'Do I need music theory knowledge to use Notavex?',
-    answer:
-      "No music theory required! Notavex handles all the technical work automatically. Simply upload your audio, select which instruments to transcribe, and download professional sheet music. It's designed for musicians of all skill levels.",
-  },
-]
+type FaqItem = {
+  question: string
+  answer: string
+}
 
 export function FAQSection() {
+  const t = useTranslations('FAQ')
+  const faqs = t.raw('items') as FaqItem[]
   const [openIndex, setOpenIndex] = useState<number | null>(0)
 
   const toggleFAQ = (index: number) => {
@@ -83,11 +48,9 @@ export function FAQSection() {
           className="text-center mb-12"
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
-            Frequently Asked Questions
+            {t('title')}
           </h2>
-          <p className="text-lg text-muted-foreground">
-            Everything you need to know about AI music transcription
-          </p>
+          <p className="text-lg text-muted-foreground">{t('subtitle')}</p>
         </motion.div>
 
         <div className="space-y-4">
@@ -134,10 +97,10 @@ export function FAQSection() {
           className="mt-12 text-center"
         >
           <p className="text-muted-foreground mb-4">
-            Still have questions? We&apos;re here to help.
+            {t('stillHaveQuestions')}
           </p>
           <button className="text-primary hover:text-primary/80 font-semibold transition-colors cursor-pointer">
-            Contact Support →
+            {t('contactSupport')}
           </button>
         </motion.div>
       </div>

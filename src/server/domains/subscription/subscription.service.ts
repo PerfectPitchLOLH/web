@@ -1,12 +1,20 @@
 import Stripe from 'stripe'
 
+import { db } from '@/server/lib/database'
+import {
+  sendPaymentFailedEmail,
+  sendSubscriptionCancelledEmail,
+  sendSubscriptionCreatedEmail,
+  sendTrialEndingEmail,
+} from '@/server/lib/email'
 import { stripe } from '@/server/lib/stripe'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
 import type { CreditService } from '../credit/credit.service'
 import type { CreditPurchaseRepository } from '../credit-purchase/credit-purchase.repository'
-import { SUBSCRIPTION_STATUS } from './subscription.constants'
+import type { NotificationService } from '../notification/notification.service'
+import { DUNNING, SUBSCRIPTION_STATUS } from './subscription.constants'
 import type { SubscriptionRepository } from './subscription.repository'
 import type {
   CreateCheckoutSessionRequest,
@@ -23,6 +31,7 @@ export class SubscriptionService {
     private repository: SubscriptionRepository,
     private creditService: CreditService,
     private creditPurchaseRepository: CreditPurchaseRepository,
+    private notificationService: NotificationService,
   ) {}
 
   async getPlans(): Promise<SubscriptionPlanDTO[]> {
@@ -353,6 +362,11 @@ export class SubscriptionService {
       latestInvoice,
     )
 
+    const user = await this.repository.findUserById(userId)
+    if (user) {
+      await sendSubscriptionCreatedEmail(user.email, user.name, plan.name)
+    }
+
     return subscription
   }
 
@@ -439,6 +453,15 @@ export class SubscriptionService {
         await this.creditService.grantSubscriptionCredits(
           subscription.userId,
           0,
+        )
+      }
+
+      const user = await this.repository.findUserById(subscription.userId)
+      if (user) {
+        await sendSubscriptionCancelledEmail(
+          user.email,
+          user.name,
+          subscription.currentPeriodEnd,
         )
       }
     }
@@ -559,6 +582,85 @@ export class SubscriptionService {
       description: stripeInvoice.description ?? null,
       paidAt: null,
     })
+
+    const user = await this.repository.findUserById(customer.userId)
+    if (!user) {
+      return
+    }
+
+    await sendPaymentFailedEmail(user.email, user.name)
+
+    await this.notificationService.createNotification({
+      userId: customer.userId,
+      type: 'security',
+      title: 'Échec de paiement',
+      description:
+        'Votre dernier paiement a échoué. Mettez à jour votre moyen de paiement pour éviter une interruption de votre abonnement.',
+      icon: 'CreditCard',
+      read: false,
+    })
+
+    await db.auditLog.create({
+      data: {
+        userId: customer.userId,
+        userName: user.name,
+        action: 'PAYMENT_FAILED',
+        resource: 'subscription',
+        details: `Échec du paiement de la facture Stripe ${stripeInvoiceId}`,
+        ipAddress: null,
+        userAgent: null,
+      },
+    })
+
+    const failedInvoiceCount = await db.invoice.count({
+      where: { userId: customer.userId, status: 'failed' },
+    })
+
+    if (failedInvoiceCount >= DUNNING.PAYMENT_FAILURE_THRESHOLD) {
+      const subscription = await this.repository.findSubscriptionByUserId(
+        customer.userId,
+      )
+
+      if (subscription) {
+        await this.repository.updateSubscriptionStatus(
+          subscription.stripeSubscriptionId,
+          SUBSCRIPTION_STATUS.PAST_DUE,
+        )
+
+        await db.auditLog.create({
+          data: {
+            userId: customer.userId,
+            userName: user.name,
+            action: 'SUBSCRIPTION_PAST_DUE',
+            resource: 'subscription',
+            details: `Abonnement passé en past_due après ${failedInvoiceCount} échecs de paiement`,
+            ipAddress: null,
+            userAgent: null,
+          },
+        })
+      }
+    }
+  }
+
+  async handleTrialWillEnd(stripeSubscriptionId: string): Promise<void> {
+    const stripeSubscription =
+      await stripe.subscriptions.retrieve(stripeSubscriptionId)
+
+    const customer = await this.repository.findCustomerByStripeId(
+      stripeSubscription.customer as string,
+    )
+
+    if (!customer) return
+
+    const user = await this.repository.findUserById(customer.userId)
+
+    if (user && stripeSubscription.trial_end) {
+      await sendTrialEndingEmail(
+        user.email,
+        user.name,
+        new Date(stripeSubscription.trial_end * 1000),
+      )
+    }
   }
 
   async cancelSubscription(userId: string): Promise<void> {
@@ -711,6 +813,62 @@ export class SubscriptionService {
         `Échec de la mise à jour de l'abonnement: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
       )
     }
+  }
+
+  async downgradeSubscription(
+    userId: string,
+    newPriceId: string,
+  ): Promise<void> {
+    const subscription = await this.repository.findSubscriptionByUserId(userId)
+
+    if (
+      !subscription ||
+      !['active', 'trialing'].includes(subscription.status)
+    ) {
+      throw new ApiError(
+        'SUBSCRIPTION_NOT_FOUND',
+        HTTP_STATUS.NOT_FOUND,
+        'Aucun abonnement actif',
+      )
+    }
+
+    const currentPlan = await this.repository.findPlanById(subscription.planId)
+    const newPlan = await this.repository.findPlanByStripePriceId(newPriceId)
+
+    if (!newPlan) {
+      throw new ApiError(
+        'INVALID_PLAN',
+        HTTP_STATUS.BAD_REQUEST,
+        'Plan cible invalide',
+      )
+    }
+
+    if (currentPlan && newPlan.monthlyPrice >= currentPlan.monthlyPrice) {
+      throw new ApiError(
+        'INVALID_DOWNGRADE',
+        HTTP_STATUS.BAD_REQUEST,
+        'Le plan cible doit être inférieur au plan actuel',
+      )
+    }
+
+    const stripeSubscription = await stripe.subscriptions.retrieve(
+      subscription.stripeSubscriptionId,
+    )
+
+    const itemId = stripeSubscription.items.data[0]?.id
+
+    if (!itemId) {
+      throw new ApiError(
+        'SUBSCRIPTION_ITEM_NOT_FOUND',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        "Item d'abonnement introuvable",
+      )
+    }
+
+    await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+      items: [{ id: itemId, price: newPriceId }],
+      proration_behavior: 'create_prorations',
+    })
   }
 
   async grantWelcomeCredits(userId: string, email: string): Promise<void> {

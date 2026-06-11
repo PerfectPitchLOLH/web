@@ -65,8 +65,7 @@ export const STATS = {
 } as const
 
 export const PRICING = {
-  monthly: 29,
-  annual: 279,
-  annualSavings: 69,
-  trialDays: 14,
+  junior: { monthly: 9.99, yearly: 99.99 },
+  basic: { monthly: 14.99, yearly: 149.99 },
+  pro: { monthly: 29.99, yearly: 299.99 },
 } as const

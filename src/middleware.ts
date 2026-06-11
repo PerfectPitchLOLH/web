@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server'
+import createMiddleware from 'next-intl/middleware'
 
 import { auth } from '@/server/lib/auth'
 import { auditLogger } from '@/server/shared/utils'
 
+import { routing } from './i18n/routing'
+
 export const runtime = 'nodejs'
+
+const intlMiddleware = createMiddleware(routing)
 
 function getClientIP(request: Request): string | null {
   const forwarded = request.headers.get('x-forwarded-for')
@@ -20,6 +25,21 @@ function getClientIP(request: Request): string | null {
   return null
 }
 
+function isAuthOnlyPage(pathname: string): boolean {
+  return (
+    pathname.startsWith('/auth/signin') || pathname.startsWith('/auth/signup')
+  )
+}
+
+function isLandingPath(pathname: string): boolean {
+  return (
+    !pathname.startsWith('/dashboard') &&
+    !pathname.startsWith('/auth') &&
+    !pathname.startsWith('/admin') &&
+    !pathname.startsWith('/api')
+  )
+}
+
 export default auth((req) => {
   const { pathname } = req.nextUrl
   const isAuthenticated = !!req.auth
@@ -34,8 +54,12 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/auth/signin', req.url))
   }
 
-  if (isAuthenticated && pathname.startsWith('/auth')) {
+  if (isAuthenticated && isAuthOnlyPage(pathname)) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
+  }
+
+  if (isLandingPath(pathname)) {
+    return intlMiddleware(req)
   }
 
   const response = NextResponse.next()
@@ -54,5 +78,5 @@ export default auth((req) => {
 })
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)'],
 }

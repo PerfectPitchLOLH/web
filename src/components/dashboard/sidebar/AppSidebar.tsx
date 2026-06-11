@@ -30,6 +30,7 @@ const navigationItems = [
     title: 'Mes partitions',
     url: '/dashboard/partitions',
     icon: FileMusic,
+    tourStep: 'partitions',
   },
 ]
 
@@ -38,6 +39,7 @@ const featuresItems = [
     title: 'Audio to sheet',
     url: '/dashboard/audio-to-sheet',
     icon: AudioLines,
+    tourStep: 'upload',
   },
   {
     title: 'Touches qui tombent',
@@ -92,7 +94,7 @@ export function AppSidebar() {
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={pathname === item.url}>
-                    <Link href={item.url}>
+                    <Link href={item.url} data-onboarding-step={item.tourStep}>
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
@@ -110,7 +112,7 @@ export function AppSidebar() {
               {featuresItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={pathname === item.url}>
-                    <Link href={item.url}>
+                    <Link href={item.url} data-onboarding-step={item.tourStep}>
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
@@ -146,7 +148,10 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild size="lg" tooltip="Améliorer">
-              <Link href="/dashboard/subscription#plan">
+              <Link
+                href="/dashboard/subscription#plan"
+                data-onboarding-step="subscription"
+              >
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-amber-500 text-white">
                   <Coins className="size-4" />
                 </div>

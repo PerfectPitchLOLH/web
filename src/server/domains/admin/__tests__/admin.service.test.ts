@@ -15,6 +15,7 @@ describe('AdminService', () => {
     mockRepository = {
       getUserStats: vi.fn(),
       getSystemStats: vi.fn(),
+      getMrrStats: vi.fn(),
       getUsersWithFilters: vi.fn(),
       getUserById: vi.fn(),
       getRootAdmin: vi.fn(),
@@ -49,19 +50,31 @@ describe('AdminService', () => {
         errorRate: 1.0,
       }
 
+      const mockMrrStats = {
+        mrr: 1000,
+        arr: 12000,
+        revenueThisMonth: 1000,
+        newSubscribersThisMonth: 10,
+        churnedThisMonth: 2,
+        activeSubscriptions: 50,
+      }
+
       vi.mocked(mockRepository.getUserStats).mockResolvedValue(mockUserStats)
       vi.mocked(mockRepository.getSystemStats).mockResolvedValue(
         mockSystemStats,
       )
+      vi.mocked(mockRepository.getMrrStats).mockResolvedValue(mockMrrStats)
 
       const result = await adminService.getDashboardStats()
 
       expect(result).toEqual({
         users: mockUserStats,
         system: mockSystemStats,
+        mrr: mockMrrStats,
       })
       expect(mockRepository.getUserStats).toHaveBeenCalledTimes(1)
       expect(mockRepository.getSystemStats).toHaveBeenCalledTimes(1)
+      expect(mockRepository.getMrrStats).toHaveBeenCalledTimes(1)
     })
 
     it('should call both getUserStats and getSystemStats in parallel', async () => {
@@ -82,15 +95,26 @@ describe('AdminService', () => {
         errorRate: 1.0,
       }
 
+      const mockMrrStats = {
+        mrr: 500,
+        arr: 6000,
+        revenueThisMonth: 500,
+        newSubscribersThisMonth: 5,
+        churnedThisMonth: 1,
+        activeSubscriptions: 25,
+      }
+
       vi.mocked(mockRepository.getUserStats).mockResolvedValue(mockUserStats)
       vi.mocked(mockRepository.getSystemStats).mockResolvedValue(
         mockSystemStats,
       )
+      vi.mocked(mockRepository.getMrrStats).mockResolvedValue(mockMrrStats)
 
       await adminService.getDashboardStats()
 
       expect(mockRepository.getUserStats).toHaveBeenCalled()
       expect(mockRepository.getSystemStats).toHaveBeenCalled()
+      expect(mockRepository.getMrrStats).toHaveBeenCalled()
     })
   })
 

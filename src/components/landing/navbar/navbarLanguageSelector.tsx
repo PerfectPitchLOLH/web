@@ -1,7 +1,7 @@
 'use client'
 
 import { Check, Globe } from 'lucide-react'
-import { useState } from 'react'
+import { useLocale } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { usePathname, useRouter } from '@/i18n/navigation'
 
 const languages = [
   { code: 'en', label: 'English', flag: '🇬🇧' },
@@ -19,11 +20,15 @@ const languages = [
 ]
 
 export function NavbarLanguageSelector() {
-  const [selectedLanguage, setSelectedLanguage] = useState('en')
+  const locale = useLocale()
+  const router = useRouter()
+  const pathname = usePathname()
 
-  const currentLanguage = languages.find(
-    (lang) => lang.code === selectedLanguage,
-  )
+  const currentLanguage = languages.find((lang) => lang.code === locale)
+
+  function switchLocale(newLocale: string) {
+    router.replace(pathname, { locale: newLocale })
+  }
 
   return (
     <DropdownMenu>
@@ -41,14 +46,14 @@ export function NavbarLanguageSelector() {
         {languages.map((language) => (
           <DropdownMenuItem
             key={language.code}
-            onClick={() => setSelectedLanguage(language.code)}
+            onClick={() => switchLocale(language.code)}
             className="flex items-center justify-between cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <span className="text-lg">{language.flag}</span>
               <span>{language.label}</span>
             </div>
-            {selectedLanguage === language.code && (
+            {locale === language.code && (
               <Check className="w-4 h-4 text-primary" />
             )}
           </DropdownMenuItem>

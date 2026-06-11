@@ -7,6 +7,7 @@ import type {
   AuditLogEntry,
   AuditLogFilters,
   AuditLogResult,
+  MrrStats,
   SystemStats,
   UserManagementFilters,
   UserManagementResult,
@@ -257,6 +258,71 @@ export class AdminRepository {
       page,
       limit,
       totalPages: limit === 0 ? Infinity : Math.ceil(total / limit),
+    }
+  }
+
+  async getMrrStats(): Promise<MrrStats> {
+    const now = new Date()
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+    const [
+      activeSubscriptions,
+      newThisMonth,
+      churnedThisMonth,
+      invoicesThisMonth,
+    ] = await Promise.all([
+      db.subscription.findMany({
+        where: { status: { in: ['active', 'trialing'] } },
+        include: {
+          plan: { select: { monthlyPrice: true, yearlyPrice: true } },
+        },
+      }),
+      db.subscription.count({
+        where: {
+          status: { in: ['active', 'trialing'] },
+          createdAt: { gte: startOfMonth },
+        },
+      }),
+      db.subscription.count({
+        where: {
+          status: 'canceled',
+          canceledAt: { gte: startOfMonth },
+        },
+      }),
+      db.invoice.findMany({
+        where: {
+          status: 'paid',
+          createdAt: { gte: startOfMonth },
+        },
+        select: { amount: true },
+      }),
+    ])
+
+    const mrr = activeSubscriptions.reduce((sum, sub) => {
+      const periodMonths = Math.round(
+        (new Date(sub.currentPeriodEnd).getTime() -
+          new Date(sub.currentPeriodStart).getTime()) /
+          (1000 * 60 * 60 * 24 * 30),
+      )
+      const isYearly = periodMonths > 1
+      const monthly = isYearly
+        ? (sub.plan.yearlyPrice ?? sub.plan.monthlyPrice * 12) / 12
+        : sub.plan.monthlyPrice
+      return sum + monthly
+    }, 0)
+
+    const revenueThisMonth = invoicesThisMonth.reduce(
+      (sum, inv) => sum + inv.amount,
+      0,
+    )
+
+    return {
+      mrr: Math.round(mrr * 100) / 100,
+      arr: Math.round(mrr * 12 * 100) / 100,
+      revenueThisMonth: Math.round(revenueThisMonth * 100) / 100,
+      newSubscribersThisMonth: newThisMonth,
+      churnedThisMonth,
+      activeSubscriptions: activeSubscriptions.length,
     }
   }
 }

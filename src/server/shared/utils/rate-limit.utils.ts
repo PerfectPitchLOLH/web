@@ -41,6 +41,13 @@ export const rateLimiters = {
     analytics: true,
     prefix: '@upstash/ratelimit:api',
   }),
+
+  contact: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(5, '1 h'),
+    analytics: true,
+    prefix: '@upstash/ratelimit:contact',
+  }),
 }
 
 export async function checkRateLimit(

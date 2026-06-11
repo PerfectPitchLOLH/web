@@ -2,8 +2,10 @@ import './globals.css'
 
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { headers } from 'next/headers'
 
 import { CookieConsentBanner } from '@/components/landing/CookieConsentBanner'
+import { PostHogProvider } from '@/components/providers/PostHogProvider'
 import { SessionProvider } from '@/components/providers/SessionProvider'
 import { ThemeProvider } from '@/components/providers/themeProvider'
 import { JsonLdSchema } from '@/components/seo/json-ld-schema'
@@ -99,13 +101,15 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const h = await headers()
+  const locale = h.get('x-next-intl-locale') ?? 'en'
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#000000" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -116,11 +120,13 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SessionProvider>
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-            <TooltipProvider>{children}</TooltipProvider>
-            <Toaster richColors position="bottom-right" />
-            <CookieConsentBanner />
-          </ThemeProvider>
+          <PostHogProvider>
+            <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+              <TooltipProvider>{children}</TooltipProvider>
+              <Toaster richColors position="bottom-right" />
+              <CookieConsentBanner />
+            </ThemeProvider>
+          </PostHogProvider>
         </SessionProvider>
       </body>
     </html>

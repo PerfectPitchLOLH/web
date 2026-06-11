@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('@/server/lib/email', () => ({
+  sendLowCreditsEmail: vi.fn(),
+  sendNoCreditsEmail: vi.fn(),
+}))
+
+vi.mock('@/server/lib/stripe', () => ({ stripe: {} }))
+
 vi.mock('@/server/lib/database', () => ({
   db: {
     transcriptionJob: {
@@ -7,6 +14,9 @@ vi.mock('@/server/lib/database', () => ({
     },
     user: {
       findUnique: vi.fn(),
+    },
+    subscription: {
+      findFirst: vi.fn().mockResolvedValue(null),
     },
   },
 }))

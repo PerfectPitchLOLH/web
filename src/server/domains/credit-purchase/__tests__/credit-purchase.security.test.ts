@@ -15,6 +15,11 @@ import type {
   PaymentStatus,
 } from '../credit-purchase.types'
 
+vi.mock('@/server/lib/email', () => ({
+  sendLowCreditsEmail: vi.fn(),
+  sendNoCreditsEmail: vi.fn(),
+}))
+
 vi.mock('@/server/lib/stripe', () => ({
   stripe: {
     paymentIntents: {

@@ -52,10 +52,10 @@ export function JsonLdSchema() {
     featureList: [
       'AI-powered instrument separation',
       'YouTube direct import',
-      'Multi-track sheet music export',
+      'Standard notation and guitar tablature views',
       'Real-time playback control',
       'Professional notation formatting',
-      'Cloud storage & collaboration',
+      'Cloud-saved transcription history',
     ],
     screenshot: 'https://notavex.com/screenshot.png',
     softwareVersion: '2.1.0',

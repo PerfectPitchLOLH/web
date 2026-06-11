@@ -1,4 +1,9 @@
-import { auth } from '@/server/lib/auth'
+'use client'
+
+import { useSession } from 'next-auth/react'
+
+import { FirstTranscriptionCard } from '@/components/dashboard/FirstTranscriptionCard'
+import { useActivationStatus } from '@/hooks/useActivationStatus'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -7,8 +12,20 @@ function getGreeting() {
   return 'Bonsoir'
 }
 
-export async function DashboardWelcome() {
-  const session = await auth()
+export function DashboardWelcome() {
+  const { data: session } = useSession()
+  const { status, loading } = useActivationStatus()
+
+  if (loading) {
+    return (
+      <div className="h-full min-h-32 animate-pulse rounded-2xl border border-border/50 bg-muted/30" />
+    )
+  }
+
+  if (status && !status.hasTranscription) {
+    return <FirstTranscriptionCard />
+  }
+
   const name = session?.user?.name
   const greeting = getGreeting()
 
@@ -18,8 +35,8 @@ export async function DashboardWelcome() {
         {name ? `${greeting}, ${name} !` : `${greeting} !`}
       </h3>
       <p className="mt-2 text-sm text-muted-foreground">
-        Votre espace de travail pour la séparation de stems et la production
-        musicale
+        Votre espace de travail pour transformer vos enregistrements audio en
+        partitions et tablatures
       </p>
     </div>
   )

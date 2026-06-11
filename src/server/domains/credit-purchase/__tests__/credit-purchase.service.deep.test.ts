@@ -14,6 +14,11 @@ import type {
   PaymentStatus,
 } from '../credit-purchase.types'
 
+vi.mock('@/server/lib/email', () => ({
+  sendLowCreditsEmail: vi.fn(),
+  sendNoCreditsEmail: vi.fn(),
+}))
+
 vi.mock('@/server/lib/stripe', () => ({
   stripe: {
     paymentIntents: {
@@ -77,6 +82,7 @@ describe('CreditPurchaseService - Deep Tests', () => {
       isCreditsAlreadyGranted: vi.fn(),
       findRecentPurchasesByUserId: vi.fn(),
       findSucceededByUserId: vi.fn(),
+      findUserById: vi.fn().mockResolvedValue(null),
     } as unknown as Mocked<CreditPurchaseRepository>
 
     mockCreditService = {

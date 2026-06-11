@@ -1,5 +1,6 @@
 import type { CreditService } from '@/server/domains/credit/credit.service'
 import { db } from '@/server/lib/database'
+import { sendCreditPurchaseEmail } from '@/server/lib/email'
 import { stripe } from '@/server/lib/stripe'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
@@ -253,6 +254,17 @@ export class CreditPurchaseService {
     }
 
     await this.grantCredits(purchase)
+
+    const user = await this.repository.findUserById(purchase.userId)
+    if (user) {
+      await sendCreditPurchaseEmail(
+        user.email,
+        user.name,
+        purchase.minutes,
+        purchase.amount,
+      )
+    }
+
     return this.repository.markCreditsGranted(sessionId)
   }
 

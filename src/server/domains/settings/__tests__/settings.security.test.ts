@@ -81,6 +81,7 @@ function createMockSettings(
     language: 'fr',
     notificationPreferences: null,
     hasPassword: true,
+    onboardingCompleted: false,
     ...overrides,
   }
 }

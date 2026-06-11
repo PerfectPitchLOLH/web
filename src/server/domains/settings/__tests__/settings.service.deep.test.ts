@@ -51,6 +51,7 @@ function createMockSettings(
     language: 'fr',
     notificationPreferences: null,
     hasPassword: true,
+    onboardingCompleted: false,
     ...overrides,
   }
 }
@@ -69,6 +70,7 @@ describe('SettingsService - Deep Tests', () => {
       getTwoFactorSecret: vi.fn(),
       updateNotifications: vi.fn(),
       updateAppearance: vi.fn(),
+      completeOnboarding: vi.fn(),
       deleteUser: vi.fn(),
     } as any
 

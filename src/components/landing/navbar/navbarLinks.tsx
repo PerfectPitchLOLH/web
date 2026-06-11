@@ -1,35 +1,37 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
-const links = [
-  { label: 'Overview', href: '#overview' },
-  { label: 'Features', href: '#features' },
-  { label: 'Pricing', href: '#pricing' },
-]
-
 export function NavbarLinks({ className }: { className?: string }) {
+  const t = useTranslations('Navbar')
   const [activeSection, setActiveSection] = useState('')
   const isScrollingRef = useRef(false)
 
+  const links = [
+    { label: t('overview'), href: '#overview' },
+    { label: t('features'), href: '#features' },
+    { label: t('pricing'), href: '#pricing' },
+  ]
+
   useEffect(() => {
+    const sectionIds = ['overview', 'features', 'pricing']
     const handleScroll = () => {
       if (isScrollingRef.current) return
 
-      const sections = links.map((link) => link.href.slice(1))
       const scrollPosition = window.scrollY + 100
 
-      for (const section of sections) {
-        const element = document.getElementById(section)
+      for (const id of sectionIds) {
+        const element = document.getElementById(id)
         if (element) {
           const { offsetTop, offsetHeight } = element
           if (
             scrollPosition >= offsetTop &&
             scrollPosition < offsetTop + offsetHeight
           ) {
-            setActiveSection(section)
+            setActiveSection(id)
             break
           }
         }

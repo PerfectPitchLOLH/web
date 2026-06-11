@@ -4,10 +4,12 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { useAnalytics } from '@/hooks/useAnalytics'
 import type { PartitionSummary } from '@/server/domains/partition'
 
 export function usePartitionViewer(id: string) {
   const router = useRouter()
+  const { track } = useAnalytics()
   const [partition, setPartition] = useState<PartitionSummary | null>(null)
   const [svgContent, setSvgContent] = useState<string | null>(null)
   const [svgError, setSvgError] = useState(false)
@@ -108,7 +110,11 @@ export function usePartitionViewer(id: string) {
     a.download = `${partition.title}.svg`
     a.click()
     URL.revokeObjectURL(url)
-  }, [svgContent, partition])
+    track({
+      name: 'export_downloaded',
+      properties: { format: 'svg', partitionId: partition.id },
+    })
+  }, [svgContent, partition, track])
 
   return {
     partition,

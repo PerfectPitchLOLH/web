@@ -1,0 +1,207 @@
+{
+  "Hero": {
+    "badge": "Polyphonic engine — available now",
+    "title": "The music transcription\ninfrastructure,",
+    "titleItalic": "at the service of musicians.",
+    "ctaPrimary": "Get started →",
+    "ctaDemo": "See a demo",
+    "socialProof": "Join {count}+ musicians saving 5+ hours per transcription",
+    "transcribedIn": "Transcribed in"
+  },
+  "Pricing": {
+    "title": "The price your sheet music",
+    "titleItalic": "deserves.",
+    "subtitle": "Buy your sheet music one by one at €9 each — or subscribe from €9.99/month. From 2 sheets, Notavex Junior pays for itself.",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "yearlyBadge": "−17%",
+    "pieceTitle": "Per piece",
+    "pieceLabel": "Per sheet",
+    "notavexLabel": "Notavex",
+    "recommended": "Recommended",
+    "mostPopular": "Most popular",
+    "choosePlan": "Choose this plan",
+    "tryFree": "Try for free",
+    "pickYourPlan": "Choose your plan",
+    "savingsMonthly": "Save <strong>€215/month</strong> vs buying individually — paid back from the 2nd sheet.",
+    "savingsYearly": "Save <strong>€2,600/year</strong> with the annual Junior plan — 27x cheaper than buying individually.",
+    "estimatedMonthly": "estimated for 25 sheets/month",
+    "estimatedYearly": "estimated for 300 sheets/year",
+    "perMonth": "/ month",
+    "perYear": "/ year — 2 months free",
+    "negativeBullets": [
+      "€9 per sheet",
+      "Formats limited to purchase",
+      "No cloud backup",
+      "Standard support only"
+    ],
+    "juniorFeatures": [
+      "10 min transcription / month",
+      "Falling notes included",
+      "Notation and tablature included",
+      "30-day history",
+      "Cloud backup & sync",
+      "Standard support"
+    ],
+    "planFeatures": {
+      "transcription": "Transcription / month",
+      "fallingNotes": "Falling notes",
+      "history": "History",
+      "polyphony": "Polyphony",
+      "historyValues": ["30 days", "90 days", "Unlimited"]
+    }
+  },
+  "SocialProof": {
+    "statsLabels": {
+      "musicians": "Musicians",
+      "sheets": "Sheets created",
+      "countries": "Countries"
+    },
+    "title": "Loved by musicians around the world",
+    "subtitle": "Over {count} guitarists, pianists, violinists and producers trust Notavex every day.",
+    "testimonials": [
+      {
+        "quote": "\"I saved over €400 in 3 months. Notavex made learning guitar accessible and enjoyable.\"",
+        "name": "Sarah M.",
+        "role": "Guitar Student",
+        "location": "Austin, TX"
+      },
+      {
+        "quote": "\"I used to spend 4–5 hours transcribing for clients. Now it takes minutes. Paid back in a week.\"",
+        "name": "James K.",
+        "role": "Session Musician",
+        "location": "Nashville, TN"
+      },
+      {
+        "quote": "\"I create material for 30+ students. Multi-instrument separation changes everything for teaching orchestration.\"",
+        "name": "Dr. Lisa Chen",
+        "role": "Music Educator · Berklee",
+        "location": "Boston, MA"
+      },
+      {
+        "quote": "\"The accuracy is impressive. I analyze my favorite producers' progressions. X-ray vision for music.\"",
+        "name": "Alex T.",
+        "role": "Electronic Music Producer",
+        "location": "Los Angeles, CA"
+      },
+      {
+        "quote": "\"We learned 20 songs in 2 months. Separating bass, guitar and drum tracks individually changed everything.\"",
+        "name": "The Midnight Groove",
+        "role": "Cover Band",
+        "location": "Chicago, IL"
+      },
+      {
+        "quote": "\"Notavex captured subtle dynamic nuances I didn't expect. Excellent for studying concertos.\"",
+        "name": "Maria S.",
+        "role": "Violinist · NY Philharmonic",
+        "location": "New York, NY"
+      }
+    ]
+  },
+  "Footer": {
+    "tagline": "Raw sound. Clean sheet music. In 30 seconds.",
+    "copyright": "© 2026 Notavex · Made with care in Paris",
+    "columns": {
+      "product": {
+        "title": "Product",
+        "links": ["Features", "How it works", "Pricing", "Demo"]
+      },
+      "resources": {
+        "title": "Resources",
+        "links": ["Documentation", "Blog", "Tutorials", "Changelog"]
+      },
+      "company": {
+        "title": "Company",
+        "links": ["About", "Careers", "Press", "Contact"]
+      },
+      "legal": {
+        "title": "Legal",
+        "links": ["Privacy", "Terms", "Cookies", "Legal notice"]
+      }
+    }
+  },
+  "Navbar": {
+    "overview": "Overview",
+    "features": "Features",
+    "pricing": "Pricing",
+    "tryFree": "Try for free"
+  },
+  "Features": {
+    "title": "Everything You Need to Transform",
+    "titleHighlight": "Audio Into Music",
+    "items": [
+      {
+        "title": "Automatic Instrument Detection",
+        "description": "Upload any audio and our AI identifies every instrument—piano, guitar, drums, bass, vocals, strings, and more."
+      },
+      {
+        "title": "Works With Any Audio Source",
+        "description": "Paste YouTube links, upload MP3/WAV files, or record live audio directly in the app. No conversion needed."
+      },
+      {
+        "title": "Get Results in Seconds",
+        "description": "Most songs transcribe in under 60 seconds. No waiting hours for processing."
+      },
+      {
+        "title": "Edit and Customize",
+        "description": "Fine-tune generated transcriptions with our built-in notation editor. Adjust notes, rhythms, and dynamics."
+      },
+      {
+        "title": "Export to Any Format",
+        "description": "Download as PDF, MusicXML, MIDI, or Guitar Pro. Compatible with Finale, Sibelius, MuseScore, and more."
+      },
+      {
+        "title": "Interactive Playback Modes",
+        "description": "Standard notation, guitar tabs, or falling-notes visualization for visual learners."
+      },
+      {
+        "title": "Access From Anywhere",
+        "description": "All your transcriptions saved in the cloud. Access from desktop, tablet, or mobile."
+      },
+      {
+        "title": "Share With Your Band",
+        "description": "Share transcriptions with bandmates or students. Collaborate on arrangements together."
+      }
+    ]
+  },
+  "FAQ": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Everything you need to know about AI music transcription",
+    "stillHaveQuestions": "Still have questions? We're here to help.",
+    "contactSupport": "Contact Support →",
+    "items": [
+      {
+        "question": "How does AI music transcription work?",
+        "answer": "Notavex uses advanced AI algorithms to analyze audio files and separate individual instruments using stem separation technology. The AI then converts each instrument into accurate sheet music notation, preserving pitch, rhythm, and dynamics."
+      },
+      {
+        "question": "Can I transcribe music from YouTube videos?",
+        "answer": "Yes! Simply paste any YouTube URL into Notavex and our AI will automatically extract the audio, separate all instruments, and generate sheet music. This works with any public YouTube video including songs, tutorials, and live performances."
+      },
+      {
+        "question": "What audio formats does Notavex support?",
+        "answer": "Notavex supports all common audio formats including MP3, WAV, FLAC, M4A, OGG, and AAC. You can upload files directly from your computer or import from YouTube, Spotify, and SoundCloud links."
+      },
+      {
+        "question": "How accurate is the AI transcription?",
+        "answer": "Our AI achieves 95%+ accuracy on most recordings. Accuracy depends on audio quality, mixing clarity, and instrumentation complexity. Clean studio recordings produce near-perfect transcriptions, while live recordings may require minor manual adjustments."
+      },
+      {
+        "question": "Is there a free plan available?",
+        "answer": "Yes! Our Free plan includes 3 transcriptions per month, YouTube import, basic instrument separation, and sheet music export. Perfect for students and hobbyists learning new songs."
+      },
+      {
+        "question": "Can I export sheet music to different formats?",
+        "answer": "Absolutely! Notavex exports to MusicXML, PDF, MIDI, and proprietary formats for Sibelius, Finale, and MuseScore. This ensures compatibility with any music notation software you use."
+      },
+      {
+        "question": "How long does transcription take?",
+        "answer": "Most songs are transcribed in 30-90 seconds depending on length and complexity. A 3-minute pop song typically takes 45 seconds, while a 10-minute orchestral piece may take 2-3 minutes."
+      },
+      {
+        "question": "Do I need music theory knowledge to use Notavex?",
+        "answer": "No music theory required! Notavex handles all the technical work automatically. Simply upload your audio, select which instruments to transcribe, and download professional sheet music. It's designed for musicians of all skill levels."
+      }
+    ]
+  }
+}

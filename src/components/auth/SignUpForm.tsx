@@ -1,5 +1,6 @@
 'use client'
 
+import { Turnstile } from '@marsidev/react-turnstile'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
@@ -9,11 +10,16 @@ import { useState } from 'react'
 
 import { FormError } from '@/components/auth/FormError'
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton'
+import { PasswordStrengthIndicator } from '@/components/auth/PasswordStrengthIndicator'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useAnalytics } from '@/hooks/useAnalytics'
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
 export function SignUpForm() {
   const router = useRouter()
+  const { track } = useAnalytics()
   const [email, setEmail] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
@@ -22,6 +28,7 @@ export function SignUpForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [acceptTerms, setAcceptTerms] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState('')
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,7 +52,13 @@ export function SignUpForm() {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name, acceptTerms }),
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          acceptTerms,
+          captchaToken,
+        }),
       })
 
       const data = await response.json()
@@ -60,6 +73,8 @@ export function SignUpForm() {
         password,
         redirect: false,
       })
+
+      track({ name: 'signup_completed', properties: { method: 'email' } })
 
       router.push('/dashboard')
       router.refresh()
@@ -184,6 +199,7 @@ export function SignUpForm() {
                 Must be 8+ characters with uppercase, lowercase, number, and
                 special character
               </p>
+              <PasswordStrengthIndicator password={password} />
             </div>
 
             <div className="space-y-2">
@@ -229,13 +245,26 @@ export function SignUpForm() {
               </label>
             </div>
 
+            {TURNSTILE_SITE_KEY && (
+              <Turnstile
+                siteKey={TURNSTILE_SITE_KEY}
+                onSuccess={setCaptchaToken}
+                onExpire={() => setCaptchaToken('')}
+                options={{ theme: 'auto' }}
+              />
+            )}
+
             <FormError error={error} />
 
             <Button
               type="submit"
               className="w-full"
               size="lg"
-              disabled={isLoading || !acceptTerms}
+              disabled={
+                isLoading ||
+                !acceptTerms ||
+                (!!TURNSTILE_SITE_KEY && !captchaToken)
+              }
             >
               {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
               {isLoading ? 'Creating account...' : 'Create Account'}

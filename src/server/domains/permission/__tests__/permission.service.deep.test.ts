@@ -442,11 +442,11 @@ describe('PermissionService - Deep Tests', () => {
           isCanceled: false,
         }
 
-        const result = service.checkFeatureAccess(context, 'sheet_editor')
+        const result = service.checkFeatureAccess(context, 'polyphony')
 
         expect(result).toMatchObject({
           hasAccess: false,
-          reason: expect.stringContaining('sheet_editor'),
+          reason: expect.stringContaining('polyphony'),
           upgradeRequired: 'pro',
         })
       })
@@ -696,7 +696,7 @@ describe('PermissionService - Deep Tests', () => {
     })
 
     describe('Upgrade Required Logic', () => {
-      it('should suggest junior plan for feature not available on free', () => {
+      it('should suggest basic plan for feature not available on free', () => {
         const context: PermissionContext = {
           userId: 'user-123',
           planTier: 'free',
@@ -705,11 +705,11 @@ describe('PermissionService - Deep Tests', () => {
           isCanceled: false,
         }
 
-        const result = service.checkFeatureAccess(context, 'export_pdf')
+        const result = service.checkFeatureAccess(context, 'ai_recommendations')
 
         expect(result).toMatchObject({
           hasAccess: false,
-          upgradeRequired: 'junior',
+          upgradeRequired: 'basic',
         })
       })
 
@@ -722,7 +722,7 @@ describe('PermissionService - Deep Tests', () => {
           isCanceled: false,
         }
 
-        const result = service.checkFeatureAccess(context, 'export_musicxml')
+        const result = service.checkFeatureAccess(context, 'ai_recommendations')
 
         expect(result).toMatchObject({
           hasAccess: false,
@@ -739,7 +739,7 @@ describe('PermissionService - Deep Tests', () => {
           isCanceled: false,
         }
 
-        const result = service.checkFeatureAccess(context, 'sheet_editor')
+        const result = service.checkFeatureAccess(context, 'polyphony')
 
         expect(result).toMatchObject({
           hasAccess: false,
@@ -830,7 +830,7 @@ describe('PermissionService - Deep Tests', () => {
 
       const result = await service.checkFeatureAccessForUser(
         'user-123',
-        'sheet_editor',
+        'polyphony',
       )
 
       expect(result.hasAccess).toBe(true)
@@ -905,7 +905,7 @@ describe('PermissionService - Deep Tests', () => {
         sheet_editor: false,
         polyphony: false,
         export_pdf: false,
-        export_midi: true,
+        export_midi: false,
         export_musicxml: false,
         ai_recommendations: false,
         collaboration: false,
@@ -953,14 +953,14 @@ describe('PermissionService - Deep Tests', () => {
         transcription: true,
         falling_notes: true,
         history_access: true,
-        sheet_editor: true,
+        sheet_editor: false,
         polyphony: true,
-        export_pdf: true,
-        export_midi: true,
-        export_musicxml: true,
+        export_pdf: false,
+        export_midi: false,
+        export_musicxml: false,
         ai_recommendations: true,
-        collaboration: true,
-        api_access: true,
+        collaboration: false,
+        api_access: false,
         priority_support: true,
         custom_branding: true,
       })
@@ -1441,21 +1441,6 @@ describe('PermissionService - Deep Tests', () => {
       expect(result.currentLimit).toBe(7)
       expect(PLAN_PERMISSIONS.free.features.history_access.unit).toBe('days')
     })
-
-    it('should handle collaboration limit in users', () => {
-      const context: PermissionContext = {
-        userId: 'user-123',
-        planTier: 'pro',
-        subscriptionStatus: 'active',
-        isTrialing: false,
-        isCanceled: false,
-      }
-
-      const result = service.checkFeatureAccess(context, 'collaboration', 3)
-
-      expect(result.currentLimit).toBe(5)
-      expect(PLAN_PERMISSIONS.pro.features.collaboration.unit).toBe('users')
-    })
   })
 
   describe('Edge Cases - Trialing Status Edge Cases', () => {
@@ -1493,7 +1478,7 @@ describe('PermissionService - Deep Tests', () => {
 
       const result = await service.checkFeatureAccessForUser(
         'user-123',
-        'sheet_editor',
+        'polyphony',
       )
 
       expect(result.hasAccess).toBe(true)
@@ -1573,7 +1558,7 @@ describe('PermissionService - Deep Tests', () => {
 
       const result = await service.checkFeatureAccessForUser(
         'user-123',
-        'sheet_editor',
+        'polyphony',
       )
 
       expect(result.hasAccess).toBe(true)

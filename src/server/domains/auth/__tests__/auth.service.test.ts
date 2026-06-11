@@ -14,6 +14,7 @@ vi.mock('@/server/shared/utils/password.utils', () => ({
 vi.mock('@/server/lib/email', () => ({
   sendVerificationEmail: vi.fn(),
   sendPasswordResetEmail: vi.fn(),
+  sendWelcomeEmail: vi.fn(),
 }))
 
 import {

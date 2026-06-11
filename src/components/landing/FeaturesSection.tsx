@@ -11,59 +11,14 @@ import {
   Users,
   Zap,
 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-const features = [
-  {
-    icon: Music2,
-    title: 'Automatic Instrument Detection',
-    description:
-      'Upload any audio and our AI identifies every instrument—piano, guitar, drums, bass, vocals, strings, and more.',
-  },
-  {
-    icon: Upload,
-    title: 'Works With Any Audio Source',
-    description:
-      'Paste YouTube links, upload MP3/WAV files, or record live audio directly in the app. No conversion needed.',
-  },
-  {
-    icon: Zap,
-    title: 'Get Results in Seconds',
-    description:
-      'Most songs transcribe in under 60 seconds. No waiting hours for processing.',
-  },
-  {
-    icon: Edit3,
-    title: 'Edit and Customize',
-    description:
-      'Fine-tune generated transcriptions with our built-in notation editor. Adjust notes, rhythms, and dynamics.',
-  },
-  {
-    icon: Download,
-    title: 'Export to Any Format',
-    description:
-      'Download as PDF, MusicXML, MIDI, or Guitar Pro. Compatible with Finale, Sibelius, MuseScore, and more.',
-  },
-  {
-    icon: Play,
-    title: 'Interactive Playback Modes',
-    description:
-      'Standard notation, guitar tabs, or falling-notes visualization for visual learners.',
-  },
-  {
-    icon: Cloud,
-    title: 'Access From Anywhere',
-    description:
-      'All your transcriptions saved in the cloud. Access from desktop, tablet, or mobile.',
-  },
-  {
-    icon: Users,
-    title: 'Share With Your Band',
-    description:
-      'Share transcriptions with bandmates or students. Collaborate on arrangements together.',
-  },
-]
+const icons = [Music2, Upload, Zap, Edit3, Download, Play, Cloud, Users]
 
 export function FeaturesSection() {
+  const t = useTranslations('Features')
+  const items = t.raw('items') as Array<{ title: string; description: string }>
+
   return (
     <section className="py-20 sm:py-32 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -74,17 +29,17 @@ export function FeaturesSection() {
           className="text-center mb-16"
         >
           <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-            Everything You Need to Transform{' '}
-            <span className="text-primary">Audio Into Music</span>
+            {t('title')}{' '}
+            <span className="text-primary">{t('titleHighlight')}</span>
           </h2>
         </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {features.map((feature, index) => {
-            const Icon = feature.icon
+          {items.map((item, index) => {
+            const Icon = icons[index]
             return (
               <motion.div
-                key={feature.title}
+                key={item.title}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -94,9 +49,9 @@ export function FeaturesSection() {
                 <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <Icon className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {feature.description}
+                  {item.description}
                 </p>
               </motion.div>
             )

@@ -2,7 +2,6 @@
 
 import { CheckCircle, Loader2, XCircle } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 
@@ -12,7 +11,6 @@ type State = 'loading' | 'success' | 'error' | 'missing'
 
 export function EmailVerifyView({ token }: { token?: string }) {
   const { update } = useSession()
-  const router = useRouter()
   const [state, setState] = useState<State>(token ? 'loading' : 'missing')
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -26,7 +24,12 @@ export function EmailVerifyView({ token }: { token?: string }) {
       if (response.ok) {
         await update()
         setState('success')
-        setTimeout(() => router.push('/dashboard'), 2000)
+        // Hard navigation: guarantees a fresh server render with the
+        // updated session — router.push/refresh can still serve the
+        // dashboard's cached RSC payload with the stale emailVerified.
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 2000)
       } else {
         setErrorMessage(data.error?.message || 'Vérification échouée')
         setState('error')
@@ -34,7 +37,7 @@ export function EmailVerifyView({ token }: { token?: string }) {
     }
 
     verify()
-  }, [token, update, router])
+  }, [token, update])
 
   if (state === 'missing') {
     return (

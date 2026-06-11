@@ -4,6 +4,7 @@ import { ApiError } from '@/server/shared/utils'
 
 import { UserRepository } from './user.repository'
 import type {
+  ActivationStatus,
   CreateUserDTO,
   UpdateUserDTO,
   UserEntity,
@@ -97,6 +98,34 @@ export class UserService {
     }
 
     return updated
+  }
+
+  async getActivationStatus(userId: string): Promise<ActivationStatus> {
+    const data = await this.repository.findActivationData(userId)
+
+    if (!data) {
+      throw new ApiError(
+        'NOT_FOUND',
+        HTTP_STATUS.NOT_FOUND,
+        `User with id ${userId} not found`,
+      )
+    }
+
+    return {
+      emailVerified: !!data.emailVerified,
+      hasTranscription: data.transcriptionCount > 0,
+      hasSavedPartition: data.partitionCount > 0,
+      triedFallingNotes: !!data.fallingNotesTriedAt,
+      dismissed: !!data.activationChecklistDismissedAt,
+    }
+  }
+
+  async dismissActivationChecklist(userId: string): Promise<void> {
+    await this.repository.dismissActivationChecklist(userId)
+  }
+
+  async markFallingNotesTried(userId: string): Promise<void> {
+    await this.repository.markFallingNotesTried(userId)
   }
 
   async deleteUser(id: string): Promise<void> {

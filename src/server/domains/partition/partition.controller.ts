@@ -105,6 +105,15 @@ export class PartitionController {
     }
   }
 
+  async lastOpened(userId: string) {
+    try {
+      const data = await this.service.getLastOpened(userId)
+      return createSuccessResponse(data)
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
   async checkSimilarTitle(userId: string, request: NextRequest) {
     try {
       const { searchParams } = new URL(request.url)
