@@ -4,12 +4,14 @@ import { Calendar, TrendingUp, Wallet } from 'lucide-react'
 import Link from 'next/link'
 
 import { CreditBalanceCardSkeleton } from '@/components/dashboard/credits/CreditBalanceCardSkeleton'
+import { ExpiringCreditsNotice } from '@/components/dashboard/credits/ExpiringCreditsNotice'
 import { Button } from '@/components/ui/button'
 import { useCredits } from '@/hooks/useCredits'
 import {
   computeUsagePercent,
   formatLocalDate,
   getCreditProgressColor,
+  getExpiringCredits,
   getNextRefillDate,
   secondsToMinutes,
 } from '@/lib/credits'
@@ -36,6 +38,7 @@ export function CreditBalanceCard() {
   )
 
   const nextRefill = getNextRefillDate(credits.lastMonthlyRefill)
+  const expiring = getExpiringCredits(credits)
 
   return (
     <div
@@ -109,6 +112,13 @@ export function CreditBalanceCard() {
             <span>Prochain renouvellement : {formatLocalDate(nextRefill)}</span>
           </div>
         </div>
+      )}
+
+      {expiring && (
+        <ExpiringCreditsNotice
+          minutes={expiring.minutes}
+          daysLeft={expiring.daysLeft}
+        />
       )}
 
       <div className="flex gap-2">

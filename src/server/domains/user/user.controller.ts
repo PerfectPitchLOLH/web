@@ -86,6 +86,44 @@ export class UserController {
     }
   }
 
+  async getActivationStatus(request: NextRequest) {
+    const authResult = await validateApiAuth(request)
+    if (!authResult.ok) return authResult.response
+
+    try {
+      const data = await this.service.getActivationStatus(
+        authResult.session.user.id,
+      )
+      return createSuccessResponse(data)
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
+  async dismissActivationChecklist(request: NextRequest) {
+    const authResult = await validateApiAuth(request)
+    if (!authResult.ok) return authResult.response
+
+    try {
+      await this.service.dismissActivationChecklist(authResult.session.user.id)
+      return createSuccessResponse({ dismissed: true })
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
+  async markFallingNotesTried(request: NextRequest) {
+    const authResult = await validateApiAuth(request)
+    if (!authResult.ok) return authResult.response
+
+    try {
+      await this.service.markFallingNotesTried(authResult.session.user.id)
+      return createSuccessResponse({ marked: true })
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
   async createUser(request: NextRequest) {
     const authResult = await validateApiAuth(request)
     if (!authResult.ok) return authResult.response

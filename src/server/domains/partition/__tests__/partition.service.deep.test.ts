@@ -61,6 +61,8 @@ describe('PartitionService - Deep Tests', () => {
       updateSvg: vi.fn(),
       delete: vi.fn(),
       findByJobIdAndUserId: vi.fn(),
+      touchLastOpened: vi.fn().mockResolvedValue(undefined),
+      findLastOpened: vi.fn(),
     } as any
 
     service = new PartitionService(mockRepo)

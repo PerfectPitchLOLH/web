@@ -136,6 +136,8 @@ export class PartitionService {
       throw new ApiError(ERROR_CODES.PARTITION_NOT_FOUND, HTTP_STATUS.NOT_FOUND)
     }
 
+    this.repository.touchLastOpened(id).catch(() => {})
+
     if (data.svgContent) {
       return data.svgContent
     }
@@ -192,6 +194,10 @@ export class PartitionService {
     if (!deleted) {
       throw new ApiError(ERROR_CODES.PARTITION_NOT_FOUND, HTTP_STATUS.NOT_FOUND)
     }
+  }
+
+  async getLastOpened(userId: string): Promise<PartitionSummary | null> {
+    return this.repository.findLastOpened(userId)
   }
 
   async findSimilarByTitle(

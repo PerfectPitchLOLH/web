@@ -30,6 +30,8 @@ model User {
   notificationPreferences Json?
   onboardingCompleted  Boolean                @default(false)
   termsAcceptedAt      DateTime?
+  activationChecklistDismissedAt DateTime?
+  fallingNotesTriedAt  DateTime?
   accounts             Account[]
   creditTransactions   CreditTransaction[]
   creditPurchases      CreditPurchase[]
@@ -348,6 +350,7 @@ model SavedPartition {
 
   sourceJobId      String?
   durationSeconds  Float?
+  lastOpenedAt     DateTime?
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -357,6 +360,7 @@ model SavedPartition {
   @@index([userId])
   @@index([userId, createdAt])
   @@index([userId, instrument])
+  @@index([userId, lastOpenedAt])
   @@map("saved_partitions")
 }
 

@@ -19,6 +19,7 @@ const SUMMARY_SELECT = {
   notes: true,
   sourceJobId: true,
   durationSeconds: true,
+  lastOpenedAt: true,
   createdAt: true,
   updatedAt: true,
 } as const
@@ -139,6 +140,24 @@ export class PartitionRepository {
       where: { sourceJobId: jobId, userId },
     })
     return count > 0
+  }
+
+  async touchLastOpened(id: string): Promise<void> {
+    await db.savedPartition.update({
+      where: { id },
+      data: { lastOpenedAt: new Date() },
+    })
+  }
+
+  async findLastOpened(userId: string): Promise<PartitionSummary | null> {
+    return db.savedPartition.findFirst({
+      where: { userId },
+      select: SUMMARY_SELECT,
+      orderBy: [
+        { lastOpenedAt: { sort: 'desc', nulls: 'last' } },
+        { createdAt: 'desc' },
+      ],
+    }) as unknown as PartitionSummary | null
   }
 
   async findSimilarByTitle(

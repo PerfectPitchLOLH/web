@@ -29,6 +29,33 @@ export function getNextRefillDate(
   return next
 }
 
+const EXPIRY_WARNING_DAYS = 7
+const EXPIRY_MIN_MINUTES = 10
+
+export function getExpiringCredits(credits: {
+  monthlyCredits: number
+  usedThisMonth: number
+  lastMonthlyRefill: string | null
+}): { minutes: number; daysLeft: number } | null {
+  const nextRefill = getNextRefillDate(credits.lastMonthlyRefill)
+  if (!nextRefill) return null
+
+  const msLeft = nextRefill.getTime() - Date.now()
+  if (msLeft <= 0) return null
+
+  const daysLeft = Math.ceil(msLeft / (24 * 60 * 60 * 1000))
+  if (daysLeft > EXPIRY_WARNING_DAYS) return null
+
+  const remainingMonthlySeconds = Math.max(
+    0,
+    credits.monthlyCredits - credits.usedThisMonth,
+  )
+  const minutes = secondsToMinutes(remainingMonthlySeconds)
+  if (minutes < EXPIRY_MIN_MINUTES) return null
+
+  return { minutes, daysLeft }
+}
+
 export function formatLocalDate(date: Date | string | null): string {
   if (!date) return 'Non défini'
   return new Date(date).toLocaleDateString('fr-FR', {

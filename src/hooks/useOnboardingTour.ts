@@ -36,6 +36,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     title: 'Suivez vos minutes de transcription',
     description:
       'Ce module affiche vos crédits restants et la date de leur prochain renouvellement.',
+    href: '/dashboard',
     side: 'bottom',
   },
   {
@@ -60,6 +61,10 @@ function measure(target: string): TargetRect | null {
   if (!element) return null
 
   const rect = element.getBoundingClientRect()
+  // Hidden elements (collapsed sidebar on mobile) report a 0×0 rect —
+  // spotlighting them would highlight the viewport corner
+  if (rect.width === 0 || rect.height === 0) return null
+
   return {
     top: rect.top,
     left: rect.left,
@@ -100,11 +105,15 @@ export function useOnboardingTour(active: boolean) {
     }
 
     update()
+    // The target may mount only after the step's router.push resolves —
+    // poll until the page settles
+    const interval = setInterval(update, 400)
     window.addEventListener('resize', update)
     window.addEventListener('scroll', update, true)
 
     return () => {
       cancelAnimationFrame(frame)
+      clearInterval(interval)
       window.removeEventListener('resize', update)
       window.removeEventListener('scroll', update, true)
     }

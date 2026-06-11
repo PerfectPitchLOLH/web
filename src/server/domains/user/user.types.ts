@@ -24,6 +24,8 @@ export type CreateUserDTO = Omit<
   | 'language'
   | 'notificationPreferences'
   | 'onboardingCompleted'
+  | 'activationChecklistDismissedAt'
+  | 'fallingNotesTriedAt'
 > & {
   password?: string | null
   emailVerified?: Date | null
@@ -46,4 +48,12 @@ export type UpdateUserDTO = Omit<
 export type UserListFilters = {
   role?: UserRole
   search?: string
+}
+
+export type ActivationStatus = {
+  emailVerified: boolean
+  hasTranscription: boolean
+  hasSavedPartition: boolean
+  triedFallingNotes: boolean
+  dismissed: boolean
 }

@@ -87,7 +87,7 @@ export function OnboardingTour({ active }: OnboardingTourProps) {
         aria-modal="true"
         aria-label={step.title}
         className={cn(
-          'absolute w-80 rounded-lg border bg-popover p-4 text-popover-foreground shadow-lg transition-all duration-300',
+          'absolute w-[min(20rem,calc(100vw-2rem))] rounded-lg border bg-popover p-4 text-popover-foreground shadow-lg transition-all duration-300',
           !cardPosition && 'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
         )}
         style={cardPosition ?? undefined}
