@@ -18,6 +18,12 @@ vi.mock('@/server/lib/database', () => ({
 
 import { db } from '@/server/lib/database'
 
+const PUBLIC_USER_OMIT = {
+  password: true,
+  twoFactorSecret: true,
+  twoFactorBackupCodes: true,
+}
+
 describe('UserRepository', () => {
   let repository: UserRepository
 
@@ -49,6 +55,7 @@ describe('UserRepository', () => {
 
       expect(result).toEqual(mockUsers)
       expect(db.user.findMany).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: {},
         skip: 0,
         take: 10,
@@ -72,6 +79,7 @@ describe('UserRepository', () => {
 
       expect(result).toEqual(mockAdmins)
       expect(db.user.findMany).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: { role: 'admin' },
         skip: 0,
         take: 10,
@@ -95,6 +103,7 @@ describe('UserRepository', () => {
 
       expect(result).toEqual(mockUsers)
       expect(db.user.findMany).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: {
           OR: [
             { email: { contains: 'john', mode: 'insensitive' } },
@@ -123,6 +132,7 @@ describe('UserRepository', () => {
 
       expect(result).toEqual(mockUsers)
       expect(db.user.findMany).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: {},
         skip: 5,
         take: 5,
@@ -149,6 +159,7 @@ describe('UserRepository', () => {
 
       expect(result).toEqual(mockUsers)
       expect(db.user.findMany).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: {
           role: 'admin',
           OR: [
@@ -178,6 +189,7 @@ describe('UserRepository', () => {
 
       expect(result).toEqual(mockUser)
       expect(db.user.findUnique).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: { id: 'user123' },
       })
     })
@@ -189,6 +201,7 @@ describe('UserRepository', () => {
 
       expect(result).toBeNull()
       expect(db.user.findUnique).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: { id: 'nonexistent' },
       })
     })
@@ -209,6 +222,7 @@ describe('UserRepository', () => {
 
       expect(result).toEqual(mockUser)
       expect(db.user.findUnique).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: { email: 'test@test.com' },
       })
     })
@@ -220,6 +234,7 @@ describe('UserRepository', () => {
 
       expect(result).toBeNull()
       expect(db.user.findUnique).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: { email: 'nonexistent@test.com' },
       })
     })
@@ -246,6 +261,7 @@ describe('UserRepository', () => {
       expect(result).toEqual(mockCreated)
       expect(db.user.create).toHaveBeenCalledWith({
         data: createData,
+        omit: PUBLIC_USER_OMIT,
       })
     })
 
@@ -272,6 +288,7 @@ describe('UserRepository', () => {
       expect(result).toEqual(mockCreated)
       expect(db.user.create).toHaveBeenCalledWith({
         data: createData,
+        omit: PUBLIC_USER_OMIT,
       })
     })
   })
@@ -292,6 +309,7 @@ describe('UserRepository', () => {
 
       expect(result).toEqual(mockUpdated)
       expect(db.user.update).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: { id: 'user123' },
         data: updateData,
       })
@@ -315,6 +333,7 @@ describe('UserRepository', () => {
 
       expect(result).toEqual(mockUpdated)
       expect(db.user.update).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: { id: 'user123' },
         data: updateData,
       })

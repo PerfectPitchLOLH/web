@@ -1051,11 +1051,13 @@ describe('SubscriptionService - Deep Tests', () => {
           id: 'plan_basic',
           stripePriceId: 'price_basic_monthly',
           transcriptionMinutes: 20,
+          monthlyPrice: 14.99,
         } as any)
         .mockResolvedValueOnce({
           id: 'plan_pro',
           stripePriceId: 'price_pro_monthly',
           transcriptionMinutes: 50,
+          monthlyPrice: 29.99,
         } as any)
 
       vi.mocked(mockCreditService.handlePlanChange).mockResolvedValue()
@@ -1070,6 +1072,7 @@ describe('SubscriptionService - Deep Tests', () => {
         'user_123',
         20,
         50,
+        14.99,
         'cus_stripe_123',
       )
       expect(mockRepository.updateSubscription).toHaveBeenCalledWith(
@@ -1612,7 +1615,7 @@ describe('SubscriptionService - Deep Tests', () => {
   })
 
   describe('upgradeSubscription', () => {
-    it('should upgrade subscription to new plan', async () => {
+    it('should upgrade the existing subscription in place with proration', async () => {
       vi.mocked(mockRepository.findSubscriptionByUserId).mockResolvedValue({
         id: 'sub_123',
         stripeSubscriptionId: 'sub_stripe_123',
@@ -1625,14 +1628,15 @@ describe('SubscriptionService - Deep Tests', () => {
         name: 'Pro',
       } as any)
 
-      vi.mocked(mockRepository.findCustomerByUserId).mockResolvedValue({
-        userId: 'user_123',
-        stripeCustomerId: 'cus_123',
+      vi.mocked(stripe.subscriptions.retrieve).mockResolvedValue({
+        id: 'sub_stripe_123',
+        items: { data: [{ id: 'si_123' }] },
       } as any)
 
-      vi.mocked(stripe.checkout.sessions.create).mockResolvedValue({
-        id: 'cs_test',
-        url: 'https://checkout.stripe.com/cs_test',
+      vi.mocked(stripe.subscriptions.update).mockResolvedValue({
+        id: 'sub_stripe_123',
+        status: 'active',
+        items: { data: [{ id: 'si_123', price: { id: 'price_pro_monthly' } }] },
       } as any)
 
       const result = await service.upgradeSubscription(
@@ -1640,16 +1644,15 @@ describe('SubscriptionService - Deep Tests', () => {
         'price_pro_monthly',
       )
 
-      expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
+      expect(stripe.checkout.sessions.create).not.toHaveBeenCalled()
+      expect(stripe.subscriptions.update).toHaveBeenCalledWith(
+        'sub_stripe_123',
         expect.objectContaining({
-          customer: 'cus_123',
-          mode: 'subscription',
+          items: [{ id: 'si_123', price: 'price_pro_monthly' }],
+          proration_behavior: 'create_prorations',
         }),
       )
-      expect(result).toEqual({
-        sessionId: 'cs_test',
-        url: 'https://checkout.stripe.com/cs_test',
-      })
+      expect(result).toBeUndefined()
     })
 
     it('should throw error if no active subscription', async () => {
@@ -1673,7 +1676,7 @@ describe('SubscriptionService - Deep Tests', () => {
       ).rejects.toThrow('Plan invalide')
     })
 
-    it('should throw CUSTOMER_NOT_FOUND if customer does not exist', async () => {
+    it('should throw if the Stripe subscription has no item to update', async () => {
       vi.mocked(mockRepository.findSubscriptionByUserId).mockResolvedValue({
         id: 'sub_123',
         stripeSubscriptionId: 'sub_stripe_123',
@@ -1682,14 +1685,18 @@ describe('SubscriptionService - Deep Tests', () => {
 
       vi.mocked(mockRepository.findPlanByStripePriceId).mockResolvedValue({
         id: 'plan_pro',
+        stripePriceId: 'price_pro_monthly',
         name: 'Pro',
       } as any)
 
-      vi.mocked(mockRepository.findCustomerByUserId).mockResolvedValue(null)
+      vi.mocked(stripe.subscriptions.retrieve).mockResolvedValue({
+        id: 'sub_stripe_123',
+        items: { data: [] },
+      } as any)
 
       await expect(
         service.upgradeSubscription('user_123', 'price_pro_monthly'),
-      ).rejects.toThrow('Client introuvable')
+      ).rejects.toThrow("Item d'abonnement introuvable")
     })
   })
 

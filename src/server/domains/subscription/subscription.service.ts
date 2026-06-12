@@ -175,98 +175,6 @@ export class SubscriptionService {
     }
   }
 
-  async createUpgradeCheckoutSession(
-    userId: string,
-    newPriceId: string,
-  ): Promise<CreateCheckoutSessionResponse> {
-    console.log('[UPGRADE_CHECKOUT] Création session Checkout pour upgrade:', {
-      userId,
-      newPriceId,
-    })
-
-    const subscription = await this.repository.findSubscriptionByUserId(userId)
-
-    if (!subscription || subscription.status !== 'active') {
-      throw new ApiError(
-        'SUBSCRIPTION_NOT_FOUND',
-        HTTP_STATUS.NOT_FOUND,
-        'Aucun abonnement actif',
-      )
-    }
-
-    const newPlan = await this.repository.findPlanByStripePriceId(newPriceId)
-
-    if (!newPlan) {
-      throw new ApiError(
-        'INVALID_PLAN',
-        HTTP_STATUS.BAD_REQUEST,
-        'Plan invalide',
-      )
-    }
-
-    const customer = await this.repository.findCustomerByUserId(userId)
-
-    if (!customer) {
-      throw new ApiError(
-        'CUSTOMER_NOT_FOUND',
-        HTTP_STATUS.NOT_FOUND,
-        'Client introuvable',
-      )
-    }
-
-    console.log('[UPGRADE_CHECKOUT] Création session avec:', {
-      customerId: customer.stripeCustomerId,
-      currentSubscriptionId: subscription.stripeSubscriptionId,
-      newPriceId,
-      newPlanName: newPlan.name,
-    })
-
-    const session = await stripe.checkout.sessions.create({
-      customer: customer.stripeCustomerId,
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: newPriceId,
-          quantity: 1,
-        },
-      ],
-      subscription_data: {
-        metadata: {
-          userId,
-          planId: newPlan.id,
-          upgradeFrom: subscription.stripeSubscriptionId,
-        },
-      },
-      success_url: `${process.env.API_URL}/dashboard/subscription?upgrade=success`,
-      cancel_url: `${process.env.API_URL}/dashboard/subscription?upgrade=cancelled`,
-      metadata: {
-        userId,
-        planId: newPlan.id,
-        isUpgrade: 'true',
-        oldSubscriptionId: subscription.stripeSubscriptionId,
-      },
-    })
-
-    if (!session.url) {
-      throw new ApiError(
-        'CHECKOUT_SESSION_FAILED',
-        HTTP_STATUS.INTERNAL_SERVER_ERROR,
-        'Impossible de créer la session de paiement',
-      )
-    }
-
-    console.log('[UPGRADE_CHECKOUT] Session créée avec succès:', {
-      sessionId: session.id,
-      url: session.url,
-    })
-
-    return {
-      sessionId: session.id,
-      url: session.url,
-    }
-  }
-
   async createPortalSession(
     userId: string,
     returnUrl?: string,
@@ -400,6 +308,7 @@ export class SubscriptionService {
           existingSubscription.userId,
           oldPlan.transcriptionMinutes,
           newPlan.transcriptionMinutes,
+          oldPlan.monthlyPrice,
           stripeSubscription.customer as string,
         )
       }
@@ -725,12 +634,8 @@ export class SubscriptionService {
     )
   }
 
-  async upgradeSubscription(
-    userId: string,
-    newPriceId: string,
-  ): Promise<CreateCheckoutSessionResponse> {
-    console.log('[UPGRADE] Redirection vers Stripe Checkout pour upgrade')
-    return this.createUpgradeCheckoutSession(userId, newPriceId)
+  async upgradeSubscription(userId: string, newPriceId: string): Promise<void> {
+    return this.upgradeSubscriptionDirect(userId, newPriceId)
   }
 
   async upgradeSubscriptionDirect(

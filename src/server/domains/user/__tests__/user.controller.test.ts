@@ -15,6 +15,9 @@ vi.mock('@/server/shared/middleware', () => ({
     },
     response: null,
   }),
+  requireAdminAuth: vi.fn().mockResolvedValue({
+    user: { id: 'admin-user-id', email: 'admin@test.com', role: 'admin' },
+  }),
 }))
 
 const createMockUser = (overrides: any = {}) => ({

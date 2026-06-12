@@ -628,22 +628,26 @@ describe('Subscription Domain - Security Tests', () => {
         transcriptionMinutes: 10,
       } as any)
 
-      vi.mocked(mockRepository.findCustomerByUserId).mockResolvedValue({
-        userId: 'user_123',
-        stripeCustomerId: 'cus_123',
+      vi.mocked(stripe.subscriptions.retrieve).mockResolvedValue({
+        id: 'sub_stripe_123',
+        items: { data: [{ id: 'si_123' }] },
       } as any)
 
-      vi.mocked(stripe.checkout.sessions.create).mockResolvedValue({
-        id: 'cs_downgrade',
-        url: 'https://checkout.stripe.com/cs_downgrade',
+      vi.mocked(stripe.subscriptions.update).mockResolvedValue({
+        id: 'sub_stripe_123',
+        status: 'active',
+        items: {
+          data: [{ id: 'si_123', price: { id: 'price_junior_monthly' } }],
+        },
       } as any)
 
       await service.upgradeSubscription('user_123', 'price_junior_monthly')
 
-      expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
+      expect(stripe.checkout.sessions.create).not.toHaveBeenCalled()
+      expect(stripe.subscriptions.update).toHaveBeenCalledWith(
+        'sub_stripe_123',
         expect.objectContaining({
-          customer: 'cus_123',
-          mode: 'subscription',
+          proration_behavior: 'create_prorations',
         }),
       )
     })
@@ -1078,15 +1082,18 @@ describe('Subscription Domain - Security Tests', () => {
         name: 'Pro',
       } as any)
 
-      vi.mocked(mockRepository.findCustomerByUserId).mockResolvedValue({
-        userId: 'user_race',
-        stripeCustomerId: 'cus_race',
+      vi.mocked(stripe.subscriptions.retrieve).mockResolvedValue({
+        id: 'sub_stripe_race',
+        items: { data: [{ id: 'si_race' }] },
       } as any)
 
-      vi.mocked(stripe.checkout.sessions.create)
+      vi.mocked(stripe.subscriptions.update)
         .mockResolvedValueOnce({
-          id: 'cs_race_1',
-          url: 'https://checkout.stripe.com/cs_race_1',
+          id: 'sub_stripe_race',
+          status: 'active',
+          items: {
+            data: [{ id: 'si_race', price: { id: 'price_pro_monthly' } }],
+          },
         } as any)
         .mockRejectedValueOnce(new Error('Concurrent modification detected'))
 

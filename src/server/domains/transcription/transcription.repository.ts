@@ -11,6 +11,12 @@ import type {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 
+const BACKEND_API_KEY = process.env.BACKEND_API_KEY ?? ''
+
+function backendAuthHeaders(): Record<string, string> {
+  return BACKEND_API_KEY ? { 'X-API-Key': BACKEND_API_KEY } : {}
+}
+
 export class TranscriptionRepository {
   private async callBackendAPI<T>(
     endpoint: string,
@@ -27,6 +33,7 @@ export class TranscriptionRepository {
         signal: options?.signal ?? controller.signal,
         headers: {
           'Content-Type': 'application/json',
+          ...backendAuthHeaders(),
           ...options?.headers,
         },
       })
@@ -63,6 +70,7 @@ export class TranscriptionRepository {
     try {
       const response = await fetch(url, {
         method: 'POST',
+        headers: backendAuthHeaders(),
         body: formData,
       })
 
@@ -91,7 +99,10 @@ export class TranscriptionRepository {
     try {
       const response = await fetch(backendUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...backendAuthHeaders(),
+        },
         body: JSON.stringify({ url, config }),
       })
 
@@ -120,7 +131,10 @@ export class TranscriptionRepository {
     try {
       const response = await fetch(backendUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...backendAuthHeaders(),
+        },
         body: JSON.stringify({ url, config }),
       })
 
@@ -258,7 +272,7 @@ export class TranscriptionRepository {
     url: string,
   ): Promise<{ duration_seconds: number; title: string }> {
     const backendUrl = `${API_BASE_URL}/transcribe/youtube/info?url=${encodeURIComponent(url)}`
-    const response = await fetch(backendUrl)
+    const response = await fetch(backendUrl, { headers: backendAuthHeaders() })
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
       throw new Error(errorData.detail || 'Could not fetch YouTube info')

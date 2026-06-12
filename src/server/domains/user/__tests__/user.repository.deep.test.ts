@@ -17,6 +17,12 @@ vi.mock('@/server/lib/database', () => ({
   },
 }))
 
+const PUBLIC_USER_OMIT = {
+  password: true,
+  twoFactorSecret: true,
+  twoFactorBackupCodes: true,
+}
+
 describe('UserRepository - Deep Tests', () => {
   let repository: UserRepository
 
@@ -35,6 +41,7 @@ describe('UserRepository - Deep Tests', () => {
         expect(result).toBeDefined()
         expect(result).toEqual([])
         expect(db.user.findMany).toHaveBeenCalledWith({
+          omit: PUBLIC_USER_OMIT,
           where: {},
           skip: 0,
           take: 10,
@@ -233,6 +240,7 @@ describe('UserRepository - Deep Tests', () => {
       const result = await repository.findByEmail('TEST@TEST.COM')
 
       expect(db.user.findUnique).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: { email: 'TEST@TEST.COM' },
       })
     })
@@ -348,6 +356,7 @@ describe('UserRepository - Deep Tests', () => {
       })
 
       expect(db.user.update).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: { id: '1' },
         data: expect.objectContaining({
           twoFactorBackupCodes: expect.anything(),
@@ -367,6 +376,7 @@ describe('UserRepository - Deep Tests', () => {
       })
 
       expect(db.user.update).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: { id: '1' },
         data: expect.objectContaining({
           twoFactorBackupCodes: backupCodes,
@@ -385,6 +395,7 @@ describe('UserRepository - Deep Tests', () => {
       })
 
       expect(db.user.update).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: { id: '1' },
         data: expect.objectContaining({
           notificationPreferences: expect.anything(),
@@ -414,6 +425,7 @@ describe('UserRepository - Deep Tests', () => {
       const result = await repository.update('1', {})
 
       expect(db.user.update).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: { id: '1' },
         data: {
           twoFactorBackupCodes: undefined,
@@ -521,7 +533,6 @@ describe('UserRepository - Deep Tests', () => {
         id: '1',
         email: 'test@test.com',
         name: 'Test',
-        password: null,
         emailVerified: null,
       } as any)
 
@@ -534,7 +545,7 @@ describe('UserRepository - Deep Tests', () => {
         termsAcceptedAt: null,
       })
 
-      expect(result.password).toBeNull()
+      expect('password' in result).toBe(false)
       expect(result.emailVerified).toBeNull()
     })
   })
@@ -598,6 +609,7 @@ describe('UserRepository - Deep Tests', () => {
       const result = await repository.findById('invalid-id-format')
 
       expect(db.user.findUnique).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: { id: 'invalid-id-format' },
       })
     })
@@ -630,6 +642,7 @@ describe('UserRepository - Deep Tests', () => {
       const result = await repository.findByEmail('not-an-email')
 
       expect(db.user.findUnique).toHaveBeenCalledWith({
+        omit: PUBLIC_USER_OMIT,
         where: { email: 'not-an-email' },
       })
     })

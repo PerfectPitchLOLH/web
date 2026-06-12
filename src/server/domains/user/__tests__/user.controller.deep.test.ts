@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
-import { validateApiAuth } from '@/server/shared/middleware'
+import { requireAdminAuth, validateApiAuth } from '@/server/shared/middleware'
 import { ApiError } from '@/server/shared/utils'
 
 import { UserController } from '../user.controller'
@@ -11,6 +11,7 @@ import { UserService } from '../user.service'
 
 vi.mock('@/server/shared/middleware', () => ({
   validateApiAuth: vi.fn(),
+  requireAdminAuth: vi.fn(),
 }))
 
 describe('UserController - Deep Tests', () => {
@@ -36,16 +37,17 @@ describe('UserController - Deep Tests', () => {
       },
       response: null,
     } as any)
+
+    vi.mocked(requireAdminAuth).mockResolvedValue({
+      user: { id: 'admin-1', email: 'admin@test.com', role: 'admin' },
+    } as any)
   })
 
   describe('Authentication & Authorization', () => {
     it('should reject request without authentication', async () => {
-      vi.mocked(validateApiAuth).mockResolvedValue({
-        session: null,
-        response: new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: HTTP_STATUS.UNAUTHORIZED,
-        }),
-      } as any)
+      vi.mocked(requireAdminAuth).mockRejectedValue(
+        new ApiError('UNAUTHORIZED', HTTP_STATUS.UNAUTHORIZED),
+      )
 
       const request = new NextRequest('http://localhost/api/users')
       const response = await controller.getUsers(request)
@@ -53,21 +55,18 @@ describe('UserController - Deep Tests', () => {
       expect(response.status).toBe(HTTP_STATUS.UNAUTHORIZED)
     })
 
-    it('should reject request with invalid token', async () => {
-      vi.mocked(validateApiAuth).mockResolvedValue({
-        session: null,
-        response: new Response(JSON.stringify({ error: 'Invalid token' }), {
-          status: HTTP_STATUS.UNAUTHORIZED,
-        }),
-      } as any)
+    it('should reject non-admin users', async () => {
+      vi.mocked(requireAdminAuth).mockRejectedValue(
+        new ApiError('FORBIDDEN', HTTP_STATUS.FORBIDDEN),
+      )
 
       const request = new NextRequest('http://localhost/api/users', {
-        headers: { Authorization: 'Bearer invalid.token' },
+        headers: { Authorization: 'Bearer valid.user.token' },
       })
 
       const response = await controller.getUsers(request)
 
-      expect(response.status).toBe(HTTP_STATUS.UNAUTHORIZED)
+      expect(response.status).toBe(HTTP_STATUS.FORBIDDEN)
     })
 
     it('should accept valid authentication', async () => {
@@ -80,7 +79,7 @@ describe('UserController - Deep Tests', () => {
       const response = await controller.getUsers(request)
 
       expect(response.status).toBe(HTTP_STATUS.OK)
-      expect(validateApiAuth).toHaveBeenCalledWith(request)
+      expect(requireAdminAuth).toHaveBeenCalled()
     })
   })
 

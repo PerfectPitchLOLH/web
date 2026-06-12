@@ -4,7 +4,12 @@ import type { CreateDTO, UpdateDTO } from '@/server/shared/types'
 
 export type UserRole = 'admin' | 'user'
 
-export type UserEntity = PrismaUser
+export type PublicUser = Omit<
+  PrismaUser,
+  'password' | 'twoFactorSecret' | 'twoFactorBackupCodes'
+>
+
+export type UserEntity = PublicUser
 
 export type CreateUserDTO = Omit<
   CreateDTO<PrismaUser>,

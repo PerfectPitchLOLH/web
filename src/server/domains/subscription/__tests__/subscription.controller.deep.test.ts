@@ -774,10 +774,7 @@ describe('SubscriptionController - Deep Tests', () => {
         }),
       })
 
-      vi.mocked(mockService.upgradeSubscription).mockResolvedValue({
-        sessionId: 'test_session',
-        url: 'http://test.com',
-      })
+      vi.mocked(mockService.upgradeSubscription).mockResolvedValue(undefined)
       vi.mocked(createSuccessResponse).mockReturnValue({
         status: HTTP_STATUS.OK,
       } as any)
@@ -789,8 +786,7 @@ describe('SubscriptionController - Deep Tests', () => {
         'price_pro_monthly',
       )
       expect(createSuccessResponse).toHaveBeenCalledWith({
-        checkoutUrl: 'http://test.com',
-        sessionId: 'test_session',
+        success: true,
       })
     })
 
@@ -800,10 +796,7 @@ describe('SubscriptionController - Deep Tests', () => {
         body: JSON.stringify({}),
       })
 
-      vi.mocked(mockService.upgradeSubscription).mockResolvedValue({
-        sessionId: 'test_session',
-        url: 'http://test.com',
-      })
+      vi.mocked(mockService.upgradeSubscription).mockResolvedValue(undefined)
       vi.mocked(createSuccessResponse).mockReturnValue({
         status: HTTP_STATUS.OK,
       } as any)
@@ -856,10 +849,7 @@ describe('SubscriptionController - Deep Tests', () => {
         }),
       })
 
-      vi.mocked(mockService.upgradeSubscription).mockResolvedValue({
-        sessionId: 'test_session',
-        url: 'http://test.com',
-      })
+      vi.mocked(mockService.upgradeSubscription).mockResolvedValue(undefined)
       vi.mocked(createSuccessResponse).mockReturnValue({
         status: HTTP_STATUS.OK,
       } as any)
@@ -878,10 +868,7 @@ describe('SubscriptionController - Deep Tests', () => {
         body: JSON.stringify({ priceId: null }),
       })
 
-      vi.mocked(mockService.upgradeSubscription).mockResolvedValue({
-        sessionId: 'test_session',
-        url: 'http://test.com',
-      })
+      vi.mocked(mockService.upgradeSubscription).mockResolvedValue(undefined)
       vi.mocked(createSuccessResponse).mockReturnValue({
         status: HTTP_STATUS.OK,
       } as any)
@@ -898,10 +885,7 @@ describe('SubscriptionController - Deep Tests', () => {
         body: JSON.stringify({ priceId: longPriceId }),
       })
 
-      vi.mocked(mockService.upgradeSubscription).mockResolvedValue({
-        sessionId: 'test_session',
-        url: 'http://test.com',
-      })
+      vi.mocked(mockService.upgradeSubscription).mockResolvedValue(undefined)
       vi.mocked(createSuccessResponse).mockReturnValue({
         status: HTTP_STATUS.OK,
       } as any)
@@ -1021,10 +1005,7 @@ describe('SubscriptionController - Deep Tests', () => {
       })
 
       vi.mocked(mockService.upgradeSubscription)
-        .mockResolvedValueOnce({
-          sessionId: 'test_session',
-          url: 'http://test.com',
-        })
+        .mockResolvedValueOnce(undefined)
         .mockRejectedValueOnce(new Error('Concurrent modification'))
 
       vi.mocked(createSuccessResponse).mockReturnValue({

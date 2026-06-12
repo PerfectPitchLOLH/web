@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
 
     return createSuccessResponse({ received: true })
   } catch (error) {
-    await subscriptionRepository.markWebhookEventProcessed(
+    await subscriptionRepository.markWebhookEventFailed(
       event.id,
       error instanceof Error ? error.message : 'Unknown error',
     )
