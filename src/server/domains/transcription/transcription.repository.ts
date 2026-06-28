@@ -202,7 +202,7 @@ export class TranscriptionRepository {
 
     for (const url of svgUrls) {
       try {
-        const res = await fetch(url)
+        const res = await fetch(url, { headers: backendAuthHeaders() })
         if (res.ok) {
           svgContent = await res.text()
           break
@@ -222,7 +222,7 @@ export class TranscriptionRepository {
     const url = `${API_BASE_URL}/jobs/${jobId}/download/partition`
 
     try {
-      const response = await fetch(url)
+      const response = await fetch(url, { headers: backendAuthHeaders() })
 
       if (!response.ok) {
         throw new Error(`Download failed: ${response.statusText}`)
@@ -249,7 +249,10 @@ export class TranscriptionRepository {
   async cancelJob(jobId: string): Promise<void> {
     const url = `${API_BASE_URL}/jobs/${jobId}`
     try {
-      const response = await fetch(url, { method: 'DELETE' })
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: backendAuthHeaders(),
+      })
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         throw new Error(

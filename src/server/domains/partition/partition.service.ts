@@ -17,6 +17,12 @@ import type {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 
+const BACKEND_API_KEY = process.env.BACKEND_API_KEY ?? ''
+
+function backendAuthHeaders(): Record<string, string> {
+  return BACKEND_API_KEY ? { 'X-API-Key': BACKEND_API_KEY } : {}
+}
+
 export class PartitionService {
   constructor(private repository: PartitionRepository) {}
 
@@ -49,7 +55,9 @@ export class PartitionService {
       )
     }
 
-    const jobRes = await fetch(`${API_BASE_URL}/jobs/${input.jobId}`)
+    const jobRes = await fetch(`${API_BASE_URL}/jobs/${input.jobId}`, {
+      headers: backendAuthHeaders(),
+    })
     if (!jobRes.ok) {
       throw new ApiError(
         ERROR_CODES.NOT_FOUND,
@@ -74,6 +82,7 @@ export class PartitionService {
       try {
         const svgRes = await fetch(
           `${API_BASE_URL}/jobs/${input.jobId}/download/partition`,
+          { headers: backendAuthHeaders() },
         )
         if (svgRes.ok) svgContent = await svgRes.text()
       } catch {}

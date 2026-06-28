@@ -1,9 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { ZodError } from 'zod'
 
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
-import { validateApiAuth } from '@/server/shared/middleware/auth.middleware'
-import { auditLogger } from '@/server/shared/utils'
+import { requireAdminAuth } from '@/server/shared/middleware/auth.middleware'
 import {
   createErrorResponse,
   createSuccessResponse,
@@ -22,30 +21,9 @@ import type { AdminService } from './admin.service'
 export class AdminController {
   constructor(private service: AdminService) {}
 
-  async getDashboardStats(request: NextRequest) {
-    const authResult = await validateApiAuth(request)
-    if (!authResult.ok) return authResult.response
-
-    const { session } = authResult
-
-    if (session.user.role !== 'admin') {
-      const ip = getClientIP(request)
-      auditLogger.logUnauthorizedAdminAccess(
-        session.user.id,
-        session.user.name || session.user.email,
-        request.nextUrl.pathname,
-        ip,
-      )
-
-      return createErrorResponse(
-        'FORBIDDEN',
-        'Admin access required',
-        undefined,
-        HTTP_STATUS.FORBIDDEN,
-      )
-    }
-
+  async getDashboardStats(_request: NextRequest) {
     try {
+      await requireAdminAuth()
       const stats = await this.service.getDashboardStats()
       return createSuccessResponse(stats)
     } catch (error) {
@@ -54,77 +32,29 @@ export class AdminController {
   }
 
   async getUsers(request: NextRequest) {
-    const authResult = await validateApiAuth(request)
-    if (!authResult.ok) return authResult.response
-
-    const { session } = authResult
-
-    if (session.user.role !== 'admin') {
-      const ip = getClientIP(request)
-      auditLogger.logUnauthorizedAdminAccess(
-        session.user.id,
-        session.user.name || session.user.email,
-        request.nextUrl.pathname,
-        ip,
-      )
-
-      return createErrorResponse(
-        'FORBIDDEN',
-        'Admin access required',
-        undefined,
-        HTTP_STATUS.FORBIDDEN,
-      )
-    }
-
     try {
-      const { searchParams } = request.nextUrl
+      await requireAdminAuth()
 
-      const rawFilters = {
+      const { searchParams } = request.nextUrl
+      const filters = userManagementFiltersSchema.parse({
         role: searchParams.get('role'),
         search: searchParams.get('search'),
         emailVerified: searchParams.get('emailVerified'),
         page: searchParams.get('page') || '1',
         limit: searchParams.get('limit') || '10',
-      }
-
-      console.log('[Admin Controller] Raw filters:', rawFilters)
-
-      const filters = userManagementFiltersSchema.parse(rawFilters)
-
-      console.log('[Admin Controller] Parsed filters:', filters)
+      })
 
       const result = await this.service.getUsers(filters)
       return createSuccessResponse(result)
     } catch (error) {
-      console.error('[Admin Controller] Error:', error)
       return handleApiError(error)
     }
   }
 
   async updateUserRole(request: NextRequest) {
-    const authResult = await validateApiAuth(request)
-    if (!authResult.ok) return authResult.response
-
-    const { session } = authResult
-
-    if (session.user.role !== 'admin') {
-      const ip = getClientIP(request)
-      auditLogger.logUnauthorizedAdminAccess(
-        session.user.id,
-        session.user.name || session.user.email,
-        request.nextUrl.pathname,
-        ip,
-      )
-
-      return createErrorResponse(
-        'FORBIDDEN',
-        'Admin access required',
-        undefined,
-        HTTP_STATUS.FORBIDDEN,
-      )
-    }
-
     try {
+      const session = await requireAdminAuth()
+
       const body = await request.json()
       const data = updateUserRoleSchema.parse(body)
 
@@ -165,32 +95,9 @@ export class AdminController {
   }
 
   async suspendUser(request: NextRequest) {
-    const authResult = await validateApiAuth(request)
-    if (!authResult.ok) return authResult.response
-
-    const { session } = authResult
-
-    if (session.user.role !== 'admin') {
-      const ip = getClientIP(request)
-      auditLogger.logUnauthorizedAdminAccess(
-        session.user.id,
-        session.user.name || session.user.email,
-        request.nextUrl.pathname,
-        ip,
-      )
-
-      return NextResponse.json(
-        createErrorResponse(
-          'FORBIDDEN',
-          'Admin access required',
-          undefined,
-          HTTP_STATUS.FORBIDDEN,
-        ),
-        { status: HTTP_STATUS.FORBIDDEN },
-      )
-    }
-
     try {
+      const session = await requireAdminAuth()
+
       const body = await request.json()
       const data = suspendUserSchema.parse(body)
 
@@ -231,32 +138,9 @@ export class AdminController {
   }
 
   async deleteUser(request: NextRequest) {
-    const authResult = await validateApiAuth(request)
-    if (!authResult.ok) return authResult.response
-
-    const { session } = authResult
-
-    if (session.user.role !== 'admin') {
-      const ip = getClientIP(request)
-      auditLogger.logUnauthorizedAdminAccess(
-        session.user.id,
-        session.user.name || session.user.email,
-        request.nextUrl.pathname,
-        ip,
-      )
-
-      return NextResponse.json(
-        createErrorResponse(
-          'FORBIDDEN',
-          'Admin access required',
-          undefined,
-          HTTP_STATUS.FORBIDDEN,
-        ),
-        { status: HTTP_STATUS.FORBIDDEN },
-      )
-    }
-
     try {
+      const session = await requireAdminAuth()
+
       const body = await request.json()
       const data = deleteUserSchema.parse(body)
 
@@ -297,32 +181,9 @@ export class AdminController {
   }
 
   async getAuditLogs(request: NextRequest) {
-    const authResult = await validateApiAuth(request)
-    if (!authResult.ok) return authResult.response
-
-    const { session } = authResult
-
-    if (session.user.role !== 'admin') {
-      const ip = getClientIP(request)
-      auditLogger.logUnauthorizedAdminAccess(
-        session.user.id,
-        session.user.name || session.user.email,
-        request.nextUrl.pathname,
-        ip,
-      )
-
-      return NextResponse.json(
-        createErrorResponse(
-          'FORBIDDEN',
-          'Admin access required',
-          undefined,
-          HTTP_STATUS.FORBIDDEN,
-        ),
-        { status: HTTP_STATUS.FORBIDDEN },
-      )
-    }
-
     try {
+      await requireAdminAuth()
+
       const { searchParams } = request.nextUrl
       const filters = auditLogFiltersSchema.parse({
         userId: searchParams.get('userId'),

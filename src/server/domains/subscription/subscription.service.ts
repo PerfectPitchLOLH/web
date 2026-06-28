@@ -450,22 +450,6 @@ export class SubscriptionService {
           }
         }
       }
-    } else {
-      const lines = stripeInvoice.lines.data
-      const packageLine = lines.find((line) =>
-        line.description?.toLowerCase().includes('crédit'),
-      )
-
-      if (packageLine) {
-        const linePrice = (packageLine as any).price
-        if (linePrice?.metadata?.bundleId) {
-          await this.creditService.purchaseBundle(
-            customer.userId,
-            linePrice.metadata.bundleId as any,
-            stripeInvoiceId,
-          )
-        }
-      }
     }
   }
 
