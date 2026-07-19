@@ -113,6 +113,22 @@ async function migrate() {
   }
 }
 
+function seedPlans() {
+  if (process.env.NEXT_PUBLIC_STRIPE_MODE !== 'live') {
+    process.stdout.write(
+      'Skipping plan seed (NEXT_PUBLIC_STRIPE_MODE != live)\n',
+    )
+    return
+  }
+  try {
+    execSync('npx tsx scripts/seed-plans.ts', { stdio: 'inherit' })
+  } catch (err) {
+    process.stderr.write(
+      `Warning: plan seeding failed, continuing deploy: ${err.message}\n`,
+    )
+  }
+}
+
 const directUrl = process.env.DIRECT_URL
 if (!directUrl) {
   process.stderr.write('DIRECT_URL env var is required for migrations\n')
@@ -123,3 +139,4 @@ await warmUp(directUrl)
 await resolveFailedMigrations(directUrl)
 await syncChecksums(directUrl)
 await migrate()
+seedPlans()

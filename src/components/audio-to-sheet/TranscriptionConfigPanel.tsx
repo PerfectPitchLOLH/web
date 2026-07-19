@@ -1,6 +1,7 @@
 'use client'
 
 import { ChevronRight, CreditCard, Loader2, Music } from 'lucide-react'
+import Link from 'next/link'
 
 import { InstrumentChips } from '@/components/audio-to-sheet/InstrumentChips'
 import { PartitionFormatPicker } from '@/components/audio-to-sheet/PartitionFormatPicker'
@@ -26,6 +27,7 @@ interface TranscriptionConfigPanelProps {
   onFormatChange: (format: PartitionType) => void
   onSeparationChange: (checked: boolean) => void
   onPolyphonicChange: (checked: boolean) => void
+  canUsePolyphony: boolean
   isProcessing: boolean
   error: string | null
   outOfCredits: boolean
@@ -41,6 +43,7 @@ export function TranscriptionConfigPanel({
   onFormatChange,
   onSeparationChange,
   onPolyphonicChange,
+  canUsePolyphony,
   isProcessing,
   error,
   outOfCredits,
@@ -108,12 +111,20 @@ export function TranscriptionConfigPanel({
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Détecte plusieurs notes jouées en même temps (accords)
                 </p>
+                {!canUsePolyphony && (
+                  <Link
+                    href="/dashboard/subscription"
+                    className="mt-1 inline-block text-xs font-medium text-primary hover:underline"
+                  >
+                    Réservé au plan Pro — passer à Pro
+                  </Link>
+                )}
               </div>
               <Switch
                 id="polyphonic-switch"
-                checked={config.polyphonic}
+                checked={config.polyphonic && canUsePolyphony}
                 onCheckedChange={onPolyphonicChange}
-                disabled={isProcessing}
+                disabled={isProcessing || !canUsePolyphony}
               />
             </div>
           </AccordionContent>

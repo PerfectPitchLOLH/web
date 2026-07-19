@@ -163,6 +163,7 @@ export class SubscriptionRepository {
     const customer = await db.customer.upsert({
       where: { userId: data.userId },
       update: {
+        stripeCustomerId: data.stripeCustomerId,
         email: data.email,
         name: data.name ?? null,
         defaultPaymentMethod: data.defaultPaymentMethod ?? null,

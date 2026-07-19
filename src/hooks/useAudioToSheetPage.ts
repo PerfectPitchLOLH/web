@@ -1,11 +1,12 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 
 import {
   getFormatAvailability,
   POLYPHONIC_DEFAULTS,
 } from '@/components/audio-to-sheet/audio-to-sheet.constants'
+import { useFeatureGate } from '@/hooks/permissions/useFeatureGate'
 import { useCredits } from '@/hooks/useCredits'
 import { useTranscribeSubmit } from '@/hooks/useTranscribeSubmit'
 import { useTranscription } from '@/hooks/useTranscription'
@@ -38,6 +39,8 @@ export function useAudioToSheetPage() {
   const { credits } = useCredits()
   const remainingSeconds = credits?.remainingCredits ?? null
   const outOfCredits = remainingSeconds !== null && remainingSeconds <= 0
+
+  const { canAccess: canUsePolyphony } = useFeatureGate('polyphony')
 
   const [inputSource, setInputSource] = useState<InputSource>(null)
   const [config, setConfig] = useState<TranscribeConfig>(DEFAULT_CONFIG)
@@ -130,10 +133,19 @@ export function useAudioToSheetPage() {
     }))
   }, [])
 
-  const handlePolyphonicChange = useCallback((checked: boolean) => {
-    polyphonicTouched.current = true
-    setConfig((c) => ({ ...c, polyphonic: checked }))
-  }, [])
+  const handlePolyphonicChange = useCallback(
+    (checked: boolean) => {
+      if (!canUsePolyphony) return
+      polyphonicTouched.current = true
+      setConfig((c) => ({ ...c, polyphonic: checked }))
+    },
+    [canUsePolyphony],
+  )
+
+  const effectiveConfig = useMemo<TranscribeConfig>(
+    () => (canUsePolyphony ? config : { ...config, polyphonic: false }),
+    [canUsePolyphony, config],
+  )
 
   const {
     isSubmitting,
@@ -142,7 +154,7 @@ export function useAudioToSheetPage() {
     similarDialogOpen,
     setSimilarDialogOpen,
     handleSimilarConfirm,
-  } = useTranscribeSubmit(inputSource, config, {
+  } = useTranscribeSubmit(inputSource, effectiveConfig, {
     transcribe,
     transcribeFromYoutube,
     transcribeFromSpotify,
@@ -158,7 +170,8 @@ export function useAudioToSheetPage() {
 
   return {
     inputSource,
-    config,
+    config: effectiveConfig,
+    canUsePolyphony,
     outOfCredits,
     insufficientCredits,
     costSeconds,

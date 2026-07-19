@@ -1,5 +1,3 @@
-import Stripe from 'stripe'
-
 import { db } from '@/server/lib/database'
 import {
   sendPaymentFailedEmail,
@@ -87,10 +85,6 @@ export class SubscriptionService {
     email: string,
     request: CreateCheckoutSessionRequest,
   ): Promise<CreateCheckoutSessionResponse> {
-    console.log(
-      '[SubscriptionService] Looking up plan for price ID:',
-      request.priceId,
-    )
     const plan = await this.repository.findPlanByStripePriceId(request.priceId)
 
     if (!plan) {
@@ -104,12 +98,6 @@ export class SubscriptionService {
         'Plan invalide',
       )
     }
-
-    console.log('[SubscriptionService] Found plan:', {
-      id: plan.id,
-      name: plan.name,
-      priceId: plan.stripePriceId,
-    })
 
     const existingSubscription =
       await this.repository.findSubscriptionByUserId(userId)
@@ -419,11 +407,7 @@ export class SubscriptionService {
           paidAt: new Date(),
         })
       } catch (error: any) {
-        if (error.code === 'P2002') {
-          console.log(
-            `[Invoice] Invoice ${stripeInvoiceId} already created by another request, continuing`,
-          )
-        } else {
+        if (error.code !== 'P2002') {
           throw error
         }
       }
@@ -660,33 +644,10 @@ export class SubscriptionService {
       )
     }
 
-    console.log("[UPGRADE_DIRECT] Tentative d'upgrade direct:", {
-      userId,
-      subscriptionId: subscription.stripeSubscriptionId,
-      currentPlanId: subscription.planId,
-      newPriceId,
-      newPlanId: newPlan.id,
-      itemId,
-    })
-
     try {
-      const updatedSubscription: Stripe.Subscription =
-        await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
-          items: [{ id: itemId, price: newPriceId }],
-          proration_behavior: 'create_prorations',
-        })
-
-      console.log('[UPGRADE_DIRECT] Abonnement mis à jour avec succès:', {
-        subscriptionId: updatedSubscription.id,
-        status: updatedSubscription.status,
-        currentPeriodEnd: new Date(
-          (updatedSubscription as any).current_period_end * 1000,
-        ),
-        latestInvoice: updatedSubscription.latest_invoice,
-        items: updatedSubscription.items.data.map((item) => ({
-          id: item.id,
-          priceId: item.price.id,
-        })),
+      await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+        items: [{ id: itemId, price: newPriceId }],
+        proration_behavior: 'create_prorations',
       })
     } catch (error) {
       console.error('[UPGRADE_DIRECT] Erreur lors de la mise à jour Stripe:', {
@@ -757,18 +718,6 @@ export class SubscriptionService {
     await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
       items: [{ id: itemId, price: newPriceId }],
       proration_behavior: 'create_prorations',
-    })
-  }
-
-  async grantWelcomeCredits(userId: string, email: string): Promise<void> {
-    await this.creditService.getUserCreditsBalance(userId)
-
-    await this.repository.createOrUpdateCustomer({
-      userId,
-      stripeCustomerId: `temp_${userId}`,
-      email,
-      name: null,
-      defaultPaymentMethod: null,
     })
   }
 }

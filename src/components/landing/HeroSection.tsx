@@ -186,7 +186,7 @@ export function HeroSection() {
                 {t('ctaPrimary')}
               </Link>
               <Link
-                href="#"
+                href="#pricing"
                 className="inline-flex h-[46px] items-center rounded-full px-6 text-[15px] font-medium text-white/95 transition-all hover:bg-white/10"
                 style={{
                   background: 'rgba(255,255,255,0.07)',

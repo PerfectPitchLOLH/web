@@ -763,6 +763,7 @@ describe('SubscriptionRepository - Deep Tests', () => {
       expect(db.customer.upsert).toHaveBeenCalledWith({
         where: { userId: 'user_123' },
         update: {
+          stripeCustomerId: customerData.stripeCustomerId,
           email: customerData.email,
           name: customerData.name,
           defaultPaymentMethod: customerData.defaultPaymentMethod,

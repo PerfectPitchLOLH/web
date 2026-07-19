@@ -1359,52 +1359,6 @@ describe('SubscriptionService - Deep Tests', () => {
       expect(mockRepository.createInvoice).not.toHaveBeenCalled()
     })
 
-    it('should handle credit bundle purchase', async () => {
-      vi.mocked(stripe.invoices.retrieve).mockResolvedValue({
-        id: 'in_stripe_bundle',
-        customer: 'cus_stripe_123',
-        amount_paid: 1999,
-        currency: 'eur',
-        status: 'paid',
-        hosted_invoice_url: null,
-        invoice_pdf: null,
-        description: null,
-        billing_reason: 'manual',
-        subscription: null,
-        lines: {
-          data: [
-            {
-              description: 'Achat de crédits',
-              price: {
-                metadata: {
-                  bundleId: 'small',
-                },
-              },
-            } as any,
-          ],
-        },
-      } as any)
-
-      vi.mocked(mockRepository.findCustomerByStripeId).mockResolvedValue({
-        userId: 'user_123',
-      } as any)
-
-      vi.mocked(mockRepository.findInvoicesByUserId).mockResolvedValue([])
-      vi.mocked(mockRepository.createInvoice).mockResolvedValue({
-        id: 'inv_bundle',
-      } as any)
-
-      vi.mocked(mockCreditService.purchaseBundle).mockResolvedValue()
-
-      await service.handleInvoicePaymentSucceeded('in_stripe_bundle')
-
-      expect(mockCreditService.purchaseBundle).toHaveBeenCalledWith(
-        'user_123',
-        'small',
-        'in_stripe_bundle',
-      )
-    })
-
     it('should throw error if customer not found', async () => {
       vi.mocked(stripe.invoices.retrieve).mockResolvedValue({
         id: 'in_stripe_123',
@@ -1697,40 +1651,6 @@ describe('SubscriptionService - Deep Tests', () => {
       await expect(
         service.upgradeSubscription('user_123', 'price_pro_monthly'),
       ).rejects.toThrow("Item d'abonnement introuvable")
-    })
-  })
-
-  describe('grantWelcomeCredits', () => {
-    it('should grant welcome credits to new user', async () => {
-      vi.mocked(mockCreditService.getUserCreditsBalance).mockResolvedValue({
-        totalMinutes: 0,
-        usedMinutes: 0,
-        remainingMinutes: 0,
-      } as any)
-
-      vi.mocked(mockRepository.createOrUpdateCustomer).mockResolvedValue({
-        id: 'customer-3',
-        userId: 'user_new',
-        stripeCustomerId: 'temp_user_new',
-        email: 'new@example.com',
-        name: null,
-        defaultPaymentMethod: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-
-      await service.grantWelcomeCredits('user_new', 'new@example.com')
-
-      expect(mockCreditService.getUserCreditsBalance).toHaveBeenCalledWith(
-        'user_new',
-      )
-      expect(mockRepository.createOrUpdateCustomer).toHaveBeenCalledWith({
-        userId: 'user_new',
-        stripeCustomerId: 'temp_user_new',
-        email: 'new@example.com',
-        name: null,
-        defaultPaymentMethod: null,
-      })
     })
   })
 
