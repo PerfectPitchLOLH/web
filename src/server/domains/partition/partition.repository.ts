@@ -58,16 +58,11 @@ export class PartitionRepository {
   async findSvgByIdAndUserId(
     id: string,
     userId: string,
-  ): Promise<{ svgContent: string | null; musicXmlContent: string } | null> {
-    const data = await db.savedPartition.findFirst({
+  ): Promise<{ svgContent: string | null } | null> {
+    return db.savedPartition.findFirst({
       where: { id, userId },
-      select: { svgContent: true, musicXmlContent: true },
+      select: { svgContent: true },
     })
-    if (!data || !data.musicXmlContent) return null
-    return {
-      svgContent: data.svgContent,
-      musicXmlContent: data.musicXmlContent,
-    }
   }
 
   async create(data: CreatePartitionDTO): Promise<SavedPartitionEntity> {

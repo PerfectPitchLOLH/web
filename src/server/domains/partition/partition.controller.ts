@@ -91,20 +91,6 @@ export class PartitionController {
     }
   }
 
-  async musicXml(userId: string, id: string) {
-    try {
-      const xmlContent = await this.service.getMusicXml(id, userId)
-      return new Response(xmlContent, {
-        headers: {
-          'Content-Type': 'application/xml',
-          'Content-Disposition': `attachment; filename="partition_${id}.musicxml"`,
-        },
-      })
-    } catch (error) {
-      return handleApiError(error)
-    }
-  }
-
   async lastOpened(userId: string) {
     try {
       const data = await this.service.getLastOpened(userId)

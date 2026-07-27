@@ -42,7 +42,6 @@ describe('PartitionController - Deep Tests', () => {
       saveFromJob: vi.fn(),
       getById: vi.fn(),
       getSvg: vi.fn(),
-      getMusicXml: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     } as any
@@ -308,31 +307,6 @@ describe('PartitionController - Deep Tests', () => {
       const res = await controller.svg('user-1', 'part-1')
 
       expect(res.status).toBe(HTTP_STATUS.SERVICE_UNAVAILABLE)
-    })
-  })
-
-  describe('musicXml', () => {
-    it('should return XML with correct headers', async () => {
-      vi.mocked(mockService.getMusicXml).mockResolvedValue('<score/>')
-
-      const res = await controller.musicXml('user-1', 'part-1')
-      const text = await res.text()
-
-      expect(res.status).toBe(HTTP_STATUS.OK)
-      expect(res.headers.get('Content-Type')).toBe('application/xml')
-      expect(res.headers.get('Content-Disposition')).toContain('attachment')
-      expect(res.headers.get('Content-Disposition')).toContain('part-1')
-      expect(text).toBe('<score/>')
-    })
-
-    it('should return 404 when partition not found', async () => {
-      vi.mocked(mockService.getMusicXml).mockRejectedValue(
-        new ApiError('PARTITION_NOT_FOUND', HTTP_STATUS.NOT_FOUND),
-      )
-
-      const res = await controller.musicXml('user-1', 'nope')
-
-      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
     })
   })
 })

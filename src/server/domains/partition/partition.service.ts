@@ -151,39 +151,10 @@ export class PartitionService {
       return data.svgContent
     }
 
-    const renderRes = await fetch(`${API_BASE_URL}/render/svg`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/xml' },
-      body: data.musicXmlContent,
-    })
-
-    if (!renderRes.ok) {
-      throw new ApiError(
-        ERROR_CODES.SERVICE_UNAVAILABLE,
-        HTTP_STATUS.SERVICE_UNAVAILABLE,
-      )
-    }
-
-    const svg = await renderRes.text()
-
-    this.repository.updateSvg(id, svg).catch(() => {})
-
-    return svg
-  }
-
-  async getMusicXml(id: string, userId: string): Promise<string> {
-    const partition = await this.repository.findByIdAndUserId(id, userId)
-    if (!partition) {
-      throw new ApiError(ERROR_CODES.PARTITION_NOT_FOUND, HTTP_STATUS.NOT_FOUND)
-    }
-    if (!partition.musicXmlContent) {
-      throw new ApiError(
-        ERROR_CODES.MUSICXML_UNAVAILABLE,
-        HTTP_STATUS.NOT_FOUND,
-        'MusicXML not available for this partition',
-      )
-    }
-    return partition.musicXmlContent
+    throw new ApiError(
+      ERROR_CODES.SERVICE_UNAVAILABLE,
+      HTTP_STATUS.SERVICE_UNAVAILABLE,
+    )
   }
 
   async update(

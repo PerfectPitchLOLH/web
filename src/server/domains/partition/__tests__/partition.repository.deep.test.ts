@@ -157,22 +157,18 @@ describe('PartitionRepository - Deep Tests', () => {
   })
 
   describe('findSvgByIdAndUserId', () => {
-    it('should select only svgContent and musicXmlContent', async () => {
+    it('should select only svgContent', async () => {
       vi.mocked(db.savedPartition.findFirst).mockResolvedValue({
         svgContent: '<svg/>',
-        musicXmlContent: '<score/>',
       } as any)
 
       const result = await repository.findSvgByIdAndUserId('part-1', 'user-1')
 
       expect(db.savedPartition.findFirst).toHaveBeenCalledWith({
         where: { id: 'part-1', userId: 'user-1' },
-        select: { svgContent: true, musicXmlContent: true },
+        select: { svgContent: true },
       })
-      expect(result).toEqual({
-        svgContent: '<svg/>',
-        musicXmlContent: '<score/>',
-      })
+      expect(result).toEqual({ svgContent: '<svg/>' })
     })
 
     it('should return null when partition not found', async () => {
