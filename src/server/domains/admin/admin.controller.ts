@@ -8,6 +8,7 @@ import {
   createSuccessResponse,
   handleApiError,
 } from '@/server/shared/utils/api.utils'
+import { getClientIP } from '@/server/shared/utils/rate-limit.utils'
 
 import {
   auditLogFiltersSchema,
@@ -200,19 +201,4 @@ export class AdminController {
       return handleApiError(error)
     }
   }
-}
-
-function getClientIP(request: Request): string | null {
-  const forwarded = request.headers.get('x-forwarded-for')
-  const realIp = request.headers.get('x-real-ip')
-
-  if (forwarded) {
-    return forwarded.split(',')[0].trim()
-  }
-
-  if (realIp) {
-    return realIp
-  }
-
-  return null
 }

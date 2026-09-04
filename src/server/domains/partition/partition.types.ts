@@ -2,8 +2,6 @@ import type { SavedPartition } from '@prisma/client'
 
 import type { TranscribeConfig } from '@/server/domains/transcription'
 
-export type SavedPartitionEntity = SavedPartition
-
 export type CreatePartitionDTO = {
   userId: string
   title: string

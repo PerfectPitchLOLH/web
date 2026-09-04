@@ -58,7 +58,6 @@ describe('PartitionService - Deep Tests', () => {
       findSvgByIdAndUserId: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
-      updateSvg: vi.fn(),
       delete: vi.fn(),
       findByJobIdAndUserId: vi.fn(),
       touchLastOpened: vi.fn().mockResolvedValue(undefined),
@@ -209,7 +208,7 @@ describe('PartitionService - Deep Tests', () => {
         svgContent: null,
       } as any)
       setupFetch(makeJob())
-      vi.mocked(mockRepo.create).mockResolvedValue(makeEntity() as any)
+      vi.mocked(mockRepo.create).mockResolvedValue(makeSummary() as any)
 
       const result = await service.saveFromJob('user-1', {
         jobId: 'job-1',
@@ -230,9 +229,7 @@ describe('PartitionService - Deep Tests', () => {
           musicXmlContent: '<score/>',
         }),
       )
-      expect(result).not.toHaveProperty('musicXmlContent')
-      expect(result).not.toHaveProperty('svgContent')
-      expect(result).not.toHaveProperty('transcribeConfig')
+      expect(result).toEqual(makeSummary())
     })
 
     it('should throw SERVICE_UNAVAILABLE when svg fetch throws', async () => {
@@ -265,7 +262,7 @@ describe('PartitionService - Deep Tests', () => {
         svgContent: null,
       } as any)
       setupFetch(makeJob({ config: {} }))
-      vi.mocked(mockRepo.create).mockResolvedValue(makeEntity() as any)
+      vi.mocked(mockRepo.create).mockResolvedValue(makeSummary() as any)
 
       await service.saveFromJob('user-1', { jobId: 'job-1', title: 'T' })
 
@@ -340,7 +337,6 @@ describe('PartitionService - Deep Tests', () => {
       const result = await service.getSvg('part-1', 'user-1')
 
       expect(result).toBe('<svg>cached</svg>')
-      expect(mockRepo.updateSvg).not.toHaveBeenCalled()
     })
 
     it('should throw PARTITION_NOT_FOUND when partition does not exist', async () => {

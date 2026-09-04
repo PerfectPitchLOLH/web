@@ -43,13 +43,7 @@ export class PartitionController {
   async getOne(userId: string, id: string) {
     try {
       const data = await this.service.getById(id, userId)
-      const {
-        musicXmlContent: _xml,
-        svgContent: _svg,
-        transcribeConfig: _cfg,
-        ...summary
-      } = data
-      return createSuccessResponse(summary)
+      return createSuccessResponse(data)
     } catch (error) {
       return handleApiError(error)
     }
@@ -59,13 +53,7 @@ export class PartitionController {
     try {
       const body = (await request.json()) as UpdatePartitionDTO
       const data = await this.service.update(id, userId, body)
-      const {
-        musicXmlContent: _xml,
-        svgContent: _svg,
-        transcribeConfig: _cfg,
-        ...summary
-      } = data
-      return createSuccessResponse(summary)
+      return createSuccessResponse(data)
     } catch (error) {
       return handleApiError(error)
     }

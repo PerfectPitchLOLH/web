@@ -9,7 +9,6 @@ import type { PartitionRepository } from './partition.repository'
 import type {
   PartitionListFilters,
   PartitionSummary,
-  SavedPartitionEntity,
   SavePartitionInput,
   UpdatePartitionDTO,
 } from './partition.types'
@@ -100,7 +99,7 @@ export class PartitionService {
     const instrument = config.instrument_type || 'other'
     const partitionType = config.partition_type || 'classique'
 
-    const entity = await this.repository.create({
+    return this.repository.create({
       userId,
       title: input.title,
       originalFileName: input.originalFileName,
@@ -114,14 +113,6 @@ export class PartitionService {
       sourceJobId: input.jobId,
       durationSeconds: job.results?.duration_seconds,
     })
-
-    const {
-      musicXmlContent: _xml,
-      svgContent: _svg,
-      transcribeConfig: _cfg,
-      ...summary
-    } = entity
-    return summary as PartitionSummary
   }
 
   async getList(
@@ -131,7 +122,7 @@ export class PartitionService {
     return this.repository.findAllByUserId(userId, filters)
   }
 
-  async getById(id: string, userId: string): Promise<SavedPartitionEntity> {
+  async getById(id: string, userId: string): Promise<PartitionSummary> {
     const partition = await this.repository.findByIdAndUserId(id, userId)
     if (!partition) {
       throw new ApiError(ERROR_CODES.PARTITION_NOT_FOUND, HTTP_STATUS.NOT_FOUND)
@@ -161,7 +152,7 @@ export class PartitionService {
     id: string,
     userId: string,
     data: UpdatePartitionDTO,
-  ): Promise<SavedPartitionEntity> {
+  ): Promise<PartitionSummary> {
     const updated = await this.repository.update(id, userId, data)
     if (!updated) {
       throw new ApiError(ERROR_CODES.PARTITION_NOT_FOUND, HTTP_STATUS.NOT_FOUND)

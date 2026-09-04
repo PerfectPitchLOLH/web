@@ -17,7 +17,13 @@ vi.mock('@/server/lib/database', () => ({
   },
 }))
 
-const makeEntity = (overrides = {}) => ({
+const expectNoHeavyFields = (select: Record<string, unknown>) => {
+  expect(select).not.toHaveProperty('musicXmlContent')
+  expect(select).not.toHaveProperty('svgContent')
+  expect(select).not.toHaveProperty('transcribeConfig')
+}
+
+const makeSummary = (overrides = {}) => ({
   id: 'part-1',
   userId: 'user-1',
   title: 'Test Partition',
@@ -28,11 +34,17 @@ const makeEntity = (overrides = {}) => ({
   notes: null,
   sourceJobId: 'job-1',
   durationSeconds: 120,
+  lastOpenedAt: null,
+  createdAt: new Date('2024-01-01'),
+  updatedAt: new Date('2024-01-01'),
+  ...overrides,
+})
+
+const makeEntity = (overrides = {}) => ({
+  ...makeSummary(),
   musicXmlContent: '<score/>',
   svgContent: null,
   transcribeConfig: {},
-  createdAt: new Date('2024-01-01'),
-  updatedAt: new Date('2024-01-01'),
   ...overrides,
 })
 
@@ -124,16 +136,17 @@ describe('PartitionRepository - Deep Tests', () => {
   })
 
   describe('findByIdAndUserId', () => {
-    it('should return entity when found', async () => {
-      const entity = makeEntity()
-      vi.mocked(db.savedPartition.findFirst).mockResolvedValue(entity as any)
+    it('should return a summary without the heavy content columns', async () => {
+      const summary = makeSummary()
+      vi.mocked(db.savedPartition.findFirst).mockResolvedValue(summary as any)
 
       const result = await repository.findByIdAndUserId('part-1', 'user-1')
 
-      expect(result).toEqual(entity)
-      expect(db.savedPartition.findFirst).toHaveBeenCalledWith({
-        where: { id: 'part-1', userId: 'user-1' },
-      })
+      expect(result).toEqual(summary)
+      const call = vi.mocked(db.savedPartition.findFirst).mock
+        .calls[0][0] as any
+      expect(call.where).toEqual({ id: 'part-1', userId: 'user-1' })
+      expectNoHeavyFields(call.select)
     })
 
     it('should return null when not found', async () => {
@@ -149,9 +162,11 @@ describe('PartitionRepository - Deep Tests', () => {
 
       const result = await repository.findByIdAndUserId('part-1', 'user-other')
 
-      expect(db.savedPartition.findFirst).toHaveBeenCalledWith({
-        where: { id: 'part-1', userId: 'user-other' },
-      })
+      expect(db.savedPartition.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'part-1', userId: 'user-other' },
+        }),
+      )
       expect(result).toBeNull()
     })
   })
@@ -201,16 +216,21 @@ describe('PartitionRepository - Deep Tests', () => {
 
       const result = await repository.create(dto)
 
-      expect(db.savedPartition.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          userId: 'user-1',
-          title: 'Test Partition',
-          instrument: 'piano',
-          partitionType: 'classique',
-          musicXmlContent: '<score/>',
-          tags: [],
+      expect(db.savedPartition.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            userId: 'user-1',
+            title: 'Test Partition',
+            instrument: 'piano',
+            partitionType: 'classique',
+            musicXmlContent: '<score/>',
+            tags: [],
+          }),
         }),
-      })
+      )
+      expectNoHeavyFields(
+        (vi.mocked(db.savedPartition.create).mock.calls[0][0] as any).select,
+      )
       expect(result).toEqual(entity)
     })
 
@@ -282,10 +302,15 @@ describe('PartitionRepository - Deep Tests', () => {
         title: 'New',
       })
 
-      expect(db.savedPartition.update).toHaveBeenCalledWith({
-        where: { id: 'part-1' },
-        data: { title: 'New' },
-      })
+      expect(db.savedPartition.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'part-1' },
+          data: { title: 'New' },
+        }),
+      )
+      expectNoHeavyFields(
+        (vi.mocked(db.savedPartition.update).mock.calls[0][0] as any).select,
+      )
       expect(result?.title).toBe('New')
     })
 
@@ -299,10 +324,12 @@ describe('PartitionRepository - Deep Tests', () => {
         notes: 'note',
       })
 
-      expect(db.savedPartition.update).toHaveBeenCalledWith({
-        where: { id: 'part-1' },
-        data: { tags: ['rock'], notes: 'note' },
-      })
+      expect(db.savedPartition.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'part-1' },
+          data: { tags: ['rock'], notes: 'note' },
+        }),
+      )
     })
 
     it('should not include undefined fields in update data', async () => {
@@ -314,19 +341,6 @@ describe('PartitionRepository - Deep Tests', () => {
 
       const call = vi.mocked(db.savedPartition.update).mock.calls[0][0]
       expect(Object.keys(call.data)).toHaveLength(0)
-    })
-  })
-
-  describe('updateSvg', () => {
-    it('should update svgContent by id', async () => {
-      vi.mocked(db.savedPartition.update).mockResolvedValue(makeEntity() as any)
-
-      await repository.updateSvg('part-1', '<svg>new</svg>')
-
-      expect(db.savedPartition.update).toHaveBeenCalledWith({
-        where: { id: 'part-1' },
-        data: { svgContent: '<svg>new</svg>' },
-      })
     })
   })
 
