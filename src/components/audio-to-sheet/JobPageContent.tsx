@@ -23,6 +23,8 @@ export function JobPageContent({ jobId }: Props) {
     results,
     error,
     isInitialLoading,
+    isConnected,
+    notFound,
   } = useJobProgress(jobId)
   const svgContent = useSvgContent(results, jobId, status)
   const { savedPartitionId, jobTitle, handleSaved } = useJobSession(
@@ -52,6 +54,15 @@ export function JobPageContent({ jobId }: Props) {
     )
   }
 
+  if (notFound) {
+    return (
+      <TranscriptionFailedView
+        error="Transcription introuvable ou expirée."
+        onReset={handleReset}
+      />
+    )
+  }
+
   if (status === 'completed' && results) {
     return (
       <TranscriptionResultView
@@ -77,6 +88,7 @@ export function JobPageContent({ jobId }: Props) {
       currentStep={currentStep}
       isCancelling={isCancelling}
       error={error}
+      isConnected={isConnected}
       onCancel={handleCancel}
     />
   )
