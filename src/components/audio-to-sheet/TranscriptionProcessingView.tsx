@@ -1,6 +1,7 @@
 'use client'
 
-import { CheckCircle2, Loader2, Music, StopCircle } from 'lucide-react'
+import { CheckCircle2, Loader2, Music, StopCircle, WifiOff } from 'lucide-react'
+import { useRef } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { InlineAlert } from '@/components/ui/inline-alert'
@@ -18,6 +19,7 @@ interface TranscriptionProcessingViewProps {
   currentStep: ProcessingStep | null
   isCancelling: boolean
   error: string | null
+  isConnected: boolean
   onCancel: () => void
 }
 
@@ -26,10 +28,14 @@ export function TranscriptionProcessingView({
   currentStep,
   isCancelling,
   error,
+  isConnected,
   onCancel,
 }: TranscriptionProcessingViewProps) {
   const currentStepIndex = currentStep ? STEPS.indexOf(currentStep) : -1
   const eta = useProcessingEta(progress)
+  const hasConnectedRef = useRef(false)
+  if (isConnected) hasConnectedRef.current = true
+  const showConnectionLost = hasConnectedRef.current && !isConnected
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center p-6 min-h-0">
@@ -56,6 +62,12 @@ export function TranscriptionProcessingView({
               <span className="tabular-nums">{progress}%</span>
             </div>
           </div>
+          {showConnectionLost && (
+            <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+              <WifiOff className="h-3 w-3" />
+              <span>Connexion temps réel perdue — mise à jour périodique</span>
+            </div>
+          )}
         </div>
 
         <div>

@@ -17,6 +17,16 @@ function backendAuthHeaders(): Record<string, string> {
   return BACKEND_API_KEY ? { 'X-API-Key': BACKEND_API_KEY } : {}
 }
 
+export class BackendApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'BackendApiError'
+  }
+}
+
 export class TranscriptionRepository {
   private async callBackendAPI<T>(
     endpoint: string,
@@ -40,7 +50,8 @@ export class TranscriptionRepository {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(
+        throw new BackendApiError(
+          response.status,
           errorData.detail ||
             `HTTP error ${response.status}: ${response.statusText}`,
         )
@@ -48,6 +59,9 @@ export class TranscriptionRepository {
 
       return response.json()
     } catch (error) {
+      if (error instanceof BackendApiError) {
+        throw error
+      }
       if (error instanceof Error) {
         throw new Error(`Backend API call failed: ${error.message}`)
       }
