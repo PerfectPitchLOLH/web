@@ -25,7 +25,10 @@ import { db } from '@/server/lib/database'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
-import { TranscriptionRepository } from '../transcription.repository'
+import {
+  BackendApiError,
+  TranscriptionRepository,
+} from '../transcription.repository'
 import { TranscriptionService } from '../transcription.service'
 import type {
   TranscribeConfig,
@@ -422,7 +425,7 @@ describe('TranscriptionService - Deep Tests', () => {
     it('should throw NOT_FOUND when job does not exist in backend', async () => {
       vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
       vi.mocked(mockRepo.getJobStatus).mockRejectedValue(
-        new Error('Backend API call failed: HTTP error 404'),
+        new BackendApiError(404, 'Job not found'),
       )
 
       await expect(service.getJob('ghost-job', 'user-1')).rejects.toMatchObject(
@@ -431,6 +434,18 @@ describe('TranscriptionService - Deep Tests', () => {
           statusCode: HTTP_STATUS.NOT_FOUND,
         },
       )
+    })
+
+    it('should throw SERVICE_UNAVAILABLE when backend is unreachable (not a 404)', async () => {
+      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
+      vi.mocked(mockRepo.getJobStatus).mockRejectedValue(
+        new Error('Backend API call failed: network error'),
+      )
+
+      await expect(service.getJob('job-1', 'user-1')).rejects.toMatchObject({
+        code: 'SERVICE_UNAVAILABLE',
+        statusCode: HTTP_STATUS.SERVICE_UNAVAILABLE,
+      })
     })
 
     it('should return job with completed status and results', async () => {

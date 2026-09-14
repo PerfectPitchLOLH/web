@@ -6,6 +6,7 @@ import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
 import type { TranscriptionRepository } from './transcription.repository'
+import { BackendApiError } from './transcription.repository'
 import type {
   ConfigValidationResponse,
   HealthStatus,
@@ -144,10 +145,17 @@ export class TranscriptionService {
       return job
     } catch (error) {
       if (error instanceof ApiError) throw error
+      if (error instanceof BackendApiError && error.status === 404) {
+        throw new ApiError(
+          'NOT_FOUND',
+          HTTP_STATUS.NOT_FOUND,
+          'Job not found or expired',
+        )
+      }
       throw new ApiError(
-        'NOT_FOUND',
-        HTTP_STATUS.NOT_FOUND,
-        'Job not found or expired',
+        'SERVICE_UNAVAILABLE',
+        HTTP_STATUS.SERVICE_UNAVAILABLE,
+        'Backend temporarily unreachable',
       )
     }
   }
