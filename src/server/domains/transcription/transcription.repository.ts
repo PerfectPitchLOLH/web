@@ -204,10 +204,11 @@ export class TranscriptionRepository {
   ): Promise<void> {
     let svgContent: string | undefined
 
-    const resolveUrl = (url: string) =>
-      url.startsWith('http')
-        ? url
-        : `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`
+    const resolveUrl = (url: string) => {
+      if (url.startsWith('http')) return url
+      const origin = new URL(API_BASE_URL).origin
+      return `${origin}${url.startsWith('/') ? '' : '/'}${url}`
+    }
 
     const svgUrls = [
       partitionUrl && resolveUrl(partitionUrl),
