@@ -66,7 +66,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://accounts.google.com https://apis.google.com https://js.stripe.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: https: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' https://accounts.google.com https://apis.google.com https://*.vercel-insights.com https://api.stripe.com https://*.sentry.io https://*.ingest.sentry.io https://challenges.cloudflare.com ${BACKEND_CSP_ORIGINS}; frame-src 'self' https://accounts.google.com https://js.stripe.com https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self';`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://accounts.google.com https://apis.google.com https://js.stripe.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com; img-src 'self' data: https: blob:; media-src 'self' blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://accounts.google.com https://apis.google.com https://*.vercel-insights.com https://api.stripe.com https://*.sentry.io https://*.ingest.sentry.io https://challenges.cloudflare.com ${BACKEND_CSP_ORIGINS}; frame-src 'self' https://accounts.google.com https://js.stripe.com https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self';`,
           },
         ],
       },
