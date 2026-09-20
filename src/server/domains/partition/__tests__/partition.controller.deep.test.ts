@@ -42,7 +42,6 @@ describe('PartitionController - Deep Tests', () => {
       saveFromJob: vi.fn(),
       getById: vi.fn(),
       getSvg: vi.fn(),
-      getMusicXml: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     } as any
@@ -201,16 +200,14 @@ describe('PartitionController - Deep Tests', () => {
 
   describe('getOne', () => {
     it('should return 200 with summary (without heavy fields)', async () => {
-      vi.mocked(mockService.getById).mockResolvedValue(makeEntity() as any)
+      vi.mocked(mockService.getById).mockResolvedValue(makeSummary() as any)
 
       const res = await controller.getOne('user-1', 'part-1')
       const body = await res.json()
 
       expect(res.status).toBe(HTTP_STATUS.OK)
       expect(body.success).toBe(true)
-      expect(body.data).not.toHaveProperty('musicXmlContent')
-      expect(body.data).not.toHaveProperty('svgContent')
-      expect(body.data).not.toHaveProperty('transcribeConfig')
+      expect(body.data.id).toBe('part-1')
     })
 
     it('should return 404 when partition not found', async () => {
@@ -227,7 +224,7 @@ describe('PartitionController - Deep Tests', () => {
   describe('patch', () => {
     it('should return 200 with updated summary', async () => {
       vi.mocked(mockService.update).mockResolvedValue(
-        makeEntity({ title: 'Nouveau titre' }) as any,
+        makeSummary({ title: 'Nouveau titre' }) as any,
       )
 
       const req = new NextRequest('http://localhost/api/partitions/part-1', {
@@ -239,7 +236,7 @@ describe('PartitionController - Deep Tests', () => {
       const body = await res.json()
 
       expect(res.status).toBe(HTTP_STATUS.OK)
-      expect(body.data).not.toHaveProperty('musicXmlContent')
+      expect(body.data.title).toBe('Nouveau titre')
     })
 
     it('should return 404 when partition not found', async () => {
@@ -308,31 +305,6 @@ describe('PartitionController - Deep Tests', () => {
       const res = await controller.svg('user-1', 'part-1')
 
       expect(res.status).toBe(HTTP_STATUS.SERVICE_UNAVAILABLE)
-    })
-  })
-
-  describe('musicXml', () => {
-    it('should return XML with correct headers', async () => {
-      vi.mocked(mockService.getMusicXml).mockResolvedValue('<score/>')
-
-      const res = await controller.musicXml('user-1', 'part-1')
-      const text = await res.text()
-
-      expect(res.status).toBe(HTTP_STATUS.OK)
-      expect(res.headers.get('Content-Type')).toBe('application/xml')
-      expect(res.headers.get('Content-Disposition')).toContain('attachment')
-      expect(res.headers.get('Content-Disposition')).toContain('part-1')
-      expect(text).toBe('<score/>')
-    })
-
-    it('should return 404 when partition not found', async () => {
-      vi.mocked(mockService.getMusicXml).mockRejectedValue(
-        new ApiError('PARTITION_NOT_FOUND', HTTP_STATUS.NOT_FOUND),
-      )
-
-      const res = await controller.musicXml('user-1', 'nope')
-
-      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
     })
   })
 })

@@ -163,6 +163,7 @@ export class SubscriptionRepository {
     const customer = await db.customer.upsert({
       where: { userId: data.userId },
       update: {
+        stripeCustomerId: data.stripeCustomerId,
         email: data.email,
         name: data.name ?? null,
         defaultPaymentMethod: data.defaultPaymentMethod ?? null,
@@ -272,17 +273,27 @@ export class SubscriptionRepository {
     return event as WebhookEventEntity
   }
 
-  async markWebhookEventProcessed(
-    stripeEventId: string,
-    error?: string,
-  ): Promise<void> {
+  async markWebhookEventProcessed(stripeEventId: string): Promise<void> {
     await db.webhookEvent.update({
       where: { stripeEventId },
       data: {
         processed: true,
         processedAt: new Date(),
+        error: null,
+      },
+    })
+  }
+
+  async markWebhookEventFailed(
+    stripeEventId: string,
+    error: string,
+  ): Promise<void> {
+    await db.webhookEvent.update({
+      where: { stripeEventId },
+      data: {
+        processed: false,
         error,
-        retryCount: error ? { increment: 1 } : undefined,
+        retryCount: { increment: 1 },
       },
     })
   }

@@ -1,4 +1,3 @@
-import type { User } from '@prisma/client'
 import { Prisma } from '@prisma/client'
 
 import { db } from '@/server/lib/database'
@@ -6,15 +5,22 @@ import type { PaginationParams } from '@/server/shared/types'
 
 import type {
   CreateUserDTO,
+  PublicUser,
   UpdateUserDTO,
   UserListFilters,
 } from './user.types'
+
+const PUBLIC_USER_OMIT = {
+  password: true,
+  twoFactorSecret: true,
+  twoFactorBackupCodes: true,
+} as const
 
 export class UserRepository {
   async findAll(
     filters?: UserListFilters,
     pagination?: PaginationParams,
-  ): Promise<User[]> {
+  ): Promise<PublicUser[]> {
     const where = {
       ...(filters?.role && { role: filters.role }),
       ...(filters?.search && {
@@ -27,6 +33,7 @@ export class UserRepository {
 
     return db.user.findMany({
       where,
+      omit: PUBLIC_USER_OMIT,
       skip: pagination?.page
         ? (pagination.page - 1) * (pagination.limit ?? 10)
         : 0,
@@ -35,27 +42,31 @@ export class UserRepository {
     })
   }
 
-  async findById(id: string): Promise<User | null> {
+  async findById(id: string): Promise<PublicUser | null> {
     return db.user.findUnique({
       where: { id },
+      omit: PUBLIC_USER_OMIT,
     })
   }
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<PublicUser | null> {
     return db.user.findUnique({
       where: { email },
+      omit: PUBLIC_USER_OMIT,
     })
   }
 
-  async create(data: CreateUserDTO): Promise<User> {
+  async create(data: CreateUserDTO): Promise<PublicUser> {
     return db.user.create({
       data,
+      omit: PUBLIC_USER_OMIT,
     })
   }
 
-  async update(id: string, data: UpdateUserDTO): Promise<User | null> {
+  async update(id: string, data: UpdateUserDTO): Promise<PublicUser | null> {
     return db.user.update({
       where: { id },
+      omit: PUBLIC_USER_OMIT,
       data: {
         ...data,
         twoFactorBackupCodes:

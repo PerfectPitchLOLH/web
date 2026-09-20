@@ -17,6 +17,7 @@ interface UseJobProgressReturn {
   error: string | null
   isConnected: boolean
   isInitialLoading: boolean
+  notFound: boolean
 }
 
 const WS_BASE_URL = (
@@ -47,44 +48,65 @@ export function useJobProgress(jobId: string | null): UseJobProgressReturn {
   const [error, setError] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [isInitialLoading, setIsInitialLoading] = useState(false)
+  const [notFound, setNotFound] = useState(false)
 
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const reconnectAttemptsRef = useRef(0)
   const statusRef = useRef<JobStatus | null>(null)
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const MAX_RECONNECT_ATTEMPTS = 3
   const RECONNECT_DELAY = 2000
+  const FALLBACK_POLL_INTERVAL = 5000
 
-  const fetchCurrentStatus = useCallback(async (id: string) => {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000)
-    try {
-      const response = await fetch(`/api/transcription/${id}`, {
-        signal: controller.signal,
-      })
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success && data.data) {
-          const job = data.data
-          if (job.results) setResults(job.results)
-          const currentStep = normalizeStep(job.current_step)
-          if (currentStep !== null) setStep(currentStep)
-          setStatus(job.status)
-          statusRef.current = job.status
-          setProgress(job.status === 'completed' ? 100 : (job.progress ?? 0))
-          if (job.error) setError(job.error)
-          if (job.status === 'completed') {
-            window.dispatchEvent(new Event('credits-refresh'))
-          }
-        }
-      }
-    } catch {
-    } finally {
-      clearTimeout(timeoutId)
-      setIsInitialLoading(false)
+  const stopFallbackPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current)
+      pollIntervalRef.current = null
     }
   }, [])
+
+  const fetchCurrentStatus = useCallback(
+    async (id: string) => {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000)
+      try {
+        const response = await fetch(`/api/transcription/${id}`, {
+          signal: controller.signal,
+        })
+        if (response.status === 404) {
+          setNotFound(true)
+          stopFallbackPolling()
+          return
+        }
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.data) {
+            const job = data.data
+            if (job.results) setResults(job.results)
+            const currentStep = normalizeStep(job.current_step)
+            if (currentStep !== null) setStep(currentStep)
+            setStatus(job.status)
+            statusRef.current = job.status
+            setProgress(job.status === 'completed' ? 100 : (job.progress ?? 0))
+            if (job.error) setError(job.error)
+            if (job.status === 'completed' || job.status === 'failed') {
+              stopFallbackPolling()
+            }
+            if (job.status === 'completed') {
+              window.dispatchEvent(new Event('credits-refresh'))
+            }
+          }
+        }
+      } catch {
+      } finally {
+        clearTimeout(timeoutId)
+        setIsInitialLoading(false)
+      }
+    },
+    [stopFallbackPolling],
+  )
 
   const connectWebSocket = useCallback(
     (id: string) => {
@@ -144,8 +166,12 @@ export function useJobProgress(jobId: string | null): UseJobProgressReturn {
               reconnectTimeoutRef.current = setTimeout(() => {
                 connectWebSocket(id)
               }, RECONNECT_DELAY)
-            } else {
+            } else if (!pollIntervalRef.current) {
               fetchCurrentStatus(id)
+              pollIntervalRef.current = setInterval(
+                () => fetchCurrentStatus(id),
+                FALLBACK_POLL_INTERVAL,
+              )
             }
           }
         }
@@ -174,8 +200,9 @@ export function useJobProgress(jobId: string | null): UseJobProgressReturn {
         clearTimeout(reconnectTimeoutRef.current)
         reconnectTimeoutRef.current = null
       }
+      stopFallbackPolling()
     }
-  }, [jobId, connectWebSocket, fetchCurrentStatus])
+  }, [jobId, connectWebSocket, fetchCurrentStatus, stopFallbackPolling])
 
   return {
     progress,
@@ -185,5 +212,6 @@ export function useJobProgress(jobId: string | null): UseJobProgressReturn {
     error,
     isConnected,
     isInitialLoading,
+    notFound,
   }
 }

@@ -18,7 +18,6 @@ export const updateUserSchema = z.object({
     .min(2, 'Name must be at least 2 characters')
     .max(100, 'Name too long')
     .optional(),
-  role: userRoleSchema.optional(),
 })
 
 export const userIdSchema = z.string().cuid('Invalid user ID format')

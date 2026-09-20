@@ -54,6 +54,25 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/auth/signin', req.url))
   }
 
+  if (pathname.startsWith('/admin')) {
+    if (!isAuthenticated) {
+      auditLogger.logUnauthorizedAccess(
+        pathname,
+        ip,
+        'Unauthenticated access to admin',
+      )
+      return NextResponse.redirect(new URL('/auth/signin', req.url))
+    }
+    if (req.auth?.user?.role !== 'admin') {
+      auditLogger.logUnauthorizedAccess(
+        pathname,
+        ip,
+        'Non-admin access to admin',
+      )
+      return NextResponse.redirect(new URL('/dashboard', req.url))
+    }
+  }
+
   if (isAuthenticated && isAuthOnlyPage(pathname)) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }

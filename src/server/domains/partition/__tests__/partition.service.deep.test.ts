@@ -58,7 +58,6 @@ describe('PartitionService - Deep Tests', () => {
       findSvgByIdAndUserId: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
-      updateSvg: vi.fn(),
       delete: vi.fn(),
       findByJobIdAndUserId: vi.fn(),
       touchLastOpened: vi.fn().mockResolvedValue(undefined),
@@ -209,7 +208,7 @@ describe('PartitionService - Deep Tests', () => {
         svgContent: null,
       } as any)
       setupFetch(makeJob())
-      vi.mocked(mockRepo.create).mockResolvedValue(makeEntity() as any)
+      vi.mocked(mockRepo.create).mockResolvedValue(makeSummary() as any)
 
       const result = await service.saveFromJob('user-1', {
         jobId: 'job-1',
@@ -230,9 +229,7 @@ describe('PartitionService - Deep Tests', () => {
           musicXmlContent: '<score/>',
         }),
       )
-      expect(result).not.toHaveProperty('musicXmlContent')
-      expect(result).not.toHaveProperty('svgContent')
-      expect(result).not.toHaveProperty('transcribeConfig')
+      expect(result).toEqual(makeSummary())
     })
 
     it('should throw SERVICE_UNAVAILABLE when svg fetch throws', async () => {
@@ -265,7 +262,7 @@ describe('PartitionService - Deep Tests', () => {
         svgContent: null,
       } as any)
       setupFetch(makeJob({ config: {} }))
-      vi.mocked(mockRepo.create).mockResolvedValue(makeEntity() as any)
+      vi.mocked(mockRepo.create).mockResolvedValue(makeSummary() as any)
 
       await service.saveFromJob('user-1', { jobId: 'job-1', title: 'T' })
 
@@ -335,13 +332,11 @@ describe('PartitionService - Deep Tests', () => {
     it('should return cached svgContent when available', async () => {
       vi.mocked(mockRepo.findSvgByIdAndUserId).mockResolvedValue({
         svgContent: '<svg>cached</svg>',
-        musicXmlContent: '<score/>',
       })
 
       const result = await service.getSvg('part-1', 'user-1')
 
       expect(result).toBe('<svg>cached</svg>')
-      expect(mockRepo.updateSvg).not.toHaveBeenCalled()
     })
 
     it('should throw PARTITION_NOT_FOUND when partition does not exist', async () => {
@@ -356,37 +351,10 @@ describe('PartitionService - Deep Tests', () => {
       }
     })
 
-    it('should render from musicXml and cache when svgContent is null', async () => {
+    it('should throw SERVICE_UNAVAILABLE when svgContent is null', async () => {
       vi.mocked(mockRepo.findSvgByIdAndUserId).mockResolvedValue({
         svgContent: null,
-        musicXmlContent: '<score/>',
       })
-      vi.mocked(mockRepo.updateSvg).mockResolvedValue(undefined)
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          text: async () => '<svg>rendered</svg>',
-        }),
-      )
-
-      const result = await service.getSvg('part-1', 'user-1')
-
-      expect(result).toBe('<svg>rendered</svg>')
-      await vi.waitFor(() => {
-        expect(mockRepo.updateSvg).toHaveBeenCalledWith(
-          'part-1',
-          '<svg>rendered</svg>',
-        )
-      })
-    })
-
-    it('should throw SERVICE_UNAVAILABLE when render endpoint fails', async () => {
-      vi.mocked(mockRepo.findSvgByIdAndUserId).mockResolvedValue({
-        svgContent: null,
-        musicXmlContent: '<score/>',
-      })
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
 
       await expect(service.getSvg('part-1', 'user-1')).rejects.toThrow(ApiError)
 
@@ -395,32 +363,6 @@ describe('PartitionService - Deep Tests', () => {
       } catch (e) {
         expect((e as ApiError).code).toBe('SERVICE_UNAVAILABLE')
         expect((e as ApiError).statusCode).toBe(HTTP_STATUS.SERVICE_UNAVAILABLE)
-      }
-    })
-  })
-
-  describe('getMusicXml', () => {
-    it('should return musicXmlContent when found', async () => {
-      vi.mocked(mockRepo.findByIdAndUserId).mockResolvedValue(
-        makeEntity({ musicXmlContent: '<score>content</score>' }) as any,
-      )
-
-      const result = await service.getMusicXml('part-1', 'user-1')
-
-      expect(result).toBe('<score>content</score>')
-    })
-
-    it('should throw PARTITION_NOT_FOUND when not found', async () => {
-      vi.mocked(mockRepo.findByIdAndUserId).mockResolvedValue(null)
-
-      await expect(service.getMusicXml('nope', 'user-1')).rejects.toThrow(
-        ApiError,
-      )
-
-      try {
-        await service.getMusicXml('nope', 'user-1')
-      } catch (e) {
-        expect((e as ApiError).code).toBe('PARTITION_NOT_FOUND')
       }
     })
   })

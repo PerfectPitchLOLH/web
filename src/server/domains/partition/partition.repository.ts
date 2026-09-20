@@ -4,7 +4,6 @@ import type {
   CreatePartitionDTO,
   PartitionListFilters,
   PartitionSummary,
-  SavedPartitionEntity,
   UpdatePartitionDTO,
 } from './partition.types'
 
@@ -49,28 +48,24 @@ export class PartitionRepository {
   async findByIdAndUserId(
     id: string,
     userId: string,
-  ): Promise<SavedPartitionEntity | null> {
+  ): Promise<PartitionSummary | null> {
     return db.savedPartition.findFirst({
       where: { id, userId },
-    })
+      select: SUMMARY_SELECT,
+    }) as unknown as PartitionSummary | null
   }
 
   async findSvgByIdAndUserId(
     id: string,
     userId: string,
-  ): Promise<{ svgContent: string | null; musicXmlContent: string } | null> {
-    const data = await db.savedPartition.findFirst({
+  ): Promise<{ svgContent: string | null } | null> {
+    return db.savedPartition.findFirst({
       where: { id, userId },
-      select: { svgContent: true, musicXmlContent: true },
+      select: { svgContent: true },
     })
-    if (!data || !data.musicXmlContent) return null
-    return {
-      svgContent: data.svgContent,
-      musicXmlContent: data.musicXmlContent,
-    }
   }
 
-  async create(data: CreatePartitionDTO): Promise<SavedPartitionEntity> {
+  async create(data: CreatePartitionDTO): Promise<PartitionSummary> {
     return db.savedPartition.create({
       data: {
         userId: data.userId,
@@ -86,14 +81,15 @@ export class PartitionRepository {
         sourceJobId: data.sourceJobId,
         durationSeconds: data.durationSeconds,
       },
-    })
+      select: SUMMARY_SELECT,
+    }) as unknown as PartitionSummary
   }
 
   async update(
     id: string,
     userId: string,
     data: UpdatePartitionDTO,
-  ): Promise<SavedPartitionEntity | null> {
+  ): Promise<PartitionSummary | null> {
     const existing = await this.findByIdAndUserId(id, userId)
     if (!existing) return null
 
@@ -104,14 +100,8 @@ export class PartitionRepository {
         ...(data.tags !== undefined && { tags: data.tags }),
         ...(data.notes !== undefined && { notes: data.notes }),
       },
-    })
-  }
-
-  async updateSvg(id: string, svgContent: string): Promise<void> {
-    await db.savedPartition.update({
-      where: { id },
-      data: { svgContent },
-    })
+      select: SUMMARY_SELECT,
+    }) as unknown as PartitionSummary
   }
 
   async delete(id: string, userId: string): Promise<boolean> {

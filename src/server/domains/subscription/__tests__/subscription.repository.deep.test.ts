@@ -763,6 +763,7 @@ describe('SubscriptionRepository - Deep Tests', () => {
       expect(db.customer.upsert).toHaveBeenCalledWith({
         where: { userId: 'user_123' },
         update: {
+          stripeCustomerId: customerData.stripeCustomerId,
           email: customerData.email,
           name: customerData.name,
           defaultPaymentMethod: customerData.defaultPaymentMethod,
@@ -1408,22 +1409,20 @@ describe('SubscriptionRepository - Deep Tests', () => {
           data: {
             processed: true,
             processedAt: expect.any(Date),
-            error: undefined,
-            retryCount: undefined,
+            error: null,
           },
         })
       })
 
-      it('should mark event as processed with error', async () => {
+      it('should mark event as failed without setting processed', async () => {
         vi.mocked(db.webhookEvent.update).mockResolvedValue({
           id: 'event_123',
-          processed: true,
-          processedAt: new Date(),
+          processed: false,
           error: 'Failed to process',
           retryCount: 1,
         } as any)
 
-        await repository.markWebhookEventProcessed(
+        await repository.markWebhookEventFailed(
           'evt_stripe_123',
           'Failed to process',
         )
@@ -1431,8 +1430,7 @@ describe('SubscriptionRepository - Deep Tests', () => {
         expect(db.webhookEvent.update).toHaveBeenCalledWith({
           where: { stripeEventId: 'evt_stripe_123' },
           data: {
-            processed: true,
-            processedAt: expect.any(Date),
+            processed: false,
             error: 'Failed to process',
             retryCount: { increment: 1 },
           },

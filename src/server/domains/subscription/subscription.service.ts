@@ -1,5 +1,3 @@
-import Stripe from 'stripe'
-
 import { db } from '@/server/lib/database'
 import {
   sendPaymentFailedEmail,
@@ -87,10 +85,6 @@ export class SubscriptionService {
     email: string,
     request: CreateCheckoutSessionRequest,
   ): Promise<CreateCheckoutSessionResponse> {
-    console.log(
-      '[SubscriptionService] Looking up plan for price ID:',
-      request.priceId,
-    )
     const plan = await this.repository.findPlanByStripePriceId(request.priceId)
 
     if (!plan) {
@@ -104,12 +98,6 @@ export class SubscriptionService {
         'Plan invalide',
       )
     }
-
-    console.log('[SubscriptionService] Found plan:', {
-      id: plan.id,
-      name: plan.name,
-      priceId: plan.stripePriceId,
-    })
 
     const existingSubscription =
       await this.repository.findSubscriptionByUserId(userId)
@@ -168,98 +156,6 @@ export class SubscriptionService {
         'Impossible de créer la session de paiement',
       )
     }
-
-    return {
-      sessionId: session.id,
-      url: session.url,
-    }
-  }
-
-  async createUpgradeCheckoutSession(
-    userId: string,
-    newPriceId: string,
-  ): Promise<CreateCheckoutSessionResponse> {
-    console.log('[UPGRADE_CHECKOUT] Création session Checkout pour upgrade:', {
-      userId,
-      newPriceId,
-    })
-
-    const subscription = await this.repository.findSubscriptionByUserId(userId)
-
-    if (!subscription || subscription.status !== 'active') {
-      throw new ApiError(
-        'SUBSCRIPTION_NOT_FOUND',
-        HTTP_STATUS.NOT_FOUND,
-        'Aucun abonnement actif',
-      )
-    }
-
-    const newPlan = await this.repository.findPlanByStripePriceId(newPriceId)
-
-    if (!newPlan) {
-      throw new ApiError(
-        'INVALID_PLAN',
-        HTTP_STATUS.BAD_REQUEST,
-        'Plan invalide',
-      )
-    }
-
-    const customer = await this.repository.findCustomerByUserId(userId)
-
-    if (!customer) {
-      throw new ApiError(
-        'CUSTOMER_NOT_FOUND',
-        HTTP_STATUS.NOT_FOUND,
-        'Client introuvable',
-      )
-    }
-
-    console.log('[UPGRADE_CHECKOUT] Création session avec:', {
-      customerId: customer.stripeCustomerId,
-      currentSubscriptionId: subscription.stripeSubscriptionId,
-      newPriceId,
-      newPlanName: newPlan.name,
-    })
-
-    const session = await stripe.checkout.sessions.create({
-      customer: customer.stripeCustomerId,
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: newPriceId,
-          quantity: 1,
-        },
-      ],
-      subscription_data: {
-        metadata: {
-          userId,
-          planId: newPlan.id,
-          upgradeFrom: subscription.stripeSubscriptionId,
-        },
-      },
-      success_url: `${process.env.API_URL}/dashboard/subscription?upgrade=success`,
-      cancel_url: `${process.env.API_URL}/dashboard/subscription?upgrade=cancelled`,
-      metadata: {
-        userId,
-        planId: newPlan.id,
-        isUpgrade: 'true',
-        oldSubscriptionId: subscription.stripeSubscriptionId,
-      },
-    })
-
-    if (!session.url) {
-      throw new ApiError(
-        'CHECKOUT_SESSION_FAILED',
-        HTTP_STATUS.INTERNAL_SERVER_ERROR,
-        'Impossible de créer la session de paiement',
-      )
-    }
-
-    console.log('[UPGRADE_CHECKOUT] Session créée avec succès:', {
-      sessionId: session.id,
-      url: session.url,
-    })
 
     return {
       sessionId: session.id,
@@ -400,6 +296,7 @@ export class SubscriptionService {
           existingSubscription.userId,
           oldPlan.transcriptionMinutes,
           newPlan.transcriptionMinutes,
+          oldPlan.monthlyPrice,
           stripeSubscription.customer as string,
         )
       }
@@ -510,11 +407,7 @@ export class SubscriptionService {
           paidAt: new Date(),
         })
       } catch (error: any) {
-        if (error.code === 'P2002') {
-          console.log(
-            `[Invoice] Invoice ${stripeInvoiceId} already created by another request, continuing`,
-          )
-        } else {
+        if (error.code !== 'P2002') {
           throw error
         }
       }
@@ -539,22 +432,6 @@ export class SubscriptionService {
               stripeInvoiceId,
             )
           }
-        }
-      }
-    } else {
-      const lines = stripeInvoice.lines.data
-      const packageLine = lines.find((line) =>
-        line.description?.toLowerCase().includes('crédit'),
-      )
-
-      if (packageLine) {
-        const linePrice = (packageLine as any).price
-        if (linePrice?.metadata?.bundleId) {
-          await this.creditService.purchaseBundle(
-            customer.userId,
-            linePrice.metadata.bundleId as any,
-            stripeInvoiceId,
-          )
         }
       }
     }
@@ -725,12 +602,8 @@ export class SubscriptionService {
     )
   }
 
-  async upgradeSubscription(
-    userId: string,
-    newPriceId: string,
-  ): Promise<CreateCheckoutSessionResponse> {
-    console.log('[UPGRADE] Redirection vers Stripe Checkout pour upgrade')
-    return this.createUpgradeCheckoutSession(userId, newPriceId)
+  async upgradeSubscription(userId: string, newPriceId: string): Promise<void> {
+    return this.upgradeSubscriptionDirect(userId, newPriceId)
   }
 
   async upgradeSubscriptionDirect(
@@ -771,33 +644,10 @@ export class SubscriptionService {
       )
     }
 
-    console.log("[UPGRADE_DIRECT] Tentative d'upgrade direct:", {
-      userId,
-      subscriptionId: subscription.stripeSubscriptionId,
-      currentPlanId: subscription.planId,
-      newPriceId,
-      newPlanId: newPlan.id,
-      itemId,
-    })
-
     try {
-      const updatedSubscription: Stripe.Subscription =
-        await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
-          items: [{ id: itemId, price: newPriceId }],
-          proration_behavior: 'create_prorations',
-        })
-
-      console.log('[UPGRADE_DIRECT] Abonnement mis à jour avec succès:', {
-        subscriptionId: updatedSubscription.id,
-        status: updatedSubscription.status,
-        currentPeriodEnd: new Date(
-          (updatedSubscription as any).current_period_end * 1000,
-        ),
-        latestInvoice: updatedSubscription.latest_invoice,
-        items: updatedSubscription.items.data.map((item) => ({
-          id: item.id,
-          priceId: item.price.id,
-        })),
+      await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+        items: [{ id: itemId, price: newPriceId }],
+        proration_behavior: 'create_prorations',
       })
     } catch (error) {
       console.error('[UPGRADE_DIRECT] Erreur lors de la mise à jour Stripe:', {
@@ -868,18 +718,6 @@ export class SubscriptionService {
     await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
       items: [{ id: itemId, price: newPriceId }],
       proration_behavior: 'create_prorations',
-    })
-  }
-
-  async grantWelcomeCredits(userId: string, email: string): Promise<void> {
-    await this.creditService.getUserCreditsBalance(userId)
-
-    await this.repository.createOrUpdateCustomer({
-      userId,
-      stripeCustomerId: `temp_${userId}`,
-      email,
-      name: null,
-      defaultPaymentMethod: null,
     })
   }
 }

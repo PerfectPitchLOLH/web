@@ -46,6 +46,7 @@ interface UseTranscriptionReturn {
   isProcessing: boolean
   isCancelling: boolean
   sessionToResume: TranscriptionSession | null
+  notFound: boolean
   reset: () => void
 }
 
@@ -71,7 +72,14 @@ export function useTranscription(): UseTranscriptionReturn {
     status,
     error: wsError,
     results,
+    notFound,
   } = useJobProgress(jobId)
+
+  useEffect(() => {
+    if (notFound) {
+      clearSession()
+    }
+  }, [notFound])
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -353,6 +361,7 @@ export function useTranscription(): UseTranscriptionReturn {
     isProcessing,
     isCancelling,
     sessionToResume,
+    notFound,
     reset,
   }
 }

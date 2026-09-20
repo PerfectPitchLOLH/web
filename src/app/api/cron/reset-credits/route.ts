@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto'
 import { NextRequest } from 'next/server'
 
 import { creditRepository, creditService } from '@/server/domains/credit'
@@ -7,6 +8,12 @@ import {
   createSuccessResponse,
   handleApiError,
 } from '@/server/shared/utils/api.utils'
+
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a)
+  const bufB = Buffer.from(b)
+  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB)
+}
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -21,7 +28,7 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  if (authHeader !== expectedAuth) {
+  if (!authHeader || !safeEqual(authHeader, expectedAuth)) {
     return createErrorResponse(
       'UNAUTHORIZED',
       'Non autorisé',

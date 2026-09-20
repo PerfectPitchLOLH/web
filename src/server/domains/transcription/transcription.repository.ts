@@ -11,6 +11,22 @@ import type {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 
+const BACKEND_API_KEY = process.env.BACKEND_API_KEY ?? ''
+
+function backendAuthHeaders(): Record<string, string> {
+  return BACKEND_API_KEY ? { 'X-API-Key': BACKEND_API_KEY } : {}
+}
+
+export class BackendApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'BackendApiError'
+  }
+}
+
 export class TranscriptionRepository {
   private async callBackendAPI<T>(
     endpoint: string,
@@ -27,13 +43,15 @@ export class TranscriptionRepository {
         signal: options?.signal ?? controller.signal,
         headers: {
           'Content-Type': 'application/json',
+          ...backendAuthHeaders(),
           ...options?.headers,
         },
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(
+        throw new BackendApiError(
+          response.status,
           errorData.detail ||
             `HTTP error ${response.status}: ${response.statusText}`,
         )
@@ -41,6 +59,9 @@ export class TranscriptionRepository {
 
       return response.json()
     } catch (error) {
+      if (error instanceof BackendApiError) {
+        throw error
+      }
       if (error instanceof Error) {
         throw new Error(`Backend API call failed: ${error.message}`)
       }
@@ -63,6 +84,7 @@ export class TranscriptionRepository {
     try {
       const response = await fetch(url, {
         method: 'POST',
+        headers: backendAuthHeaders(),
         body: formData,
       })
 
@@ -91,7 +113,10 @@ export class TranscriptionRepository {
     try {
       const response = await fetch(backendUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...backendAuthHeaders(),
+        },
         body: JSON.stringify({ url, config }),
       })
 
@@ -120,7 +145,10 @@ export class TranscriptionRepository {
     try {
       const response = await fetch(backendUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...backendAuthHeaders(),
+        },
         body: JSON.stringify({ url, config }),
       })
 
@@ -176,10 +204,11 @@ export class TranscriptionRepository {
   ): Promise<void> {
     let svgContent: string | undefined
 
-    const resolveUrl = (url: string) =>
-      url.startsWith('http')
-        ? url
-        : `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`
+    const resolveUrl = (url: string) => {
+      if (url.startsWith('http')) return url
+      const origin = new URL(API_BASE_URL).origin
+      return `${origin}${url.startsWith('/') ? '' : '/'}${url}`
+    }
 
     const svgUrls = [
       partitionUrl && resolveUrl(partitionUrl),
@@ -188,7 +217,7 @@ export class TranscriptionRepository {
 
     for (const url of svgUrls) {
       try {
-        const res = await fetch(url)
+        const res = await fetch(url, { headers: backendAuthHeaders() })
         if (res.ok) {
           svgContent = await res.text()
           break
@@ -208,7 +237,7 @@ export class TranscriptionRepository {
     const url = `${API_BASE_URL}/jobs/${jobId}/download/partition`
 
     try {
-      const response = await fetch(url)
+      const response = await fetch(url, { headers: backendAuthHeaders() })
 
       if (!response.ok) {
         throw new Error(`Download failed: ${response.statusText}`)
@@ -235,7 +264,10 @@ export class TranscriptionRepository {
   async cancelJob(jobId: string): Promise<void> {
     const url = `${API_BASE_URL}/jobs/${jobId}`
     try {
-      const response = await fetch(url, { method: 'DELETE' })
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: backendAuthHeaders(),
+      })
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         throw new Error(
@@ -258,7 +290,7 @@ export class TranscriptionRepository {
     url: string,
   ): Promise<{ duration_seconds: number; title: string }> {
     const backendUrl = `${API_BASE_URL}/transcribe/youtube/info?url=${encodeURIComponent(url)}`
-    const response = await fetch(backendUrl)
+    const response = await fetch(backendUrl, { headers: backendAuthHeaders() })
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
       throw new Error(errorData.detail || 'Could not fetch YouTube info')

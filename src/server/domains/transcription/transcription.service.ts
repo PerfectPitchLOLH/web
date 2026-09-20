@@ -1,10 +1,12 @@
 import type { CreditService } from '@/server/domains/credit/credit.service'
+import { permissionService } from '@/server/domains/permission'
 import { SUBSCRIPTION_STATUS } from '@/server/domains/subscription'
 import { db } from '@/server/lib/database'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
 import type { TranscriptionRepository } from './transcription.repository'
+import { BackendApiError } from './transcription.repository'
 import type {
   ConfigValidationResponse,
   HealthStatus,
@@ -37,8 +39,10 @@ export class TranscriptionService {
     durationSeconds?: number,
     skipCreditCheck = false,
   ): Promise<TranscribeResponse> {
-    if (!skipCreditCheck)
+    if (!skipCreditCheck) {
       await this.checkCreditsAvailable(userId, durationSeconds)
+      await this.enforcePolyphonyAccess(userId, config)
+    }
     this.validateAudioFile(file)
 
     try {
@@ -72,6 +76,7 @@ export class TranscriptionService {
     let estimatedDuration: number | undefined
 
     if (!skipCreditCheck) {
+      await this.enforcePolyphonyAccess(userId, config)
       await this.checkCreditsAvailable(userId)
       const info = await this.repository.getYoutubeInfo(url)
       estimatedDuration = info.duration_seconds
@@ -101,7 +106,10 @@ export class TranscriptionService {
       )
     }
 
-    if (!skipCreditCheck) await this.checkCreditsAvailable(userId)
+    if (!skipCreditCheck) {
+      await this.enforcePolyphonyAccess(userId, config)
+      await this.checkCreditsAvailable(userId)
+    }
 
     const response = await this.repository.uploadFromSpotifyUrl(url, config)
     await this.repository.saveJobOwner(response.job_id, userId)
@@ -137,10 +145,17 @@ export class TranscriptionService {
       return job
     } catch (error) {
       if (error instanceof ApiError) throw error
+      if (error instanceof BackendApiError && error.status === 404) {
+        throw new ApiError(
+          'NOT_FOUND',
+          HTTP_STATUS.NOT_FOUND,
+          'Job not found or expired',
+        )
+      }
       throw new ApiError(
-        'NOT_FOUND',
-        HTTP_STATUS.NOT_FOUND,
-        'Job not found or expired',
+        'SERVICE_UNAVAILABLE',
+        HTTP_STATUS.SERVICE_UNAVAILABLE,
+        'Backend temporarily unreachable',
       )
     }
   }
@@ -305,6 +320,26 @@ export class TranscriptionService {
         'INSUFFICIENT_CREDITS',
         HTTP_STATUS.PAYMENT_REQUIRED,
         `Crédits insuffisants : ${neededMinutes} min nécessaires, ${remainingMinutes} min disponibles`,
+      )
+    }
+  }
+
+  private async enforcePolyphonyAccess(
+    userId: string,
+    config: TranscribeConfig,
+  ): Promise<void> {
+    if (!config.polyphonic) return
+
+    const access = await permissionService.checkFeatureAccessForUser(
+      userId,
+      'polyphony',
+    )
+    if (!access.hasAccess) {
+      throw new ApiError(
+        'FORBIDDEN',
+        HTTP_STATUS.FORBIDDEN,
+        'La transcription polyphonique (accords) est réservée au plan Pro.',
+        { feature: 'polyphony', upgradeRequired: access.upgradeRequired },
       )
     }
   }

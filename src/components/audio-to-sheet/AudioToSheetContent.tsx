@@ -13,6 +13,7 @@ export function AudioToSheetContent() {
   const {
     inputSource,
     config,
+    canUsePolyphony,
     outOfCredits,
     insufficientCredits,
     costSeconds,
@@ -118,6 +119,7 @@ export function AudioToSheetContent() {
                 onFormatChange={handleFormatChange}
                 onSeparationChange={handleSeparationChange}
                 onPolyphonicChange={handlePolyphonicChange}
+                canUsePolyphony={canUsePolyphony}
                 isProcessing={isSubmitting}
                 error={error}
                 outOfCredits={outOfCredits}

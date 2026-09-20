@@ -9,13 +9,18 @@ import type { PartitionRepository } from './partition.repository'
 import type {
   PartitionListFilters,
   PartitionSummary,
-  SavedPartitionEntity,
   SavePartitionInput,
   UpdatePartitionDTO,
 } from './partition.types'
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+
+const BACKEND_API_KEY = process.env.BACKEND_API_KEY ?? ''
+
+function backendAuthHeaders(): Record<string, string> {
+  return BACKEND_API_KEY ? { 'X-API-Key': BACKEND_API_KEY } : {}
+}
 
 export class PartitionService {
   constructor(private repository: PartitionRepository) {}
@@ -49,7 +54,9 @@ export class PartitionService {
       )
     }
 
-    const jobRes = await fetch(`${API_BASE_URL}/jobs/${input.jobId}`)
+    const jobRes = await fetch(`${API_BASE_URL}/jobs/${input.jobId}`, {
+      headers: backendAuthHeaders(),
+    })
     if (!jobRes.ok) {
       throw new ApiError(
         ERROR_CODES.NOT_FOUND,
@@ -74,6 +81,7 @@ export class PartitionService {
       try {
         const svgRes = await fetch(
           `${API_BASE_URL}/jobs/${input.jobId}/download/partition`,
+          { headers: backendAuthHeaders() },
         )
         if (svgRes.ok) svgContent = await svgRes.text()
       } catch {}
@@ -91,7 +99,7 @@ export class PartitionService {
     const instrument = config.instrument_type || 'other'
     const partitionType = config.partition_type || 'classique'
 
-    const entity = await this.repository.create({
+    return this.repository.create({
       userId,
       title: input.title,
       originalFileName: input.originalFileName,
@@ -105,14 +113,6 @@ export class PartitionService {
       sourceJobId: input.jobId,
       durationSeconds: job.results?.duration_seconds,
     })
-
-    const {
-      musicXmlContent: _xml,
-      svgContent: _svg,
-      transcribeConfig: _cfg,
-      ...summary
-    } = entity
-    return summary as PartitionSummary
   }
 
   async getList(
@@ -122,7 +122,7 @@ export class PartitionService {
     return this.repository.findAllByUserId(userId, filters)
   }
 
-  async getById(id: string, userId: string): Promise<SavedPartitionEntity> {
+  async getById(id: string, userId: string): Promise<PartitionSummary> {
     const partition = await this.repository.findByIdAndUserId(id, userId)
     if (!partition) {
       throw new ApiError(ERROR_CODES.PARTITION_NOT_FOUND, HTTP_STATUS.NOT_FOUND)
@@ -142,46 +142,17 @@ export class PartitionService {
       return data.svgContent
     }
 
-    const renderRes = await fetch(`${API_BASE_URL}/render/svg`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/xml' },
-      body: data.musicXmlContent,
-    })
-
-    if (!renderRes.ok) {
-      throw new ApiError(
-        ERROR_CODES.SERVICE_UNAVAILABLE,
-        HTTP_STATUS.SERVICE_UNAVAILABLE,
-      )
-    }
-
-    const svg = await renderRes.text()
-
-    this.repository.updateSvg(id, svg).catch(() => {})
-
-    return svg
-  }
-
-  async getMusicXml(id: string, userId: string): Promise<string> {
-    const partition = await this.repository.findByIdAndUserId(id, userId)
-    if (!partition) {
-      throw new ApiError(ERROR_CODES.PARTITION_NOT_FOUND, HTTP_STATUS.NOT_FOUND)
-    }
-    if (!partition.musicXmlContent) {
-      throw new ApiError(
-        ERROR_CODES.MUSICXML_UNAVAILABLE,
-        HTTP_STATUS.NOT_FOUND,
-        'MusicXML not available for this partition',
-      )
-    }
-    return partition.musicXmlContent
+    throw new ApiError(
+      ERROR_CODES.SERVICE_UNAVAILABLE,
+      HTTP_STATUS.SERVICE_UNAVAILABLE,
+    )
   }
 
   async update(
     id: string,
     userId: string,
     data: UpdatePartitionDTO,
-  ): Promise<SavedPartitionEntity> {
+  ): Promise<PartitionSummary> {
     const updated = await this.repository.update(id, userId, data)
     if (!updated) {
       throw new ApiError(ERROR_CODES.PARTITION_NOT_FOUND, HTTP_STATUS.NOT_FOUND)

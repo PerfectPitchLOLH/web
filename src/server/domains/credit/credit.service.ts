@@ -258,6 +258,7 @@ export class CreditService {
     userId: string,
     oldPlanMinutes: number,
     newPlanMinutes: number,
+    oldPlanPrice: number,
     stripeCustomerId: string,
   ): Promise<void> {
     const currentCredits = await this.repository.getUserCredits(userId)
@@ -278,7 +279,11 @@ export class CreditService {
       return
     }
 
-    const unusedValue = (creditsRemaining / creditsTotal) * oldPlanMinutes * 10
+    const unusedFraction = Math.min(
+      1,
+      Math.max(0, creditsRemaining / creditsTotal),
+    )
+    const unusedValue = unusedFraction * oldPlanPrice
 
     const creditAmount = Math.round(unusedValue * 100)
 

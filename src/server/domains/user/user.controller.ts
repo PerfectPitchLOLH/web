@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { ZodError } from 'zod'
 
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
-import { validateApiAuth } from '@/server/shared/middleware'
+import { requireAdminAuth, validateApiAuth } from '@/server/shared/middleware'
 import {
   createErrorResponse,
   createSuccessResponse,
@@ -21,10 +21,9 @@ export class UserController {
   constructor(private service: UserService) {}
 
   async getUsers(request: NextRequest) {
-    const authResult = await validateApiAuth(request)
-    if (!authResult.ok) return authResult.response
-
     try {
+      await requireAdminAuth()
+
       const { searchParams } = request.nextUrl
 
       const queryParams = {
@@ -62,13 +61,12 @@ export class UserController {
   }
 
   async getUserById(
-    request: NextRequest,
+    _request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
   ) {
-    const authResult = await validateApiAuth(request)
-    if (!authResult.ok) return authResult.response
-
     try {
+      await requireAdminAuth()
+
       const { id } = await params
       const validatedId = userIdSchema.parse(id)
       const user = await this.service.getUserById(validatedId)
@@ -125,10 +123,9 @@ export class UserController {
   }
 
   async createUser(request: NextRequest) {
-    const authResult = await validateApiAuth(request)
-    if (!authResult.ok) return authResult.response
-
     try {
+      await requireAdminAuth()
+
       const body = await request.json()
       const validated = createUserSchema.parse(body)
       const user = await this.service.createUser(validated as any)
@@ -158,10 +155,9 @@ export class UserController {
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
   ) {
-    const authResult = await validateApiAuth(request)
-    if (!authResult.ok) return authResult.response
-
     try {
+      await requireAdminAuth()
+
       const { id } = await params
       const validatedId = userIdSchema.parse(id)
       const body = await request.json()
@@ -190,13 +186,12 @@ export class UserController {
   }
 
   async deleteUser(
-    request: NextRequest,
+    _request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
   ) {
-    const authResult = await validateApiAuth(request)
-    if (!authResult.ok) return authResult.response
-
     try {
+      await requireAdminAuth()
+
       const { id } = await params
       const validatedId = userIdSchema.parse(id)
       await this.service.deleteUser(validatedId)

@@ -89,33 +89,9 @@ export class SubscriptionController {
   async upgradeSubscription(userId: string, request: NextRequest) {
     try {
       const body = (await request.json()) as UpgradeSubscriptionRequest
-      console.log("[CONTROLLER] Requête d'upgrade reçue:", {
-        userId,
-        priceId: body.priceId,
-        timestamp: new Date().toISOString(),
-      })
-
-      const checkoutSession = await this.service.upgradeSubscription(
-        userId,
-        body.priceId,
-      )
-
-      console.log('[CONTROLLER] Session Checkout créée avec succès:', {
-        userId,
-        sessionId: checkoutSession.sessionId,
-        url: checkoutSession.url,
-      })
-
-      return createSuccessResponse({
-        checkoutUrl: checkoutSession.url,
-        sessionId: checkoutSession.sessionId,
-      })
+      await this.service.upgradeSubscription(userId, body.priceId)
+      return createSuccessResponse({ success: true })
     } catch (error) {
-      console.error("[CONTROLLER] Erreur lors de l'upgrade:", {
-        userId,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        errorStack: error instanceof Error ? error.stack : undefined,
-      })
       return handleApiError(error)
     }
   }
