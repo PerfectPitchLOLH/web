@@ -1,3 +1,25 @@
+import {
+  PLAN_PRICING,
+  SUBSCRIPTION_DEFAULTS,
+} from '@/server/domains/subscription/subscription.constants'
+
+const CURRENCY = SUBSCRIPTION_DEFAULTS.CURRENCY.toUpperCase()
+
+const monthlyOffers = Object.entries(PLAN_PRICING).map(([tier, prices]) => ({
+  '@type': 'Offer',
+  name: tier.charAt(0).toUpperCase() + tier.slice(1),
+  price: prices.monthly.toFixed(2),
+  priceCurrency: CURRENCY,
+  priceSpecification: {
+    '@type': 'UnitPriceSpecification',
+    price: prices.monthly.toFixed(2),
+    priceCurrency: CURRENCY,
+    unitCode: 'MON',
+  },
+}))
+
+const monthlyPrices = Object.values(PLAN_PRICING).map((p) => p.monthly)
+
 export function JsonLdSchema() {
   const schema = {
     '@context': 'https://schema.org',
@@ -7,46 +29,17 @@ export function JsonLdSchema() {
     operatingSystem: 'Web Browser',
     offers: {
       '@type': 'AggregateOffer',
-      priceCurrency: 'USD',
-      lowPrice: '0',
-      highPrice: '29',
-      offerCount: '3',
-      offers: [
-        {
-          '@type': 'Offer',
-          name: 'Free Plan',
-          price: '0',
-          priceCurrency: 'USD',
-          description: 'Perfect for learning and trying out Notavex',
-        },
-        {
-          '@type': 'Offer',
-          name: 'Pro Plan',
-          price: '14',
-          priceCurrency: 'USD',
-          description: 'For serious musicians and music educators',
-        },
-        {
-          '@type': 'Offer',
-          name: 'Studio Plan',
-          price: '29',
-          priceCurrency: 'USD',
-          description: 'Professional workflows for studios and composers',
-        },
-      ],
-    },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.8',
-      ratingCount: '1247',
-      bestRating: '5',
+      priceCurrency: CURRENCY,
+      lowPrice: Math.min(...monthlyPrices).toFixed(2),
+      highPrice: Math.max(...monthlyPrices).toFixed(2),
+      offerCount: String(monthlyOffers.length),
+      offers: monthlyOffers,
     },
     creator: {
       '@type': 'Organization',
-      name: 'Notavex Inc.',
+      name: 'Notavex',
       url: 'https://notavex.com',
     },
-    datePublished: '2026-01-15',
     description:
       'AI-powered music transcription tool that transforms any song into sheet music by automatically separating every instrument from YouTube videos, audio files, or live recordings.',
     featureList: [
@@ -57,8 +50,6 @@ export function JsonLdSchema() {
       'Professional notation formatting',
       'Cloud-saved transcription history',
     ],
-    screenshot: 'https://notavex.com/screenshot.png',
-    softwareVersion: '2.1.0',
     url: 'https://notavex.com',
   }
 
