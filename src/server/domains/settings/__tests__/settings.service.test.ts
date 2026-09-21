@@ -7,6 +7,13 @@ import { SettingsRepository } from '../settings.repository'
 import { SettingsService } from '../settings.service'
 import type { UserSettings } from '../settings.types'
 
+vi.mock('@/server/lib/stripe', () => ({
+  stripe: {
+    subscriptions: { list: vi.fn(), cancel: vi.fn() },
+    customers: { del: vi.fn() },
+  },
+}))
+
 vi.mock('@/server/shared/utils/password.utils', () => ({
   hashPassword: vi.fn().mockResolvedValue('hashed_new_password'),
   verifyPassword: vi.fn().mockResolvedValue(true),

@@ -27,6 +27,13 @@ vi.mock('@/server/lib/database', () => ({
   },
 }))
 
+vi.mock('@/server/lib/stripe', () => ({
+  stripe: {
+    subscriptions: { list: vi.fn(), cancel: vi.fn() },
+    customers: { del: vi.fn() },
+  },
+}))
+
 vi.mock('@/server/shared/utils/password.utils', () => ({
   hashPassword: vi.fn().mockResolvedValue('hashed_password'),
   verifyPassword: vi.fn().mockResolvedValue(true),
@@ -651,6 +658,9 @@ describe('Settings Security Tests', () => {
       const { db } = await import('@/server/lib/database')
       vi.mocked(db.user.findUnique).mockResolvedValue({
         id: 'user123',
+        stripeCustomerId: null,
+        customer: null,
+        subscriptions: [],
       } as any)
       vi.mocked(db.user.delete).mockResolvedValue({} as any)
 
@@ -763,6 +773,9 @@ describe('Settings Security Tests', () => {
       const { db } = await import('@/server/lib/database')
       vi.mocked(db.user.findUnique).mockResolvedValue({
         id: 'user123',
+        stripeCustomerId: null,
+        customer: null,
+        subscriptions: [],
       } as any)
       vi.mocked(db.user.delete).mockResolvedValue({} as any)
 
@@ -783,6 +796,9 @@ describe('Settings Security Tests', () => {
       const { db } = await import('@/server/lib/database')
       vi.mocked(db.user.findUnique).mockResolvedValue({
         id: 'user123',
+        stripeCustomerId: null,
+        customer: null,
+        subscriptions: [],
       } as any)
       vi.mocked(db.user.delete).mockResolvedValue({} as any)
 

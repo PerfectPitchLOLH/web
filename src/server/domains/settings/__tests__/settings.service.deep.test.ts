@@ -7,6 +7,13 @@ import { SettingsService } from '../settings.service'
 import type { UserSettings } from '../settings.types'
 import { DEFAULT_NOTIFICATION_PREFERENCES } from '../settings.types'
 
+vi.mock('@/server/lib/stripe', () => ({
+  stripe: {
+    subscriptions: { list: vi.fn(), cancel: vi.fn() },
+    customers: { del: vi.fn() },
+  },
+}))
+
 vi.mock('@/server/shared/utils/password.utils', () => ({
   hashPassword: vi.fn().mockResolvedValue('hashed_new_password'),
   verifyPassword: vi.fn().mockResolvedValue(true),
@@ -72,6 +79,7 @@ describe('SettingsService - Deep Tests', () => {
       updateAppearance: vi.fn(),
       completeOnboarding: vi.fn(),
       deleteUser: vi.fn(),
+      findStripeCustomerIds: vi.fn().mockResolvedValue([]),
     } as any
 
     service = new SettingsService(mockRepository)
