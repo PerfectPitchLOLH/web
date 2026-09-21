@@ -2,6 +2,7 @@ import type { CreditPurchaseService } from '@/server/domains/credit-purchase/cre
 import { stripe } from '@/server/lib/stripe'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
+import { buildWithdrawalWaiverMetadata } from '@/server/shared/utils/withdrawal-waiver.utils'
 
 import type { SubscriptionRepository } from '../subscription/subscription.repository'
 import type {
@@ -125,6 +126,10 @@ export class PaymentService {
       )
     }
 
+    const withdrawalWaiver = buildWithdrawalWaiverMetadata(
+      request.withdrawalWaiverAccepted,
+    )
+
     let customer =
       await this.subscriptionRepository.findCustomerByUserId(userId)
 
@@ -164,6 +169,7 @@ export class PaymentService {
         bundleId: request.bundleId,
         bundleName: request.bundleName,
         minutes: request.minutes.toString(),
+        ...withdrawalWaiver,
       },
     })
 

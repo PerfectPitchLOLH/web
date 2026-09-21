@@ -87,6 +87,7 @@ export type CreateCreditTransactionDTO = CreateDTO<CreditTransaction>
 
 export type PurchaseBundleRequest = {
   bundleId: CreditBundleId
+  withdrawalWaiverAccepted?: boolean
 }
 
 export type CreditHistoryParams = {

@@ -89,12 +89,16 @@ export function useSubscription() {
     }
   }, [track])
 
-  const createCheckoutSession = async (priceId: string) => {
+  const createCheckoutSession = async (
+    priceId: string,
+    withdrawalWaiverAccepted: boolean,
+  ) => {
     const response = await fetch('/api/subscriptions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         priceId,
+        withdrawalWaiverAccepted,
         successUrl: `${window.location.origin}/dashboard?subscribed=true`,
         cancelUrl: `${window.location.origin}/dashboard/subscription`,
       }),

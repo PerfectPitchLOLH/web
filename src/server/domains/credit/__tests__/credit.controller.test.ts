@@ -257,4 +257,58 @@ describe('CreditController', () => {
       expect(bestValueBundle.id).toBe('large')
     })
   })
+
+  describe('createBundlePurchaseCheckout', () => {
+    const buildRequest = (body: Record<string, unknown>) =>
+      new NextRequest('http://localhost/api/credits/payment-intent', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      })
+
+    it('devrait transmettre la renonciation au droit de rétractation au service de paiement', async () => {
+      const createCheckoutSession = vi
+        .fn()
+        .mockResolvedValue({ sessionId: 'cs_1', url: 'https://stripe.test' })
+      const paymentController = new CreditController(mockService, {
+        createCheckoutSession,
+      } as any)
+
+      const response = await paymentController.createBundlePurchaseCheckout(
+        'user-1',
+        'user@example.com',
+        buildRequest({ bundleId: 'small', withdrawalWaiverAccepted: true }),
+      )
+
+      expect(response.status).toBe(HTTP_STATUS.CREATED)
+      expect(createCheckoutSession).toHaveBeenCalledWith(
+        'user-1',
+        'user@example.com',
+        expect.objectContaining({
+          bundleId: 'small',
+          withdrawalWaiverAccepted: true,
+        }),
+      )
+    })
+
+    it('devrait renvoyer une erreur 400 quand le service refuse faute de renonciation', async () => {
+      const createCheckoutSession = vi
+        .fn()
+        .mockRejectedValue(
+          new ApiError('WITHDRAWAL_WAIVER_REQUIRED', HTTP_STATUS.BAD_REQUEST),
+        )
+      const paymentController = new CreditController(mockService, {
+        createCheckoutSession,
+      } as any)
+
+      const response = await paymentController.createBundlePurchaseCheckout(
+        'user-1',
+        'user@example.com',
+        buildRequest({ bundleId: 'small' }),
+      )
+      const data = await response.json()
+
+      expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST)
+      expect(data.success).toBe(false)
+    })
+  })
 })

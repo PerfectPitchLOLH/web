@@ -97,6 +97,7 @@ export type CreateCheckoutSessionRequest = {
   priceId: string
   successUrl?: string
   cancelUrl?: string
+  withdrawalWaiverAccepted?: boolean
 }
 
 export type CreateCheckoutSessionResponse = {

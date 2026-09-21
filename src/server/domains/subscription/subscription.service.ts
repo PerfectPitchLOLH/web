@@ -8,6 +8,7 @@ import {
 import { stripe } from '@/server/lib/stripe'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
+import { buildWithdrawalWaiverMetadata } from '@/server/shared/utils/withdrawal-waiver.utils'
 
 import type { CreditService } from '../credit/credit.service'
 import type { CreditPurchaseRepository } from '../credit-purchase/credit-purchase.repository'
@@ -110,6 +111,10 @@ export class SubscriptionService {
       )
     }
 
+    const withdrawalWaiver = buildWithdrawalWaiverMetadata(
+      request.withdrawalWaiverAccepted,
+    )
+
     let customer = await this.repository.findCustomerByUserId(userId)
 
     if (!customer) {
@@ -146,6 +151,7 @@ export class SubscriptionService {
       metadata: {
         userId,
         planId: plan.id,
+        ...withdrawalWaiver,
       },
     })
 

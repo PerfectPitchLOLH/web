@@ -14,6 +14,7 @@ export type CreateCheckoutSessionRequest = {
   bundleName: string
   minutes: number
   priceId: string
+  withdrawalWaiverAccepted?: boolean
 }
 
 export type CreateCheckoutSessionResponse = {
