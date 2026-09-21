@@ -1,6 +1,8 @@
 import * as OTPAuth from 'otpauth'
 import QRCode from 'qrcode'
 
+import { SUBSCRIPTION_STATUS } from '@/server/domains/subscription/subscription.constants'
+import { stripe } from '@/server/lib/stripe'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils'
 import {
@@ -36,6 +38,39 @@ function generateBackupCodes(count = 8): string[] {
     codes.push(`${code.slice(0, 5)}-${code.slice(5)}`)
   }
   return codes
+}
+
+const TERMINAL_SUBSCRIPTION_STATUSES = new Set<string>([
+  SUBSCRIPTION_STATUS.CANCELED,
+  SUBSCRIPTION_STATUS.INCOMPLETE_EXPIRED,
+])
+
+async function ignoreMissingStripeResource(
+  operation: () => Promise<unknown>,
+): Promise<void> {
+  try {
+    await operation()
+  } catch (error) {
+    if ((error as { code?: string } | null)?.code !== 'resource_missing') {
+      throw error
+    }
+  }
+}
+
+async function cancelStripeSubscriptions(customerId: string): Promise<void> {
+  await ignoreMissingStripeResource(async () => {
+    for await (const subscription of stripe.subscriptions.list({
+      customer: customerId,
+      status: 'all',
+      limit: 100,
+    })) {
+      if (TERMINAL_SUBSCRIPTION_STATUSES.has(subscription.status)) continue
+
+      await ignoreMissingStripeResource(() =>
+        stripe.subscriptions.cancel(subscription.id),
+      )
+    }
+  })
 }
 
 export class SettingsService {
@@ -289,6 +324,31 @@ export class SettingsService {
       throw new ApiError('NOT_FOUND', HTTP_STATUS.NOT_FOUND, 'User not found')
     }
 
+    await this.closeStripeBilling(userId)
     await this.repository.deleteUser(userId)
+  }
+
+  private async closeStripeBilling(userId: string): Promise<void> {
+    const customerIds = await this.repository.findStripeCustomerIds(userId)
+
+    for (const customerId of customerIds) {
+      try {
+        await cancelStripeSubscriptions(customerId)
+        await ignoreMissingStripeResource(() =>
+          stripe.customers.del(customerId),
+        )
+      } catch (error) {
+        console.error('[SettingsService] Stripe cleanup failed', {
+          userId,
+          customerId,
+          error,
+        })
+        throw new ApiError(
+          'STRIPE_UPDATE_FAILED',
+          HTTP_STATUS.SERVICE_UNAVAILABLE,
+          "Impossible de résilier votre abonnement pour le moment. Votre compte n'a pas été supprimé, veuillez réessayer dans quelques instants.",
+        )
+      }
+    }
   }
 }
