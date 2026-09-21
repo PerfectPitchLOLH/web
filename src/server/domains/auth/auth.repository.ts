@@ -73,4 +73,22 @@ export class AuthRepository {
       select: { emailVerified: true },
     })
   }
+
+  async findSuspendedAtById(
+    id: string,
+  ): Promise<{ suspendedAt: Date | null } | null> {
+    return db.user.findUnique({
+      where: { id },
+      select: { suspendedAt: true },
+    })
+  }
+
+  async findSuspendedAtByEmail(
+    email: string,
+  ): Promise<{ suspendedAt: Date | null } | null> {
+    return db.user.findUnique({
+      where: { email },
+      select: { suspendedAt: true },
+    })
+  }
 }

@@ -4,6 +4,14 @@ import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import Google from 'next-auth/providers/google'
 
+import { auditLogger } from '@/server/shared/utils/audit.logger'
+import {
+  checkRateLimit,
+  getClientIP,
+  getSignInRateLimitKey,
+  rateLimiters,
+} from '@/server/shared/utils/rate-limit.utils'
+
 import { AuthRepository } from '../domains/auth/auth.repository'
 import { signInSchema } from '../domains/auth/auth.schemas'
 import { DEV_MODE_COOKIE_NAME } from '../domains/dev-mode'
@@ -11,6 +19,8 @@ import { verifyPassword } from '../shared/utils/password.utils'
 import { db } from './database'
 
 const MAX_SESSION_DURATION_MS = 30 * 60 * 1000
+const TIMING_EQUALIZER_HASH =
+  '$2b$12$uZCeUtGKmz1QbMepfo7v1eNLkpVEobqgc.S0GkBboqHkRg1F5suhm'
 const authRepository = new AuthRepository()
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -43,22 +53,39 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         try {
           const { email, password } = await signInSchema.parseAsync(credentials)
+
+          const ip = getClientIP(request)
+          const rateLimitKey = getSignInRateLimitKey(email, ip)
+          const { success } = await checkRateLimit(
+            rateLimiters.signIn,
+            rateLimitKey,
+          )
+
+          if (!success) {
+            auditLogger.logRateLimitExceeded(rateLimitKey, 'signin', ip)
+            return null
+          }
 
           const user = await db.user.findUnique({
             where: { email },
           })
 
-          if (!user || !user.password) {
-            throw new Error('Invalid credentials')
+          // Compare against a dummy hash when the account is unknown so the
+          // response time matches a wrong password
+          const isPasswordValid = await verifyPassword(
+            password,
+            user?.password ?? TIMING_EQUALIZER_HASH,
+          )
+
+          if (!user?.password || !isPasswordValid) {
+            return null
           }
 
-          const isPasswordValid = await verifyPassword(password, user.password)
-
-          if (!isPasswordValid) {
-            throw new Error('Invalid credentials')
+          if (user.suspendedAt) {
+            return null
           }
 
           return {
@@ -76,6 +103,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === 'credentials' || !user.email) {
+        return true
+      }
+
+      const existing = await authRepository.findSuspendedAtByEmail(user.email)
+      return !existing?.suspendedAt
+    },
     async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id

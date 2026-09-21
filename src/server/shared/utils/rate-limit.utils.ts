@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 
@@ -75,6 +77,15 @@ export function getRateLimitIdentifier(
     return `email:${email}`
   }
   return `ip:${ip || 'unknown'}`
+}
+
+export function getSignInRateLimitKey(
+  email: string,
+  ip: string | null,
+): string {
+  return createHash('sha256')
+    .update(`${email.trim().toLowerCase()}|${ip || 'unknown'}`)
+    .digest('hex')
 }
 
 export function getClientIP(request: Request): string | null {

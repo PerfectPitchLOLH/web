@@ -223,4 +223,41 @@ describe('AuthRepository', () => {
       })
     })
   })
+
+  describe('findSuspendedAtById', () => {
+    it('should select only suspendedAt by primary key', async () => {
+      const suspendedAt = new Date()
+      vi.mocked(db.user.findUnique).mockResolvedValue({ suspendedAt } as any)
+
+      const result = await repository.findSuspendedAtById('user_1')
+
+      expect(result).toEqual({ suspendedAt })
+      expect(db.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'user_1' },
+        select: { suspendedAt: true },
+      })
+    })
+
+    it('should return null when the user does not exist', async () => {
+      vi.mocked(db.user.findUnique).mockResolvedValue(null)
+
+      expect(await repository.findSuspendedAtById('missing')).toBeNull()
+    })
+  })
+
+  describe('findSuspendedAtByEmail', () => {
+    it('should select only suspendedAt by email', async () => {
+      vi.mocked(db.user.findUnique).mockResolvedValue({
+        suspendedAt: null,
+      } as any)
+
+      const result = await repository.findSuspendedAtByEmail('test@test.com')
+
+      expect(result).toEqual({ suspendedAt: null })
+      expect(db.user.findUnique).toHaveBeenCalledWith({
+        where: { email: 'test@test.com' },
+        select: { suspendedAt: true },
+      })
+    })
+  })
 })
