@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function CookiesPage() {
   return (
-    <LegalPage title="Politique de cookies" lastUpdated="29 avril 2026">
+    <LegalPage title="Politique de cookies" lastUpdated="21 septembre 2026">
       <CookiesContent />
     </LegalPage>
   )

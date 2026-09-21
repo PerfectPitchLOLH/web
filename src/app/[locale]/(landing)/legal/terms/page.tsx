@@ -12,7 +12,7 @@ export default function TermsPage() {
   return (
     <LegalPage
       title="Conditions Générales d'Utilisation"
-      lastUpdated="29 avril 2026"
+      lastUpdated="21 septembre 2026"
     >
       <TermsContent />
     </LegalPage>

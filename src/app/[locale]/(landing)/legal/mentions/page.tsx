@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function MentionsPage() {
   return (
-    <LegalPage title="Mentions légales" lastUpdated="29 avril 2026">
+    <LegalPage title="Mentions légales" lastUpdated="21 septembre 2026">
       <MentionsContent />
     </LegalPage>
   )

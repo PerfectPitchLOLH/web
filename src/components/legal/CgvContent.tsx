@@ -1,3 +1,5 @@
+import { LEGAL_IDENTITY } from '@/lib/legal-identity'
+
 export function CgvContent() {
   return (
     <>
@@ -5,8 +7,13 @@ export function CgvContent() {
         Article 1 — Vendeur
       </h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        Notavex SAS, SIRET XXXXXXXXXXXXXXXXX, dont le siège social est situé à
-        Paris, France. Contact commercial : contact@notavex.com.
+        {LEGAL_IDENTITY.companyName}, {LEGAL_IDENTITY.legalForm} au capital de{' '}
+        {LEGAL_IDENTITY.shareCapital}, immatriculée sous le numéro SIRET{' '}
+        {LEGAL_IDENTITY.siret} ({LEGAL_IDENTITY.registration}), dont le siège
+        social est situé {LEGAL_IDENTITY.headOfficeAddress} (ci-après «{' '}
+        {LEGAL_IDENTITY.brandName} »). Numéro de TVA intracommunautaire :{' '}
+        {LEGAL_IDENTITY.vatNumber}. Contact commercial :{' '}
+        {LEGAL_IDENTITY.contactEmail}.
       </p>
 
       <h2 className="text-xl font-semibold mt-8 mb-4 text-foreground">
@@ -60,14 +67,23 @@ export function CgvContent() {
         fourniture d&apos;un contenu numérique non fourni sur un support
         matériel dont l&apos;exécution a commencé avec l&apos;accord préalable
         exprès du consommateur et renoncement exprès à son droit de
-        rétractation. En utilisant les crédits de transcription,
-        l&apos;utilisateur reconnaît avoir consenti à l&apos;exécution immédiate
-        du service et renoncer à son droit de rétractation pour les crédits
-        consommés.
+        rétractation.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        Pour exercer votre droit de rétractation, contactez-nous à
-        contact@notavex.com.
+        Avant tout paiement, le consommateur est invité à cocher une case par
+        laquelle il demande l&apos;exécution immédiate de sa commande (accès au
+        service et crédits de transcription mis à disposition dès le paiement)
+        et renonce expressément à son droit de rétractation. Cette case est
+        obligatoire : sans elle, la commande ne peut pas être validée.
+      </p>
+      <p className="text-muted-foreground leading-relaxed mb-4">
+        Notavex conserve la preuve de ce consentement : la date et l&apos;heure
+        de la commande ainsi que la version des présentes CGV en vigueur sont
+        enregistrées avec le paiement.
+      </p>
+      <p className="text-muted-foreground leading-relaxed mb-4">
+        Pour toute demande relative au droit de rétractation, contactez-nous à{' '}
+        {LEGAL_IDENTITY.contactEmail}.
       </p>
 
       <h2 className="text-xl font-semibold mt-8 mb-4 text-foreground">
