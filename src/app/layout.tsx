@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     siteName: 'Notavex',
     title: 'Notavex - Transform Any Song Into Sheet Music with AI',
     description:
-      'AI-powered transcription that separates every instrument from YouTube videos & audio files. Used by 10,000+ musicians. Try free today!',
+      'AI-powered transcription that separates every instrument from YouTube videos & audio files. Try free today!',
     images: [
       {
         url: '/thumbnails/og-image.png',

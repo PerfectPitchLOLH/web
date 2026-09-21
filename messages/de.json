@@ -5,7 +5,7 @@
     "titleItalic": "im Dienst der Musiker.",
     "ctaPrimary": "Jetzt starten →",
     "ctaDemo": "Demo ansehen",
-    "socialProof": "Treten Sie {count}+ Musikern bei, die 5+ Stunden pro Transkription sparen",
+    "tagline": "Noten und Tabulatur, erzeugt aus Ihrer Audiodatei",
     "transcribedIn": "Transkribiert in"
   },
   "Pricing": {
@@ -50,53 +50,6 @@
       "polyphony": "Polyphonie",
       "historyValues": ["30 Tage", "90 Tage", "Unbegrenzt"]
     }
-  },
-  "SocialProof": {
-    "statsLabels": {
-      "musicians": "Musiker",
-      "sheets": "Erstellte Noten",
-      "countries": "Länder"
-    },
-    "title": "Geliebt von Musikern auf der ganzen Welt",
-    "subtitle": "Über {count} Gitarristen, Pianisten, Geiger und Produzenten vertrauen täglich auf Notavex.",
-    "testimonials": [
-      {
-        "quote": "\"Ich habe in 3 Monaten über 400 € gespart. Notavex hat das Gitarrenlernen zugänglich und angenehm gemacht.\"",
-        "name": "Sarah M.",
-        "role": "Guitar Student",
-        "location": "Austin, TX"
-      },
-      {
-        "quote": "\"Ich verbrachte 4–5 Stunden mit Transkriptionen für Kunden. Jetzt dauert es Minuten. In einer Woche amortisiert.\"",
-        "name": "James K.",
-        "role": "Session Musician",
-        "location": "Nashville, TN"
-      },
-      {
-        "quote": "\"Ich erstelle Material für 30+ Schüler. Die Multi-Instrument-Trennung verändert alles beim Unterrichten von Orchestrierung.\"",
-        "name": "Dr. Lisa Chen",
-        "role": "Music Educator · Berklee",
-        "location": "Boston, MA"
-      },
-      {
-        "quote": "\"Die Präzision ist beeindruckend. Ich analysiere die Progressionen meiner Lieblingsproduzenten. Röntgenblick für Musik.\"",
-        "name": "Alex T.",
-        "role": "Electronic Music Producer",
-        "location": "Los Angeles, CA"
-      },
-      {
-        "quote": "\"Wir haben 20 Songs in 2 Monaten gelernt. Das individuelle Trennen von Bass-, Gitarren- und Schlagzeugspuren hat alles verändert.\"",
-        "name": "The Midnight Groove",
-        "role": "Cover Band",
-        "location": "Chicago, IL"
-      },
-      {
-        "quote": "\"Notavex hat subtile dynamische Nuancen erfasst, die ich nicht erwartet hatte. Ausgezeichnet für das Studium von Konzerten.\"",
-        "name": "Maria S.",
-        "role": "Violinist · NY Philharmonic",
-        "location": "New York, NY"
-      }
-    ]
   },
   "Footer": {
     "tagline": "Rohklang. Saubere Noten. In 30 Sekunden.",
@@ -184,7 +137,7 @@
       },
       {
         "question": "Wie genau ist die KI-Transkription?",
-        "answer": "Unsere KI erreicht bei den meisten Aufnahmen eine Genauigkeit von über 95%. Saubere Studioaufnahmen liefern nahezu perfekte Transkriptionen, während Live-Aufnahmen möglicherweise kleine manuelle Korrekturen erfordern."
+        "answer": "Die Genauigkeit hängt von Audioqualität, Klarheit des Mixes und Komplexität der Instrumentierung ab. Saubere Aufnahmen liefern die besten Ergebnisse, während Live-Aufnahmen einige manuelle Anpassungen erfordern können."
       },
       {
         "question": "Gibt es einen kostenlosen Plan?",

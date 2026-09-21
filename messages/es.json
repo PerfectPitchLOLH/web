@@ -5,7 +5,7 @@
     "titleItalic": "al servicio de los músicos.",
     "ctaPrimary": "Empezar ahora →",
     "ctaDemo": "Ver una demo",
-    "socialProof": "Únete a {count}+ músicos que ahorran 5+ horas por transcripción",
+    "tagline": "Partitura y tablatura generadas a partir de tu audio",
     "transcribedIn": "Transcrito en"
   },
   "Pricing": {
@@ -50,53 +50,6 @@
       "polyphony": "Polifonía",
       "historyValues": ["30 días", "90 días", "Ilimitado"]
     }
-  },
-  "SocialProof": {
-    "statsLabels": {
-      "musicians": "Músicos",
-      "sheets": "Partituras creadas",
-      "countries": "Países"
-    },
-    "title": "Aclamado por músicos de todo el mundo",
-    "subtitle": "Más de {count} guitarristas, pianistas, violinistas y productores confían en Notavex cada día.",
-    "testimonials": [
-      {
-        "quote": "\"Ahorré más de 400 € en 3 meses. Notavex hizo que aprender guitarra fuera accesible y agradable.\"",
-        "name": "Sarah M.",
-        "role": "Guitar Student",
-        "location": "Austin, TX"
-      },
-      {
-        "quote": "\"Pasaba 4–5 horas transcribiendo para clientes. Ahora es cuestión de minutos. Amortizado en una semana.\"",
-        "name": "James K.",
-        "role": "Session Musician",
-        "location": "Nashville, TN"
-      },
-      {
-        "quote": "\"Creo material para 30+ alumnos. La separación multi-instrumento cambia todo para enseñar orquestación.\"",
-        "name": "Dr. Lisa Chen",
-        "role": "Music Educator · Berklee",
-        "location": "Boston, MA"
-      },
-      {
-        "quote": "\"La precisión es impresionante. Analizo las progresiones de mis productores favoritos. Visión de rayos X para la música.\"",
-        "name": "Alex T.",
-        "role": "Electronic Music Producer",
-        "location": "Los Angeles, CA"
-      },
-      {
-        "quote": "\"Aprendimos 20 canciones en 2 meses. Separar las pistas de bajo, guitarra y batería individualmente lo cambió todo.\"",
-        "name": "The Midnight Groove",
-        "role": "Cover Band",
-        "location": "Chicago, IL"
-      },
-      {
-        "quote": "\"Notavex captó matices dinámicos sutiles que no esperaba. Excelente para estudiar conciertos.\"",
-        "name": "Maria S.",
-        "role": "Violinist · NY Philharmonic",
-        "location": "New York, NY"
-      }
-    ]
   },
   "Footer": {
     "tagline": "Sonido en bruto. Partitura limpia. En 30 segundos.",
@@ -184,7 +137,7 @@
       },
       {
         "question": "¿Qué tan precisa es la transcripción con IA?",
-        "answer": "Nuestra IA logra una precisión superior al 95% en la mayoría de las grabaciones. Las grabaciones de estudio limpias producen transcripciones casi perfectas, mientras que las grabaciones en vivo pueden requerir ajustes manuales menores."
+        "answer": "La precisión depende de la calidad del audio, la claridad de la mezcla y la complejidad de la instrumentación. Las grabaciones limpias dan los mejores resultados, mientras que las grabaciones en vivo pueden requerir algunos ajustes manuales."
       },
       {
         "question": "¿Hay un plan gratuito disponible?",

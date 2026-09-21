@@ -5,8 +5,6 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 
-import { STATS } from '@/lib/constants'
-
 const mono = { fontFamily: "'JetBrains Mono', monospace" }
 
 export function HeroSection() {
@@ -212,7 +210,7 @@ export function HeroSection() {
                     animation: 'nvCyanPulse 2.2s 0.4s ease-in-out infinite',
                   }}
                 />
-                {t('socialProof', { count: STATS.musicians })}
+                {t('tagline')}
               </p>
             </motion.div>
           </div>
