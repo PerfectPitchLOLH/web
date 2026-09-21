@@ -1244,6 +1244,31 @@ describe('SubscriptionRepository - Deep Tests', () => {
       })
     })
 
+    it('should return null when the subscription no longer exists (deleted account)', async () => {
+      vi.mocked(db.subscription.update).mockRejectedValue({
+        code: 'P2025',
+        message: 'Record not found',
+      })
+
+      const result = await repository.updateSubscriptionStatus(
+        'sub_deleted_user',
+        'canceled',
+        { canceledAt: new Date() },
+      )
+
+      expect(result).toBeNull()
+    })
+
+    it('should rethrow errors other than record not found', async () => {
+      vi.mocked(db.subscription.update).mockRejectedValue(
+        new Error('Connection lost'),
+      )
+
+      await expect(
+        repository.updateSubscriptionStatus('sub_stripe_123', 'canceled'),
+      ).rejects.toThrow('Connection lost')
+    })
+
     it('should handle all status values', async () => {
       const statuses: SubscriptionStatus[] = [
         'active',
