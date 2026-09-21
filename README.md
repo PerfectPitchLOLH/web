@@ -5,7 +5,7 @@ Application web Next.js avec architecture server-side Domain-Driven Design, Pris
 ## Stack Technique
 
 - **Framework**: Next.js 16 avec App Router
-- **Runtime**: React 19
+- **Runtime**: React 19 
 - **Language**: TypeScript 5
 - **Styling**: Tailwind CSS v4
 - **UI Components**: shadcn/ui
