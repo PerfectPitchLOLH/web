@@ -1,7 +1,9 @@
 // @ts-nocheck
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { CGV_VERSION } from '@/lib/legal-identity'
 import { stripe } from '@/server/lib/stripe'
+import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
 import type { CreditService } from '../../credit/credit.service'
@@ -295,6 +297,7 @@ describe('SubscriptionService - Deep Tests', () => {
   describe('createCheckoutSession', () => {
     const validRequest: CreateCheckoutSessionRequest = {
       priceId: 'price_pro_monthly',
+      withdrawalWaiverAccepted: true,
       successUrl: 'https://example.com/success',
       cancelUrl: 'https://example.com/cancel',
     }
@@ -371,18 +374,88 @@ describe('SubscriptionService - Deep Tests', () => {
       )
     })
 
+    it('should refuse checkout without the withdrawal waiver before calling Stripe', async () => {
+      vi.mocked(mockRepository.findPlanByStripePriceId).mockResolvedValue(
+        mockPlan,
+      )
+      vi.mocked(mockRepository.findSubscriptionByUserId).mockResolvedValue(null)
+
+      for (const withdrawalWaiverAccepted of [undefined, false, 'true', 1]) {
+        await expect(
+          service.createCheckoutSession('user_123', 'test@example.com', {
+            ...validRequest,
+            withdrawalWaiverAccepted: withdrawalWaiverAccepted as any,
+          }),
+        ).rejects.toMatchObject({
+          code: 'WITHDRAWAL_WAIVER_REQUIRED',
+          statusCode: HTTP_STATUS.BAD_REQUEST,
+        })
+      }
+
+      expect(stripe.customers.create).not.toHaveBeenCalled()
+      expect(stripe.checkout.sessions.create).not.toHaveBeenCalled()
+    })
+
+    it('should record the waiver consent in the checkout session metadata', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-09-21T10:00:00.000Z'))
+
+      try {
+        vi.mocked(mockRepository.findPlanByStripePriceId).mockResolvedValue(
+          mockPlan,
+        )
+        vi.mocked(mockRepository.findSubscriptionByUserId).mockResolvedValue(
+          null,
+        )
+        vi.mocked(mockRepository.findCustomerByUserId).mockResolvedValue({
+          userId: 'user_123',
+          stripeCustomerId: 'cus_existing',
+          email: 'test@example.com',
+          name: null,
+          defaultPaymentMethod: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as CustomerEntity)
+        vi.mocked(stripe.checkout.sessions.create).mockResolvedValue({
+          id: 'cs_123',
+          url: 'https://checkout.stripe.com/cs_123',
+        } as any)
+
+        await service.createCheckoutSession(
+          'user_123',
+          'test@example.com',
+          validRequest,
+        )
+
+        expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            metadata: {
+              userId: 'user_123',
+              planId: 'plan_pro',
+              withdrawal_waiver_accepted_at: '2026-09-21T10:00:00.000Z',
+              cgv_version: CGV_VERSION,
+            },
+          }),
+        )
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('should throw error if plan not found', async () => {
       vi.mocked(mockRepository.findPlanByStripePriceId).mockResolvedValue(null)
 
       await expect(
         service.createCheckoutSession('user_123', 'test@example.com', {
           priceId: 'price_invalid',
+          withdrawalWaiverAccepted: true,
         }),
       ).rejects.toThrow(ApiError)
 
       await expect(
         service.createCheckoutSession('user_123', 'test@example.com', {
           priceId: 'price_invalid',
+          withdrawalWaiverAccepted: true,
         }),
       ).rejects.toThrow('Plan invalide')
     })
@@ -484,6 +557,7 @@ describe('SubscriptionService - Deep Tests', () => {
 
       await service.createCheckoutSession('user_123', 'test@example.com', {
         priceId: 'price_pro_monthly',
+        withdrawalWaiverAccepted: true,
       })
 
       expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
@@ -611,6 +685,7 @@ describe('SubscriptionService - Deep Tests', () => {
 
       await service.createCheckoutSession('user_123', 'not-an-email', {
         priceId: 'price_pro_monthly',
+        withdrawalWaiverAccepted: true,
       })
 
       expect(stripe.customers.create).toHaveBeenCalled()
@@ -639,6 +714,7 @@ describe('SubscriptionService - Deep Tests', () => {
 
       const xssRequest: CreateCheckoutSessionRequest = {
         priceId: 'price_pro_monthly',
+        withdrawalWaiverAccepted: true,
         successUrl: 'javascript:alert(1)',
         cancelUrl: '<script>alert(2)</script>',
       }
@@ -1703,6 +1779,7 @@ describe('SubscriptionService - Deep Tests', () => {
 
       await service.createCheckoutSession('user_xss', xssEmail, {
         priceId: 'price_pro_monthly',
+        withdrawalWaiverAccepted: true,
       })
 
       expect(stripe.customers.create).toHaveBeenCalledWith(

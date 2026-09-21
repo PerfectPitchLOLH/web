@@ -292,6 +292,7 @@ describe('PaymentService & Controller - Security Tests', () => {
         bundleName: xssPayload,
         minutes: 5,
         priceId: 'price_test',
+        withdrawalWaiverAccepted: true,
       }
 
       const result = await service.createCheckoutSession(
@@ -679,6 +680,7 @@ describe('PaymentService & Controller - Security Tests', () => {
         bundleName: 'Bundle 1',
         minutes: 5,
         priceId: 'price_invalid',
+        withdrawalWaiverAccepted: true,
       }
 
       await expect(

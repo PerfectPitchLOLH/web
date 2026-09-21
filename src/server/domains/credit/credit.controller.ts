@@ -62,6 +62,7 @@ export class CreditController {
           bundleName: bundle.name,
           minutes: bundle.minutes,
           priceId: this.getPriceId(bundle.id),
+          withdrawalWaiverAccepted: body.withdrawalWaiverAccepted,
         },
       )
 

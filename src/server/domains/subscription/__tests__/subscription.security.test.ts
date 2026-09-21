@@ -218,7 +218,7 @@ describe('Subscription Domain - Security Tests', () => {
       await service.createCheckoutSession(
         'user_legitimate',
         'legitimate@example.com',
-        { priceId: 'price_pro_monthly' },
+        { priceId: 'price_pro_monthly', withdrawalWaiverAccepted: true },
       )
 
       expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
@@ -295,6 +295,7 @@ describe('Subscription Domain - Security Tests', () => {
 
         await service.createCheckoutSession('user_test', email, {
           priceId: 'price_pro_monthly',
+          withdrawalWaiverAccepted: true,
         })
       }
     })
@@ -342,6 +343,7 @@ describe('Subscription Domain - Security Tests', () => {
 
         await service.createCheckoutSession('user_xss', xssEmail, {
           priceId: 'price_pro_monthly',
+          withdrawalWaiverAccepted: true,
         })
 
         expect(stripe.customers.create).toHaveBeenCalledWith(
@@ -370,6 +372,7 @@ describe('Subscription Domain - Security Tests', () => {
         await expect(
           service.createCheckoutSession('user_123', 'test@example.com', {
             priceId: invalidPriceId as string,
+            withdrawalWaiverAccepted: true,
           }),
         ).rejects.toThrow('Plan invalide')
       }
@@ -411,6 +414,7 @@ describe('Subscription Domain - Security Tests', () => {
 
         await service.createCheckoutSession('user_123', 'test@example.com', {
           priceId: 'price_pro_monthly',
+          withdrawalWaiverAccepted: true,
           successUrl: dangerousUrl,
           cancelUrl: dangerousUrl,
         })
@@ -522,7 +526,10 @@ describe('Subscription Domain - Security Tests', () => {
           Origin: 'https://malicious-site.com',
           Referer: 'https://malicious-site.com/attack',
         },
-        body: JSON.stringify({ priceId: 'price_pro_monthly' }),
+        body: JSON.stringify({
+          priceId: 'price_pro_monthly',
+          withdrawalWaiverAccepted: true,
+        }),
       })
 
       vi.mocked(mockRepository.findPlanByStripePriceId).mockResolvedValue({
@@ -574,6 +581,7 @@ describe('Subscription Domain - Security Tests', () => {
     it('should handle very large payload attacks', async () => {
       const hugePayload = {
         priceId: 'price_pro_monthly',
+        withdrawalWaiverAccepted: true,
         data: 'x'.repeat(10 * 1024 * 1024),
       }
 
@@ -689,7 +697,7 @@ describe('Subscription Domain - Security Tests', () => {
       await service.createCheckoutSession(
         'user_attacker',
         'attacker@example.com',
-        { priceId: 'price_pro_monthly' },
+        { priceId: 'price_pro_monthly', withdrawalWaiverAccepted: true },
       )
 
       expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
@@ -826,6 +834,7 @@ describe('Subscription Domain - Security Tests', () => {
       await expect(
         service.createCheckoutSession('user_123', 'test@example.com', {
           priceId: 'price_pro_monthly',
+          withdrawalWaiverAccepted: true,
         }),
       ).rejects.toThrow()
     })
@@ -1017,6 +1026,7 @@ describe('Subscription Domain - Security Tests', () => {
           },
         },
         priceId: 'price_pro_monthly',
+        withdrawalWaiverAccepted: true,
       }
 
       const mockRequest = new NextRequest('http://localhost:3000/api/test', {

@@ -3,6 +3,7 @@
 import { Check, Loader2, Sparkles, X } from 'lucide-react'
 import { useState } from 'react'
 
+import { WithdrawalWaiverCheckbox } from '@/components/legal/WithdrawalWaiverCheckbox'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -39,9 +40,10 @@ export function CreditPurchaseModal({
 }: CreditPurchaseModalProps) {
   const [state, setState] = useState<PurchaseState>('idle')
   const [errorMessage, setErrorMessage] = useState<string>('')
+  const [waiverAccepted, setWaiverAccepted] = useState(false)
 
   const handlePurchase = async () => {
-    if (!bundle) return
+    if (!bundle || !waiverAccepted) return
 
     setState('loading')
     setErrorMessage('')
@@ -50,7 +52,10 @@ export function CreditPurchaseModal({
       const response = await fetch('/api/credits/payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bundleId: bundle.id }),
+        body: JSON.stringify({
+          bundleId: bundle.id,
+          withdrawalWaiverAccepted: waiverAccepted,
+        }),
       })
 
       const data = await response.json()
@@ -73,6 +78,7 @@ export function CreditPurchaseModal({
   const handleClose = () => {
     setState('idle')
     setErrorMessage('')
+    setWaiverAccepted(false)
     onOpenChange(false)
   }
 
@@ -146,6 +152,13 @@ export function CreditPurchaseModal({
           </div>
 
           {state === 'idle' && (
+            <WithdrawalWaiverCheckbox
+              checked={waiverAccepted}
+              onCheckedChange={setWaiverAccepted}
+            />
+          )}
+
+          {state === 'idle' && (
             <div className="flex gap-3">
               <Button
                 variant="outline"
@@ -157,6 +170,7 @@ export function CreditPurchaseModal({
               <Button
                 className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
                 onClick={handlePurchase}
+                disabled={!waiverAccepted}
               >
                 Continuer vers Stripe
               </Button>

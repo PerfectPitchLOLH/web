@@ -12,7 +12,7 @@ export default function CgvPage() {
   return (
     <LegalPage
       title="Conditions Générales de Vente"
-      lastUpdated="29 avril 2026"
+      lastUpdated="21 septembre 2026"
     >
       <CgvContent />
     </LegalPage>

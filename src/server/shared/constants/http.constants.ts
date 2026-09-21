@@ -56,6 +56,7 @@ export const ERROR_CODES = {
   CAPTCHA_VERIFICATION_FAILED: 'CAPTCHA_VERIFICATION_FAILED',
   SUBSCRIPTION_PAST_DUE: 'SUBSCRIPTION_PAST_DUE',
   EMAIL_SEND_FAILED: 'EMAIL_SEND_FAILED',
+  WITHDRAWAL_WAIVER_REQUIRED: 'WITHDRAWAL_WAIVER_REQUIRED',
 } as const
 
 export const ERROR_MESSAGES = {
@@ -100,4 +101,6 @@ export const ERROR_MESSAGES = {
   SUBSCRIPTION_PAST_DUE: 'Your subscription payment is past due',
   EMAIL_SEND_FAILED:
     "L'envoi du message a échoué. Veuillez réessayer plus tard.",
+  WITHDRAWAL_WAIVER_REQUIRED:
+    "Vous devez demander l'exécution immédiate et renoncer à votre droit de rétractation pour finaliser la commande.",
 } as const

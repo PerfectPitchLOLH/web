@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 
+import { WithdrawalWaiverCheckbox } from '@/components/legal/WithdrawalWaiverCheckbox'
 import { Button } from '@/components/ui/button'
 import { useSubscription } from '@/hooks/useSubscription'
 import type { SubscriptionPlanDTO } from '@/server/domains/subscription/subscription.types'
@@ -17,12 +18,13 @@ type Props = {
 export function PricingView({ plans }: Props) {
   const { createCheckoutSession } = useSubscription()
   const [loading, setLoading] = useState(false)
+  const [waiverAccepted, setWaiverAccepted] = useState(false)
 
   const handleSubscribe = async (priceId: string) => {
-    if (!priceId) return
+    if (!priceId || !waiverAccepted) return
     setLoading(true)
     try {
-      await createCheckoutSession(priceId)
+      await createCheckoutSession(priceId, waiverAccepted)
     } catch (error) {
       console.error('Subscription error:', error)
     } finally {
@@ -43,12 +45,21 @@ export function PricingView({ plans }: Props) {
           </p>
         </div>
 
+        <div className="max-w-2xl mx-auto mb-12">
+          <WithdrawalWaiverCheckbox
+            checked={waiverAccepted}
+            onCheckedChange={setWaiverAccepted}
+            disabled={loading}
+          />
+        </div>
+
         <div className="mb-16">
           <PricingTiersSection
             mode="subscribe"
             plans={plans}
             onAction={handleSubscribe}
             loading={loading}
+            actionDisabled={!waiverAccepted}
           />
         </div>
 

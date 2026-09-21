@@ -1,3 +1,5 @@
+import { LEGAL_IDENTITY } from '@/lib/legal-identity'
+
 export function TermsContent() {
   return (
     <>
@@ -7,11 +9,12 @@ export function TermsContent() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         Les présentes Conditions Générales d&apos;Utilisation (ci-après « CGU »)
         régissent l&apos;accès et l&apos;utilisation du service Notavex,
-        accessible à l&apos;adresse notavex.com, édité par Notavex SAS (ci-après
-        « Notavex »). En créant un compte ou en utilisant le service,
-        l&apos;utilisateur accepte sans réserve les présentes CGU. Si
-        l&apos;utilisateur n&apos;accepte pas ces conditions, il doit cesser
-        d&apos;utiliser le service.
+        accessible à l&apos;adresse notavex.com, édité par{' '}
+        {LEGAL_IDENTITY.companyName} (ci-après « {LEGAL_IDENTITY.brandName} »).
+        En créant un compte ou en utilisant le service, l&apos;utilisateur
+        accepte sans réserve les présentes CGU. Si l&apos;utilisateur
+        n&apos;accepte pas ces conditions, il doit cesser d&apos;utiliser le
+        service.
       </p>
 
       <h2 className="text-xl font-semibold mt-8 mb-4 text-foreground">
@@ -32,7 +35,8 @@ export function TermsContent() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         L&apos;ensemble des éléments constituant le service Notavex (interface,
         algorithmes, marque, logotype) est protégé par le droit de la propriété
-        intellectuelle et reste la propriété exclusive de Notavex SAS.
+        intellectuelle et reste la propriété exclusive de{' '}
+        {LEGAL_IDENTITY.companyName}.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         Concernant les partitions générées par le service : Notavex ne
@@ -59,8 +63,9 @@ export function TermsContent() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         Notavex ne saurait être tenu responsable des violations de droits
         d&apos;auteur ou de droits voisins commises par les utilisateurs. Les
-        fichiers audio sont automatiquement supprimés après traitement et ne
-        sont pas conservés sur les serveurs de Notavex.
+        fichiers audio ne sont conservés que temporairement, le temps du
+        traitement et de la mise à disposition du résultat, puis sont supprimés
+        automatiquement.
       </p>
 
       <h2 className="text-xl font-semibold mt-8 mb-4 text-foreground">

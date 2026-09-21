@@ -28,6 +28,7 @@ type SubscribeMode = {
   mode: 'subscribe'
   onAction: (priceId: string) => void
   loading: boolean
+  actionDisabled?: boolean
 }
 
 type ManageMode = {
@@ -98,6 +99,7 @@ function PricingCard({
   tierStatus,
   onAction,
   loading,
+  actionDisabled,
   onDowngrade,
   downgradeLoading,
 }: {
@@ -107,6 +109,7 @@ function PricingCard({
   tierStatus: TierStatus
   onAction: (priceId: string) => void
   loading: boolean
+  actionDisabled?: boolean
   onDowngrade?: (priceId: string) => void
   downgradeLoading?: boolean
 }) {
@@ -248,7 +251,7 @@ function PricingCard({
             variant={meta.popular || isUpgrade ? 'default' : 'outline'}
             className="w-full mb-8 group-hover:scale-105 transition-transform"
             onClick={() => onAction(priceId)}
-            disabled={loading || !priceId}
+            disabled={loading || !priceId || actionDisabled}
           >
             {loading ? (
               <>
@@ -358,6 +361,9 @@ export function PricingTiersSection(props: Props) {
             tierStatus={getTierStatus(plan, index, props)}
             onAction={props.onAction}
             loading={props.loading}
+            actionDisabled={
+              props.mode === 'subscribe' ? props.actionDisabled : undefined
+            }
             onDowngrade={
               props.mode === 'manage' ? props.onDowngrade : undefined
             }

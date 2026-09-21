@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import type { Mocked } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { CGV_VERSION } from '@/lib/legal-identity'
 import type { CreditPurchaseService } from '@/server/domains/credit-purchase/credit-purchase.service'
 import type { SubscriptionRepository } from '@/server/domains/subscription/subscription.repository'
 import { stripe } from '@/server/lib/stripe'
@@ -741,6 +742,7 @@ describe('PaymentService - Deep Tests', () => {
         bundleName: 'Small Bundle',
         minutes: 5,
         priceId: '',
+        withdrawalWaiverAccepted: true,
       }
 
       await service.createCheckoutSession(mockUserId, mockEmail, request)
@@ -771,6 +773,7 @@ describe('PaymentService - Deep Tests', () => {
         bundleName: 'Small Bundle',
         minutes: 0,
         priceId: 'price_test',
+        withdrawalWaiverAccepted: true,
       }
 
       await service.createCheckoutSession(mockUserId, mockEmail, request)
@@ -798,6 +801,7 @@ describe('PaymentService - Deep Tests', () => {
         bundleName: 'Huge Bundle',
         minutes: 1000000,
         priceId: 'price_test',
+        withdrawalWaiverAccepted: true,
       }
 
       await service.createCheckoutSession(mockUserId, mockEmail, request)
@@ -826,6 +830,7 @@ describe('PaymentService - Deep Tests', () => {
         bundleName: specialName,
         minutes: 5,
         priceId: 'price_test',
+        withdrawalWaiverAccepted: true,
       }
 
       await service.createCheckoutSession(mockUserId, mockEmail, request)
@@ -854,6 +859,7 @@ describe('PaymentService - Deep Tests', () => {
         bundleName: emojiName,
         minutes: 5,
         priceId: 'price_test',
+        withdrawalWaiverAccepted: true,
       }
 
       await service.createCheckoutSession(mockUserId, mockEmail, request)
@@ -865,6 +871,65 @@ describe('PaymentService - Deep Tests', () => {
           }),
         }),
       )
+    })
+  })
+
+  describe('createCheckoutSession - Withdrawal Waiver', () => {
+    const request: CreateCheckoutSessionRequest = {
+      bundleId: 'bundle_small',
+      bundleName: 'Small Bundle',
+      minutes: 5,
+      priceId: 'price_test',
+      withdrawalWaiverAccepted: true,
+    }
+
+    it('devrait refuser la session sans renonciation avant tout appel Stripe', async () => {
+      for (const withdrawalWaiverAccepted of [undefined, false, 'true', 1]) {
+        await expect(
+          service.createCheckoutSession(mockUserId, mockEmail, {
+            ...request,
+            withdrawalWaiverAccepted: withdrawalWaiverAccepted as any,
+          }),
+        ).rejects.toMatchObject({
+          code: 'WITHDRAWAL_WAIVER_REQUIRED',
+          statusCode: HTTP_STATUS.BAD_REQUEST,
+        })
+      }
+
+      expect(stripe.customers.create).not.toHaveBeenCalled()
+      expect(stripe.checkout.sessions.create).not.toHaveBeenCalled()
+    })
+
+    it('devrait enregistrer le consentement dans les metadata de la session', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-09-21T10:00:00.000Z'))
+
+      try {
+        mockSubscriptionRepository.findCustomerByUserId.mockResolvedValue(
+          mockCustomer,
+        )
+        vi.mocked(stripe.checkout.sessions.create).mockResolvedValue({
+          id: 'cs_test',
+          url: 'https://checkout.stripe.com/test',
+        } as any)
+
+        await service.createCheckoutSession(mockUserId, mockEmail, request)
+
+        expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            metadata: {
+              userId: mockUserId,
+              bundleId: 'bundle_small',
+              bundleName: 'Small Bundle',
+              minutes: '5',
+              withdrawal_waiver_accepted_at: '2026-09-21T10:00:00.000Z',
+              cgv_version: CGV_VERSION,
+            },
+          }),
+        )
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 
@@ -882,6 +947,7 @@ describe('PaymentService - Deep Tests', () => {
         bundleName: 'Small Bundle',
         minutes: 5,
         priceId: 'price_test',
+        withdrawalWaiverAccepted: true,
       }
 
       await expect(
@@ -903,6 +969,7 @@ describe('PaymentService - Deep Tests', () => {
         bundleName: 'Small Bundle',
         minutes: 5,
         priceId: 'price_test',
+        withdrawalWaiverAccepted: true,
       }
 
       await expect(
@@ -933,6 +1000,7 @@ describe('PaymentService - Deep Tests', () => {
         bundleName: 'Small Bundle',
         minutes: 5,
         priceId: 'price_test',
+        withdrawalWaiverAccepted: true,
       }
 
       await expect(
@@ -957,6 +1025,7 @@ describe('PaymentService - Deep Tests', () => {
         bundleName: 'Small Bundle',
         minutes: 5,
         priceId: 'price_test',
+        withdrawalWaiverAccepted: true,
       }
 
       await service.createCheckoutSession(mockUserId, mockEmail, request)
