@@ -7,7 +7,15 @@ export async function verifyCaptchaToken(
 ): Promise<boolean> {
   const secretKey = process.env.TURNSTILE_SECRET_KEY
 
-  if (!secretKey) return true
+  if (!secretKey) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error(
+        'TURNSTILE_SECRET_KEY is not set: captcha verification refused',
+      )
+      return false
+    }
+    return true
+  }
   if (!token) return false
 
   const body = new URLSearchParams({ secret: secretKey, response: token })

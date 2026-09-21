@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { Session } from 'next-auth'
 
+import { AuthRepository } from '@/server/domains/auth/auth.repository'
 import { auth } from '@/server/lib/auth'
 import { db } from '@/server/lib/database'
-import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
+import {
+  ERROR_CODES,
+  HTTP_STATUS,
+} from '@/server/shared/constants/http.constants'
 import { auditLogger } from '@/server/shared/utils'
 import { ApiError, createErrorResponse } from '@/server/shared/utils/api.utils'
+
+const authRepository = new AuthRepository()
 
 export type AuthSession = Session & {
   user: {
@@ -21,11 +27,24 @@ export type ValidateApiAuthResult =
   | { ok: true; session: AuthSession }
   | { ok: false; response: NextResponse }
 
+function suspendedAccountError(): ApiError {
+  return new ApiError(ERROR_CODES.ACCOUNT_SUSPENDED, HTTP_STATUS.FORBIDDEN)
+}
+
 export async function requireAuth(): Promise<AuthSession> {
   const session = await auth()
 
   if (!session?.user) {
     throw new ApiError('UNAUTHORIZED', HTTP_STATUS.UNAUTHORIZED)
+  }
+
+  // Under impersonation the acting principal is the admin, not the target:
+  // checking the target would lock an admin out of the account being investigated.
+  const actorId = session.impersonation?.adminId ?? session.user.id
+  const account = await authRepository.findSuspendedAtById(actorId)
+
+  if (account?.suspendedAt) {
+    throw suspendedAccountError()
   }
 
   return session as AuthSession
@@ -48,11 +67,16 @@ export async function requireAdminAuth(): Promise<AuthSession> {
       name: true,
       role: true,
       emailVerified: true,
+      suspendedAt: true,
     },
   })
 
   if (!admin || admin.role !== 'admin') {
     throw new ApiError('FORBIDDEN', HTTP_STATUS.FORBIDDEN)
+  }
+
+  if (admin.suspendedAt) {
+    throw suspendedAccountError()
   }
 
   return {
@@ -73,7 +97,22 @@ export async function validateApiAuth(
   try {
     const session = await requireAuth()
     return { ok: true, session }
-  } catch {
+  } catch (error) {
+    if (
+      error instanceof ApiError &&
+      error.code === ERROR_CODES.ACCOUNT_SUSPENDED
+    ) {
+      return {
+        ok: false,
+        response: createErrorResponse(
+          ERROR_CODES.ACCOUNT_SUSPENDED,
+          undefined,
+          undefined,
+          HTTP_STATUS.FORBIDDEN,
+        ),
+      }
+    }
+
     const ip = getClientIP(request)
     const { pathname } = request.nextUrl
 
