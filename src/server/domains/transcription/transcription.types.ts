@@ -43,6 +43,7 @@ export type TranscribeConfig = {
 export type TranscribeResponse = {
   job_id: string
   status: JobStatus
+  duration_seconds?: number | null
 }
 
 export type JobResults = {
@@ -58,8 +59,10 @@ export type JobDetails = {
   current_step: ProcessingStep
   created_at: string
   completed_at?: string
+  duration_seconds?: number | null
   results?: JobResults
   error?: string
+  error_code?: string | null
   config?: TranscribeConfig
 }
 
@@ -99,6 +102,27 @@ export type TranscriptionJob = {
   partitionSvgUrl?: string
   durationSeconds?: number
   completedAt?: Date
+}
+
+export type LocalJob = {
+  id: string
+  backendJobId: string | null
+  userId: string
+  status: string
+  creditsDeducted: boolean
+  chargedMonthlySeconds: number
+  chargedBonusSeconds: number
+  durationSeconds: number | null
+  estimatedDurationSeconds: number | null
+  createdAt: Date
+}
+
+export type JobReserveResult = 'reserved' | 'already_reserved' | 'insufficient'
+
+export type JobFailureOutcome = {
+  status: 'failed' | 'refused'
+  progress: number
+  measuredDurationSeconds?: number
 }
 
 export type TranscriptionJobEntity = Entity<TranscriptionJob>

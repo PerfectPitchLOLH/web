@@ -1,36 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/server/lib/email', () => ({
-  sendLowCreditsEmail: vi.fn(),
-  sendNoCreditsEmail: vi.fn(),
-}))
+vi.mock('@/server/lib/database', () => ({ db: {} }))
 
-vi.mock('@/server/lib/stripe', () => ({ stripe: {} }))
-
-vi.mock('@/server/lib/database', () => ({
-  db: {
-    transcriptionJob: {
-      findUnique: vi.fn(),
-    },
-    user: {
-      findUnique: vi.fn(),
-    },
-    subscription: {
-      findFirst: vi.fn().mockResolvedValue(null),
-    },
+vi.mock('@/server/domains/permission', () => ({
+  permissionService: {
+    getUserPermissionContext: vi.fn(),
+    checkFeatureAccessForUser: vi.fn(),
   },
 }))
 
-import { db } from '@/server/lib/database'
+import { permissionService } from '@/server/domains/permission'
 import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
+import { LOCAL_JOB_STATUS } from '../transcription.constants'
 import {
   BackendApiError,
   TranscriptionRepository,
 } from '../transcription.repository'
 import { TranscriptionService } from '../transcription.service'
 import type {
+  JobDetails,
+  LocalJob,
   TranscribeConfig,
   TranscribeResponse,
 } from '../transcription.types'
@@ -60,50 +51,94 @@ const makeTranscribeResponse = (overrides = {}): TranscribeResponse => ({
   ...overrides,
 })
 
+const makeJob = (overrides: Partial<JobDetails> = {}): JobDetails => ({
+  job_id: 'job-1',
+  status: 'processing',
+  progress: 50,
+  current_step: 'transcription',
+  created_at: '2024-01-01T00:00:00Z',
+  ...overrides,
+})
+
+const makeLocalJob = (overrides: Partial<LocalJob> = {}): LocalJob => ({
+  id: 'local-1',
+  backendJobId: 'job-1',
+  userId: 'user-1',
+  status: LOCAL_JOB_STATUS.ACTIVE,
+  creditsDeducted: false,
+  chargedMonthlySeconds: 0,
+  chargedBonusSeconds: 0,
+  durationSeconds: null,
+  estimatedDurationSeconds: null,
+  createdAt: new Date(),
+  ...overrides,
+})
+
 describe('TranscriptionService - Deep Tests', () => {
   let service: TranscriptionService
-  let mockRepo: TranscriptionRepository
-  let mockCreditService: any
+  let repo: Record<keyof TranscriptionRepository, ReturnType<typeof vi.fn>>
+  let creditService: { getUserCreditsBalance: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     vi.clearAllMocks()
 
-    vi.mocked(db.user.findUnique).mockResolvedValue({
-      role: 'user',
-      isRootAdmin: false,
-    } as any)
-
-    mockRepo = {
+    repo = {
       uploadAudio: vi.fn(),
       uploadFromYoutubeUrl: vi.fn(),
+      uploadFromSpotifyUrl: vi.fn(),
       getJobStatus: vi.fn(),
       downloadPartition: vi.fn(),
-      validateConfig: vi.fn(),
-      cancelJob: vi.fn(),
+      validateConfig: vi.fn().mockResolvedValue({ valid: true }),
+      cancelJob: vi.fn().mockResolvedValue(undefined),
       healthCheck: vi.fn(),
-      saveJobOwner: vi.fn(),
+      getYoutubeInfo: vi.fn(),
+      acquireJobSlot: vi.fn().mockResolvedValue('slot-1'),
+      attachBackendJob: vi.fn().mockResolvedValue(undefined),
+      releaseJobSlot: vi.fn().mockResolvedValue(undefined),
+      deleteStalePendingJobs: vi.fn().mockResolvedValue(0),
+      recordExemptJob: vi.fn().mockResolvedValue(undefined),
+      findJobForUser: vi.fn(),
+      findOpenJobsForUser: vi.fn().mockResolvedValue([]),
+      findOpenJobs: vi.fn().mockResolvedValue([]),
+      reserveCredits: vi.fn().mockResolvedValue('reserved'),
+      settleCompletedJob: vi.fn().mockResolvedValue(undefined),
+      settleUnsuccessfulJob: vi.fn().mockResolvedValue(undefined),
       verifyJobOwner: vi.fn(),
-      atomicDeductCredits: vi.fn().mockResolvedValue('already_deducted'),
-      getYoutubeInfo: vi.fn().mockResolvedValue({ duration_seconds: 120 }),
+      findUserAccess: vi.fn().mockResolvedValue({
+        isAdmin: false,
+        emailVerified: new Date(),
+      }),
+      hasPastDueSubscription: vi.fn().mockResolvedValue(false),
     } as any
 
-    mockCreditService = {
-      getUserCreditsBalance: vi
-        .fn()
-        .mockResolvedValue({ remainingCredits: 3600 }),
-      deductCreditsInSeconds: vi.fn().mockResolvedValue(undefined),
+    creditService = {
+      getUserCreditsBalance: vi.fn().mockResolvedValue({
+        remainingCredits: 600,
+      }),
     }
 
-    service = new TranscriptionService(mockRepo, mockCreditService)
+    vi.mocked(permissionService.getUserPermissionContext).mockResolvedValue({
+      userId: 'user-1',
+      planTier: 'free',
+      subscriptionStatus: null,
+      isTrialing: false,
+      isCanceled: false,
+    })
+    vi.mocked(permissionService.checkFeatureAccessForUser).mockResolvedValue({
+      hasAccess: true,
+    })
+
+    service = new TranscriptionService(
+      repo as unknown as TranscriptionRepository,
+      creditService as any,
+    )
   })
 
   describe('transcribe', () => {
-    it('should return job response on valid file and config', async () => {
-      vi.mocked(mockRepo.validateConfig).mockResolvedValue({ valid: true })
-      vi.mocked(mockRepo.uploadAudio).mockResolvedValue(
-        makeTranscribeResponse(),
+    it('acquires a slot, uploads with the remaining balance as max duration and records the job', async () => {
+      repo.uploadAudio.mockResolvedValue(
+        makeTranscribeResponse({ duration_seconds: 120.4 }),
       )
-      vi.mocked(mockRepo.saveJobOwner).mockResolvedValue(undefined)
 
       const result = await service.transcribe(
         makeFile(),
@@ -112,600 +147,451 @@ describe('TranscriptionService - Deep Tests', () => {
       )
 
       expect(result.job_id).toBe('job-abc-123')
-      expect(result.status).toBe('queued')
-      expect(mockRepo.saveJobOwner).toHaveBeenCalledWith(
+      expect(repo.acquireJobSlot).toHaveBeenCalledWith('user-1', 1, undefined)
+      expect(repo.uploadAudio).toHaveBeenCalledWith(
+        expect.any(File),
+        makeConfig(),
+        600,
+      )
+      expect(repo.attachBackendJob).toHaveBeenCalledWith(
+        'slot-1',
+        'job-abc-123',
+        120.4,
+      )
+    })
+
+    it('reserves the measured duration as soon as the backend returns it', async () => {
+      repo.uploadAudio.mockResolvedValue(
+        makeTranscribeResponse({ duration_seconds: 120.4 }),
+      )
+
+      await service.transcribe(makeFile(), makeConfig(), 'user-1')
+
+      expect(repo.reserveCredits).toHaveBeenCalledWith(
         'job-abc-123',
         'user-1',
-        undefined,
+        120.4,
+        'Transcription (121s)',
       )
     })
 
-    it('should throw PAYLOAD_TOO_LARGE when file exceeds max size', async () => {
-      const maxSizeMb = parseInt(
-        process.env.NEXT_PUBLIC_MAX_FILE_SIZE_MB || '100',
-        10,
+    it('does not reserve when the backend does not return a duration (legacy backend)', async () => {
+      repo.uploadAudio.mockResolvedValue(makeTranscribeResponse())
+
+      await service.transcribe(makeFile(), makeConfig(), 'user-1')
+
+      expect(repo.reserveCredits).not.toHaveBeenCalled()
+      expect(repo.attachBackendJob).toHaveBeenCalledWith(
+        'slot-1',
+        'job-abc-123',
+        0,
       )
-      const oversizedFile = makeFile(
-        'big.mp3',
-        'audio/mpeg',
-        (maxSizeMb + 1) * 1024 * 1024,
+    })
+
+    it('cancels the backend job and frees the slot when the reservation is insufficient', async () => {
+      repo.uploadAudio.mockResolvedValue(
+        makeTranscribeResponse({ duration_seconds: 500 }),
       )
+      repo.reserveCredits.mockResolvedValue('insufficient')
 
       await expect(
-        service.transcribe(oversizedFile, makeConfig(), 'user-1'),
+        service.transcribe(makeFile(), makeConfig(), 'user-1'),
       ).rejects.toMatchObject({
-        code: 'VALIDATION_ERROR',
-        statusCode: HTTP_STATUS.PAYLOAD_TOO_LARGE,
+        code: 'INSUFFICIENT_CREDITS',
+        statusCode: HTTP_STATUS.PAYMENT_REQUIRED,
       })
+
+      expect(repo.cancelJob).toHaveBeenCalledWith('job-abc-123')
+      expect(repo.releaseJobSlot).toHaveBeenCalledWith('slot-1')
     })
 
-    it('should throw BAD_REQUEST when MIME type is not supported', async () => {
-      const pdfFile = makeFile('doc.pdf', 'application/pdf')
+    it('cancels the backend job and frees the slot when attaching fails', async () => {
+      repo.uploadAudio.mockResolvedValue(makeTranscribeResponse())
+      repo.attachBackendJob.mockRejectedValue(new Error('db down'))
 
       await expect(
-        service.transcribe(pdfFile, makeConfig(), 'user-1'),
-      ).rejects.toMatchObject({
-        code: 'VALIDATION_ERROR',
-        statusCode: HTTP_STATUS.BAD_REQUEST,
-      })
+        service.transcribe(makeFile(), makeConfig(), 'user-1'),
+      ).rejects.toThrow('db down')
+
+      expect(repo.cancelJob).toHaveBeenCalledWith('job-abc-123')
+      expect(repo.releaseJobSlot).toHaveBeenCalledWith('slot-1')
     })
 
-    it('should throw BAD_REQUEST when extension is not supported even if MIME is faked', async () => {
-      const fakeFile = makeFile('malware.exe', 'audio/mpeg')
-
-      await expect(
-        service.transcribe(fakeFile, makeConfig(), 'user-1'),
-      ).rejects.toMatchObject({
-        code: 'VALIDATION_ERROR',
-        statusCode: HTTP_STATUS.BAD_REQUEST,
-      })
-    })
-
-    it('should accept all valid audio MIME types', async () => {
-      const validFiles = [
-        makeFile('a.wav', 'audio/wav'),
-        makeFile('b.wav', 'audio/x-wav'),
-        makeFile('c.flac', 'audio/flac'),
-        makeFile('d.flac', 'audio/x-flac'),
-        makeFile('e.m4a', 'audio/mp4'),
-        makeFile('f.m4a', 'audio/x-m4a'),
-        makeFile('g.ogg', 'audio/ogg'),
-        makeFile('h.ogg', 'audio/x-ogg'),
-      ]
-
-      vi.mocked(mockRepo.validateConfig).mockResolvedValue({ valid: true })
-      vi.mocked(mockRepo.uploadAudio).mockResolvedValue(
-        makeTranscribeResponse(),
-      )
-      vi.mocked(mockRepo.saveJobOwner).mockResolvedValue(undefined)
-
-      for (const file of validFiles) {
-        await expect(
-          service.transcribe(file, makeConfig(), 'user-1'),
-        ).resolves.toBeDefined()
-      }
-    })
-
-    it('should proceed even when backend config validation fails (non-blocking)', async () => {
-      vi.mocked(mockRepo.validateConfig).mockRejectedValue(
-        new Error('Backend down'),
-      )
-      vi.mocked(mockRepo.uploadAudio).mockResolvedValue(
-        makeTranscribeResponse(),
-      )
-      vi.mocked(mockRepo.saveJobOwner).mockResolvedValue(undefined)
-
-      const result = await service.transcribe(
-        makeFile(),
-        makeConfig(),
-        'user-1',
-      )
-
-      expect(result.job_id).toBe('job-abc-123')
-    })
-
-    it('should propagate error when uploadAudio throws', async () => {
-      vi.mocked(mockRepo.validateConfig).mockResolvedValue({ valid: true })
-      vi.mocked(mockRepo.uploadAudio).mockRejectedValue(
-        new Error('Audio upload failed: Connection refused'),
-      )
+    it('frees the slot and rethrows when the upload fails', async () => {
+      repo.uploadAudio.mockRejectedValue(new Error('Audio upload failed'))
 
       await expect(
         service.transcribe(makeFile(), makeConfig(), 'user-1'),
       ).rejects.toThrow('Audio upload failed')
+
+      expect(repo.releaseJobSlot).toHaveBeenCalledWith('slot-1')
+      expect(repo.attachBackendJob).not.toHaveBeenCalled()
     })
 
-    it('should call saveJobOwner with correct userId after successful upload', async () => {
-      vi.mocked(mockRepo.validateConfig).mockResolvedValue({ valid: true })
-      vi.mocked(mockRepo.uploadAudio).mockResolvedValue(
-        makeTranscribeResponse({ job_id: 'unique-job-id' }),
+    it('maps a backend AUDIO_TOO_LONG refusal to a 422 user error and frees the slot', async () => {
+      repo.uploadAudio.mockRejectedValue(
+        new BackendApiError(422, 'too long', 'AUDIO_TOO_LONG', 900),
       )
-      vi.mocked(mockRepo.saveJobOwner).mockResolvedValue(undefined)
 
-      await service.transcribe(makeFile(), makeConfig(), 'specific-user-42')
+      const error = await service
+        .transcribe(makeFile(), makeConfig(), 'user-1')
+        .catch((e) => e)
 
-      expect(mockRepo.saveJobOwner).toHaveBeenCalledWith(
-        'unique-job-id',
-        'specific-user-42',
+      expect(error).toBeInstanceOf(ApiError)
+      expect(error.code).toBe('AUDIO_TOO_LONG')
+      expect(error.statusCode).toBe(HTTP_STATUS.UNPROCESSABLE_ENTITY)
+      expect(error.message).toContain('15 min 00 s')
+      expect(repo.releaseJobSlot).toHaveBeenCalledWith('slot-1')
+    })
+
+    it('maps a backend AUDIO_UNREADABLE refusal to a 422 user error', async () => {
+      repo.uploadAudio.mockRejectedValue(
+        new BackendApiError(422, 'bad', 'AUDIO_UNREADABLE'),
+      )
+
+      await expect(
+        service.transcribe(makeFile(), makeConfig(), 'user-1'),
+      ).rejects.toMatchObject({
+        code: 'AUDIO_UNREADABLE',
+        statusCode: HTTP_STATUS.UNPROCESSABLE_ENTITY,
+      })
+    })
+
+    it('does not map a generic 422 validation error', async () => {
+      const validationError = new BackendApiError(422, 'invalid form')
+      repo.uploadAudio.mockRejectedValue(validationError)
+
+      await expect(
+        service.transcribe(makeFile(), makeConfig(), 'user-1'),
+      ).rejects.toBe(validationError)
+    })
+
+    it('proceeds when backend config validation fails (non-blocking)', async () => {
+      repo.validateConfig.mockRejectedValue(new Error('down'))
+      repo.uploadAudio.mockResolvedValue(makeTranscribeResponse())
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      await expect(
+        service.transcribe(makeFile(), makeConfig(), 'user-1'),
+      ).resolves.toMatchObject({ job_id: 'job-abc-123' })
+    })
+
+    it('rejects files above the max size before touching the database', async () => {
+      const big = makeFile('big.mp3', 'audio/mpeg', 101 * 1024 * 1024)
+
+      await expect(
+        service.transcribe(big, makeConfig(), 'user-1'),
+      ).rejects.toMatchObject({ statusCode: HTTP_STATUS.PAYLOAD_TOO_LARGE })
+
+      expect(repo.acquireJobSlot).not.toHaveBeenCalled()
+    })
+
+    it('rejects unsupported MIME types', async () => {
+      await expect(
+        service.transcribe(
+          makeFile('a.txt', 'text/plain'),
+          makeConfig(),
+          'user-1',
+        ),
+      ).rejects.toMatchObject({ statusCode: HTTP_STATUS.BAD_REQUEST })
+    })
+
+    it('rejects a faked MIME type with an unsupported extension', async () => {
+      await expect(
+        service.transcribe(
+          makeFile('evil.exe', 'audio/mpeg'),
+          makeConfig(),
+          'user-1',
+        ),
+      ).rejects.toMatchObject({ statusCode: HTTP_STATUS.BAD_REQUEST })
+    })
+
+    it('blocks polyphony for plans without access', async () => {
+      vi.mocked(permissionService.checkFeatureAccessForUser).mockResolvedValue({
+        hasAccess: false,
+        upgradeRequired: 'pro',
+      })
+
+      await expect(
+        service.transcribe(
+          makeFile(),
+          makeConfig({ polyphonic: true }),
+          'user-1',
+        ),
+      ).rejects.toMatchObject({ statusCode: HTTP_STATUS.FORBIDDEN })
+
+      expect(repo.acquireJobSlot).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('launch guards', () => {
+    it('blocks a free account whose email is not verified', async () => {
+      repo.findUserAccess.mockResolvedValue({
+        isAdmin: false,
+        emailVerified: null,
+      })
+
+      await expect(
+        service.transcribe(makeFile(), makeConfig(), 'user-1'),
+      ).rejects.toMatchObject({
+        code: 'EMAIL_NOT_VERIFIED',
+        statusCode: HTTP_STATUS.FORBIDDEN,
+      })
+
+      expect(repo.acquireJobSlot).not.toHaveBeenCalled()
+      expect(repo.uploadAudio).not.toHaveBeenCalled()
+    })
+
+    it('lets a paid account through even if its email is not verified', async () => {
+      repo.findUserAccess.mockResolvedValue({
+        isAdmin: false,
+        emailVerified: null,
+      })
+      vi.mocked(permissionService.getUserPermissionContext).mockResolvedValue({
+        userId: 'user-1',
+        planTier: 'basic',
+        subscriptionStatus: 'active',
+        isTrialing: false,
+        isCanceled: false,
+      })
+      repo.uploadAudio.mockResolvedValue(makeTranscribeResponse())
+
+      await expect(
+        service.transcribe(makeFile(), makeConfig(), 'user-1'),
+      ).resolves.toBeDefined()
+    })
+
+    it('blocks accounts with a past due subscription', async () => {
+      repo.hasPastDueSubscription.mockResolvedValue(true)
+
+      await expect(
+        service.transcribe(makeFile(), makeConfig(), 'user-1'),
+      ).rejects.toMatchObject({
+        code: 'SUBSCRIPTION_PAST_DUE',
+        statusCode: HTTP_STATUS.PAYMENT_REQUIRED,
+      })
+    })
+
+    it('blocks when no credits remain', async () => {
+      creditService.getUserCreditsBalance.mockResolvedValue({
+        remainingCredits: 0,
+      })
+
+      await expect(
+        service.transcribe(makeFile(), makeConfig(), 'user-1'),
+      ).rejects.toMatchObject({
+        code: 'INSUFFICIENT_CREDITS',
+        statusCode: HTTP_STATUS.PAYMENT_REQUIRED,
+      })
+
+      expect(repo.acquireJobSlot).not.toHaveBeenCalled()
+    })
+
+    it('allows 1 active job for a free account and 2 for a paid one', async () => {
+      repo.uploadAudio.mockResolvedValue(makeTranscribeResponse())
+
+      await service.transcribe(makeFile(), makeConfig(), 'user-1')
+      expect(repo.acquireJobSlot).toHaveBeenLastCalledWith(
+        'user-1',
+        1,
+        undefined,
+      )
+
+      vi.mocked(permissionService.getUserPermissionContext).mockResolvedValue({
+        userId: 'user-1',
+        planTier: 'pro',
+        subscriptionStatus: 'active',
+        isTrialing: false,
+        isCanceled: false,
+      })
+      await service.transcribe(makeFile(), makeConfig(), 'user-1')
+      expect(repo.acquireJobSlot).toHaveBeenLastCalledWith(
+        'user-1',
+        2,
         undefined,
       )
     })
 
-    it('should still return response even if saveJobOwner fails', async () => {
-      vi.mocked(mockRepo.validateConfig).mockResolvedValue({ valid: true })
-      vi.mocked(mockRepo.uploadAudio).mockResolvedValue(
-        makeTranscribeResponse(),
-      )
-      vi.mocked(mockRepo.saveJobOwner).mockRejectedValue(new Error('DB error'))
+    it('refuses with ACTIVE_JOBS_LIMIT_REACHED (429) when no slot is free', async () => {
+      repo.acquireJobSlot.mockResolvedValue(null)
 
       await expect(
         service.transcribe(makeFile(), makeConfig(), 'user-1'),
-      ).rejects.toThrow()
+      ).rejects.toMatchObject({
+        code: 'ACTIVE_JOBS_LIMIT_REACHED',
+        statusCode: HTTP_STATUS.TOO_MANY_REQUESTS,
+      })
+
+      expect(repo.uploadAudio).not.toHaveBeenCalled()
+    })
+
+    it('reconciles the open jobs of the user and retries when the limit is hit', async () => {
+      repo.acquireJobSlot
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce('slot-2')
+      repo.findOpenJobsForUser.mockResolvedValue([makeLocalJob()])
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({ status: 'completed', duration_seconds: 60 }),
+      )
+      repo.uploadAudio.mockResolvedValue(makeTranscribeResponse())
+
+      await service.transcribe(makeFile(), makeConfig(), 'user-1')
+
+      expect(repo.settleCompletedJob).toHaveBeenCalledWith('job-1')
+      expect(repo.attachBackendJob).toHaveBeenCalledWith(
+        'slot-2',
+        'job-abc-123',
+        0,
+      )
+    })
+
+    it('ignores backend errors while reconciling before refusing', async () => {
+      repo.acquireJobSlot.mockResolvedValue(null)
+      repo.findOpenJobsForUser.mockResolvedValue([makeLocalJob()])
+      repo.getJobStatus.mockRejectedValue(new Error('backend down'))
+
+      await expect(
+        service.transcribe(makeFile(), makeConfig(), 'user-1'),
+      ).rejects.toMatchObject({ code: 'ACTIVE_JOBS_LIMIT_REACHED' })
+    })
+
+    it('skips every guard and billing for admins', async () => {
+      repo.findUserAccess.mockResolvedValue({
+        isAdmin: true,
+        emailVerified: null,
+      })
+      repo.uploadAudio.mockResolvedValue(makeTranscribeResponse())
+
+      await service.transcribe(makeFile(), makeConfig(), 'admin-1')
+
+      expect(repo.acquireJobSlot).not.toHaveBeenCalled()
+      expect(repo.uploadAudio).toHaveBeenCalledWith(
+        expect.any(File),
+        makeConfig(),
+        undefined,
+      )
+      expect(repo.recordExemptJob).toHaveBeenCalledWith(
+        'job-abc-123',
+        'admin-1',
+      )
+      expect(repo.reserveCredits).not.toHaveBeenCalled()
+    })
+
+    it('skips guards and billing in dev mode', async () => {
+      repo.uploadAudio.mockResolvedValue(makeTranscribeResponse())
+
+      await service.transcribe(makeFile(), makeConfig(), 'admin-1', true)
+
+      expect(permissionService.checkFeatureAccessForUser).not.toHaveBeenCalled()
+      expect(repo.acquireJobSlot).not.toHaveBeenCalled()
+      expect(repo.recordExemptJob).toHaveBeenCalled()
     })
   })
 
   describe('transcribeFromYoutube', () => {
-    it('should return job response for a valid youtube.com/watch URL', async () => {
-      vi.mocked(mockRepo.uploadFromYoutubeUrl).mockResolvedValue(
-        makeTranscribeResponse(),
-      )
-      vi.mocked(mockRepo.saveJobOwner).mockResolvedValue(undefined)
+    it.each([
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      'https://youtu.be/dQw4w9WgXcQ',
+      'https://www.youtube.com/shorts/dQw4w9WgXcQ',
+    ])('launches for %s', async (url) => {
+      repo.getYoutubeInfo.mockResolvedValue({ duration_seconds: 100 })
+      repo.uploadFromYoutubeUrl.mockResolvedValue(makeTranscribeResponse())
 
-      const result = await service.transcribeFromYoutube(
-        'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        makeConfig(),
-        'user-1',
-      )
-
-      expect(result.job_id).toBe('job-abc-123')
+      await expect(
+        service.transcribeFromYoutube(url, makeConfig(), 'user-1'),
+      ).resolves.toMatchObject({ job_id: 'job-abc-123' })
     })
 
-    it('should return job response for a valid youtu.be short URL', async () => {
-      vi.mocked(mockRepo.uploadFromYoutubeUrl).mockResolvedValue(
-        makeTranscribeResponse(),
-      )
-      vi.mocked(mockRepo.saveJobOwner).mockResolvedValue(undefined)
+    it.each([
+      'https://vimeo.com/123456789',
+      '',
+      'https://www.youtube.com/watch?x=abc',
+      'https://youtube.com/watch?v=<script>alert(1)</script>',
+    ])('rejects the invalid URL %j', async (url) => {
+      await expect(
+        service.transcribeFromYoutube(url, makeConfig(), 'user-1'),
+      ).rejects.toMatchObject({ statusCode: HTTP_STATUS.BAD_REQUEST })
+    })
 
-      const result = await service.transcribeFromYoutube(
+    it('uses the YouTube info duration as estimate and sends the balance as max duration', async () => {
+      repo.getYoutubeInfo.mockResolvedValue({ duration_seconds: 300 })
+      repo.uploadFromYoutubeUrl.mockResolvedValue(makeTranscribeResponse())
+
+      await service.transcribeFromYoutube(
         'https://youtu.be/dQw4w9WgXcQ',
         makeConfig(),
         'user-1',
       )
 
-      expect(result.job_id).toBe('job-abc-123')
+      expect(repo.acquireJobSlot).toHaveBeenCalledWith('user-1', 1, 300)
+      expect(repo.uploadFromYoutubeUrl).toHaveBeenCalledWith(
+        'https://youtu.be/dQw4w9WgXcQ',
+        makeConfig(),
+        600,
+      )
+      expect(repo.reserveCredits).not.toHaveBeenCalled()
     })
 
-    it('should return job response for a valid youtube.com/shorts URL', async () => {
-      vi.mocked(mockRepo.uploadFromYoutubeUrl).mockResolvedValue(
-        makeTranscribeResponse(),
-      )
-      vi.mocked(mockRepo.saveJobOwner).mockResolvedValue(undefined)
+    it('refuses when the estimated duration exceeds the balance', async () => {
+      repo.getYoutubeInfo.mockResolvedValue({ duration_seconds: 700 })
 
-      const result = await service.transcribeFromYoutube(
-        'https://www.youtube.com/shorts/dQw4w9WgXcQ',
+      await expect(
+        service.transcribeFromYoutube(
+          'https://youtu.be/dQw4w9WgXcQ',
+          makeConfig(),
+          'user-1',
+        ),
+      ).rejects.toMatchObject({ code: 'INSUFFICIENT_CREDITS' })
+
+      expect(repo.acquireJobSlot).not.toHaveBeenCalled()
+    })
+
+    it('does not call the info endpoint when no credits remain', async () => {
+      creditService.getUserCreditsBalance.mockResolvedValue({
+        remainingCredits: 0,
+      })
+
+      await expect(
+        service.transcribeFromYoutube(
+          'https://youtu.be/dQw4w9WgXcQ',
+          makeConfig(),
+          'user-1',
+        ),
+      ).rejects.toMatchObject({ code: 'INSUFFICIENT_CREDITS' })
+
+      expect(repo.getYoutubeInfo).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('transcribeFromSpotify', () => {
+    it('launches with the balance as max duration', async () => {
+      repo.uploadFromSpotifyUrl.mockResolvedValue(makeTranscribeResponse())
+
+      await service.transcribeFromSpotify(
+        'https://open.spotify.com/track/abc123',
         makeConfig(),
         'user-1',
       )
 
-      expect(result.job_id).toBe('job-abc-123')
-    })
-
-    it('should throw BAD_REQUEST for a non-YouTube URL', async () => {
-      await expect(
-        service.transcribeFromYoutube(
-          'https://vimeo.com/123456789',
-          makeConfig(),
-          'user-1',
-        ),
-      ).rejects.toMatchObject({
-        code: 'VALIDATION_ERROR',
-        statusCode: HTTP_STATUS.BAD_REQUEST,
-      })
-
-      expect(mockRepo.uploadFromYoutubeUrl).not.toHaveBeenCalled()
-    })
-
-    it('should throw BAD_REQUEST for an empty URL', async () => {
-      await expect(
-        service.transcribeFromYoutube('', makeConfig(), 'user-1'),
-      ).rejects.toMatchObject({
-        code: 'VALIDATION_ERROR',
-        statusCode: HTTP_STATUS.BAD_REQUEST,
-      })
-    })
-
-    it('should throw BAD_REQUEST for youtube.com/watch without v= param', async () => {
-      await expect(
-        service.transcribeFromYoutube(
-          'https://youtube.com/watch',
-          makeConfig(),
-          'user-1',
-        ),
-      ).rejects.toMatchObject({
-        code: 'VALIDATION_ERROR',
-        statusCode: HTTP_STATUS.BAD_REQUEST,
-      })
-    })
-
-    it('should throw BAD_REQUEST for URL with spaces', async () => {
-      await expect(
-        service.transcribeFromYoutube(
-          'https://youtube.com/watch?v=dQw4w9W gXcQ',
-          makeConfig(),
-          'user-1',
-        ),
-      ).rejects.toMatchObject({
-        code: 'VALIDATION_ERROR',
-        statusCode: HTTP_STATUS.BAD_REQUEST,
-      })
-    })
-
-    it('should throw BAD_REQUEST for URL with XSS payload', async () => {
-      await expect(
-        service.transcribeFromYoutube(
-          'https://youtube.com/watch?v=<script>alert(1)</script>',
-          makeConfig(),
-          'user-1',
-        ),
-      ).rejects.toMatchObject({
-        code: 'VALIDATION_ERROR',
-        statusCode: HTTP_STATUS.BAD_REQUEST,
-      })
-    })
-
-    it('should propagate error when backend is down', async () => {
-      vi.mocked(mockRepo.uploadFromYoutubeUrl).mockRejectedValue(
-        new Error('YouTube upload failed: Connection refused'),
-      )
-
-      await expect(
-        service.transcribeFromYoutube(
-          'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          makeConfig(),
-          'user-1',
-        ),
-      ).rejects.toThrow('YouTube upload failed')
-    })
-
-    it('should call saveJobOwner with correct args after successful upload', async () => {
-      vi.mocked(mockRepo.uploadFromYoutubeUrl).mockResolvedValue(
-        makeTranscribeResponse({ job_id: 'yt-job-999' }),
-      )
-      vi.mocked(mockRepo.saveJobOwner).mockResolvedValue(undefined)
-
-      await service.transcribeFromYoutube(
-        'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      expect(repo.uploadFromSpotifyUrl).toHaveBeenCalledWith(
+        'https://open.spotify.com/track/abc123',
         makeConfig(),
-        'user-42',
-      )
-
-      expect(mockRepo.saveJobOwner).toHaveBeenCalledWith(
-        'yt-job-999',
-        'user-42',
-        120,
-      )
-    })
-  })
-
-  describe('getJob', () => {
-    const makeJobDetails = (overrides = {}) => ({
-      job_id: 'job-1',
-      status: 'processing' as const,
-      progress: 50,
-      current_step: 'transcription' as const,
-      created_at: '2024-01-01T00:00:00Z',
-      ...overrides,
-    })
-
-    it('should return job details when user is the owner', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.getJobStatus).mockResolvedValue(
-        makeJobDetails() as any,
-      )
-
-      const result = await service.getJob('job-1', 'user-1')
-
-      expect(result.job_id).toBe('job-1')
-      expect(mockRepo.verifyJobOwner).toHaveBeenCalledWith('job-1', 'user-1')
-    })
-
-    it('should throw FORBIDDEN when user does not own the job', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(false)
-
-      await expect(service.getJob('job-1', 'user-other')).rejects.toMatchObject(
-        {
-          code: 'FORBIDDEN',
-          statusCode: HTTP_STATUS.FORBIDDEN,
-        },
-      )
-
-      expect(mockRepo.getJobStatus).not.toHaveBeenCalled()
-    })
-
-    it('should throw NOT_FOUND when job does not exist in backend', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.getJobStatus).mockRejectedValue(
-        new BackendApiError(404, 'Job not found'),
-      )
-
-      await expect(service.getJob('ghost-job', 'user-1')).rejects.toMatchObject(
-        {
-          code: 'NOT_FOUND',
-          statusCode: HTTP_STATUS.NOT_FOUND,
-        },
+        600,
       )
     })
 
-    it('should throw SERVICE_UNAVAILABLE when backend is unreachable (not a 404)', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.getJobStatus).mockRejectedValue(
-        new Error('Backend API call failed: network error'),
-      )
-
-      await expect(service.getJob('job-1', 'user-1')).rejects.toMatchObject({
-        code: 'SERVICE_UNAVAILABLE',
-        statusCode: HTTP_STATUS.SERVICE_UNAVAILABLE,
-      })
-    })
-
-    it('should return job with completed status and results', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.getJobStatus).mockResolvedValue(
-        makeJobDetails({
-          status: 'completed',
-          progress: 100,
-          results: {
-            partition_svg_url: '/api/transcription/job-1/download',
-            duration_seconds: 240,
-          },
-        }) as any,
-      )
-
-      const result = await service.getJob('job-1', 'user-1')
-
-      expect(result.status).toBe('completed')
-      expect(result.results?.partition_svg_url).toBeDefined()
-    })
-  })
-
-  describe('cancelJob', () => {
-    it('should cancel job when user owns it', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.cancelJob).mockResolvedValue(undefined)
-
+    it('rejects a non-Spotify URL', async () => {
       await expect(
-        service.cancelJob('job-1', 'user-1'),
-      ).resolves.toBeUndefined()
-
-      expect(mockRepo.cancelJob).toHaveBeenCalledWith('job-1')
-    })
-
-    it('should throw FORBIDDEN when user does not own the job', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(false)
-
-      await expect(
-        service.cancelJob('job-1', 'user-other'),
-      ).rejects.toMatchObject({
-        code: 'FORBIDDEN',
-        statusCode: HTTP_STATUS.FORBIDDEN,
-      })
-
-      expect(mockRepo.cancelJob).not.toHaveBeenCalled()
-    })
-
-    it('should throw NOT_FOUND when backend cancel fails', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.cancelJob).mockRejectedValue(
-        new Error('Job cancellation failed: 404'),
-      )
-
-      await expect(
-        service.cancelJob('expired-job', 'user-1'),
-      ).rejects.toMatchObject({
-        code: 'NOT_FOUND',
-        statusCode: HTTP_STATUS.NOT_FOUND,
-      })
-    })
-  })
-
-  describe('downloadPartition', () => {
-    const makeJobDetails = (overrides = {}) => ({
-      job_id: 'job-1',
-      status: 'completed' as const,
-      progress: 100,
-      current_step: 'svg' as const,
-      created_at: '2024-01-01T00:00:00Z',
-      results: {
-        partition_svg_url: '/api/transcription/job-1/download',
-        duration_seconds: 120,
-      },
-      ...overrides,
-    })
-
-    it('should return blob when job is completed and has SVG url', async () => {
-      const fakeBlob = new Blob(['<svg/>'], { type: 'image/svg+xml' })
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.getJobStatus).mockResolvedValue(
-        makeJobDetails() as any,
-      )
-      vi.mocked(mockRepo.downloadPartition).mockResolvedValue(fakeBlob)
-
-      const result = await service.downloadPartition('job-1', 'user-1')
-
-      expect(result).toBe(fakeBlob)
-    })
-
-    it('should throw VALIDATION_ERROR when job is not yet completed', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.getJobStatus).mockResolvedValue(
-        makeJobDetails({ status: 'processing', results: undefined }) as any,
-      )
-
-      await expect(
-        service.downloadPartition('job-1', 'user-1'),
-      ).rejects.toMatchObject({
-        code: 'VALIDATION_ERROR',
-        statusCode: HTTP_STATUS.BAD_REQUEST,
-      })
-    })
-
-    it('should throw NOT_FOUND when completed job has no SVG url', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.getJobStatus).mockResolvedValue(
-        makeJobDetails({ results: undefined }) as any,
-      )
-
-      await expect(
-        service.downloadPartition('job-1', 'user-1'),
-      ).rejects.toMatchObject({
-        code: 'NOT_FOUND',
-        statusCode: HTTP_STATUS.NOT_FOUND,
-      })
-    })
-  })
-
-  describe('validateConfiguration', () => {
-    it('should return valid response from backend', async () => {
-      vi.mocked(mockRepo.validateConfig).mockResolvedValue({ valid: true })
-
-      const result = await service.validateConfiguration(makeConfig())
-
-      expect(result.valid).toBe(true)
-    })
-
-    it('should return invalid when backend reports errors', async () => {
-      vi.mocked(mockRepo.validateConfig).mockResolvedValue({
-        valid: false,
-        errors: ['tab_guitare not compatible with bass instrument'],
-      })
-
-      const result = await service.validateConfiguration(
-        makeConfig({ instrument_type: 'bass', partition_type: 'tab_guitare' }),
-      )
-
-      expect(result.valid).toBe(false)
-      expect(result.errors).toHaveLength(1)
-    })
-
-    it('should return graceful error object when backend is unreachable', async () => {
-      vi.mocked(mockRepo.validateConfig).mockRejectedValue(
-        new Error('Backend API call failed'),
-      )
-
-      const result = await service.validateConfiguration(makeConfig())
-
-      expect(result.valid).toBe(false)
-      expect(result.errors).toContain(
-        'Unable to validate configuration with backend',
-      )
-    })
-  })
-
-  describe('validateAudioFile', () => {
-    it('should not throw for a valid MP3 file', () => {
-      expect(() =>
-        service.validateAudioFile(makeFile('a.mp3', 'audio/mpeg')),
-      ).not.toThrow()
-    })
-
-    it('should not throw for a valid WAV file', () => {
-      expect(() =>
-        service.validateAudioFile(makeFile('a.wav', 'audio/wav')),
-      ).not.toThrow()
-    })
-
-    it('should not throw for a valid FLAC file', () => {
-      expect(() =>
-        service.validateAudioFile(makeFile('a.flac', 'audio/flac')),
-      ).not.toThrow()
-    })
-
-    it('should not throw for a valid M4A file', () => {
-      expect(() =>
-        service.validateAudioFile(makeFile('a.m4a', 'audio/mp4')),
-      ).not.toThrow()
-    })
-
-    it('should not throw for a valid OGG file', () => {
-      expect(() =>
-        service.validateAudioFile(makeFile('a.ogg', 'audio/ogg')),
-      ).not.toThrow()
-    })
-
-    it('should throw for a file with no extension', () => {
-      const file = makeFile('noextension', 'audio/mpeg')
-      expect(() => service.validateAudioFile(file)).toThrow(ApiError)
-    })
-
-    it('should throw PAYLOAD_TOO_LARGE at exactly the size boundary', () => {
-      const maxSizeMb = parseInt(
-        process.env.NEXT_PUBLIC_MAX_FILE_SIZE_MB || '100',
-        10,
-      )
-      const maxBytes = maxSizeMb * 1024 * 1024
-      const file = makeFile('edge.mp3', 'audio/mpeg', maxBytes + 1)
-      expect(() => service.validateAudioFile(file)).toThrow(ApiError)
-    })
-  })
-
-  describe('checkHealth', () => {
-    it('should return health status from repository', async () => {
-      const health = {
-        status: 'healthy' as const,
-        demucs_available: true,
-        disk_space_gb: 50,
-      }
-      vi.mocked(mockRepo.healthCheck).mockResolvedValue(health)
-
-      const result = await service.checkHealth()
-
-      expect(result.status).toBe('healthy')
-      expect(result.demucs_available).toBe(true)
-    })
-
-    it('should propagate error when backend health check fails', async () => {
-      vi.mocked(mockRepo.healthCheck).mockRejectedValue(
-        new Error('Backend unreachable'),
-      )
-
-      await expect(service.checkHealth()).rejects.toThrow('Backend unreachable')
-    })
-  })
-
-  describe('credit pre-check', () => {
-    it('should block transcribe() when no credits remain', async () => {
-      mockCreditService.getUserCreditsBalance.mockResolvedValue({
-        remainingCredits: 0,
-      })
-
-      await expect(
-        service.transcribe(makeFile(), makeConfig(), 'user-broke'),
-      ).rejects.toMatchObject({
-        code: 'INSUFFICIENT_CREDITS',
-        statusCode: 402,
-      })
-
-      expect(mockRepo.uploadAudio).not.toHaveBeenCalled()
-    })
-
-    it('should block transcribeFromYoutube() when no credits remain', async () => {
-      mockCreditService.getUserCreditsBalance.mockResolvedValue({
-        remainingCredits: 0,
-      })
-
-      await expect(
-        service.transcribeFromYoutube(
-          'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        service.transcribeFromSpotify(
+          'https://example.com/track/1',
           makeConfig(),
-          'user-broke',
+          'user-1',
         ),
-      ).rejects.toMatchObject({ code: 'INSUFFICIENT_CREDITS', statusCode: 402 })
-
-      expect(mockRepo.uploadFromYoutubeUrl).not.toHaveBeenCalled()
+      ).rejects.toMatchObject({ statusCode: HTTP_STATUS.BAD_REQUEST })
     })
 
-    it('should block transcribeFromSpotify() when no credits remain', async () => {
-      mockCreditService.getUserCreditsBalance.mockResolvedValue({
+    it('blocks when no credits remain', async () => {
+      creditService.getUserCreditsBalance.mockResolvedValue({
         remainingCredits: 0,
       })
 
@@ -713,164 +599,540 @@ describe('TranscriptionService - Deep Tests', () => {
         service.transcribeFromSpotify(
           'https://open.spotify.com/track/abc123',
           makeConfig(),
-          'user-broke',
+          'user-1',
         ),
-      ).rejects.toMatchObject({ code: 'INSUFFICIENT_CREDITS', statusCode: 402 })
-    })
-
-    it('should allow transcription when credits are available', async () => {
-      mockCreditService.getUserCreditsBalance.mockResolvedValue({
-        remainingCredits: 60,
-      })
-      vi.mocked(mockRepo.validateConfig).mockResolvedValue({ valid: true })
-      vi.mocked(mockRepo.uploadAudio).mockResolvedValue(
-        makeTranscribeResponse(),
-      )
-      vi.mocked(mockRepo.saveJobOwner).mockResolvedValue(undefined)
-
-      await expect(
-        service.transcribe(makeFile(), makeConfig(), 'user-1'),
-      ).resolves.toBeDefined()
-    })
-
-    it('should allow transcription when credits are exactly 1 second', async () => {
-      mockCreditService.getUserCreditsBalance.mockResolvedValue({
-        remainingCredits: 1,
-      })
-      vi.mocked(mockRepo.validateConfig).mockResolvedValue({ valid: true })
-      vi.mocked(mockRepo.uploadAudio).mockResolvedValue(
-        makeTranscribeResponse(),
-      )
-      vi.mocked(mockRepo.saveJobOwner).mockResolvedValue(undefined)
-
-      await expect(
-        service.transcribe(makeFile(), makeConfig(), 'user-1'),
-      ).resolves.toBeDefined()
+      ).rejects.toMatchObject({ code: 'INSUFFICIENT_CREDITS' })
     })
   })
 
-  describe('credit post-deduct in getJob()', () => {
-    const makeCompletedJob = (durationSeconds = 227) => ({
-      job_id: 'job-done',
-      status: 'completed' as const,
-      progress: 100,
-      current_step: 'svg' as const,
-      created_at: '2024-01-01T00:00:00Z',
-      results: {
-        partition_svg_url: '/api/transcription/job-done/download',
-        duration_seconds: durationSeconds,
-      },
+  describe('getJob', () => {
+    beforeEach(() => {
+      repo.findJobForUser.mockResolvedValue(makeLocalJob())
     })
 
-    it('should deduct credits when job completes for first time', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.getJobStatus).mockResolvedValue(
-        makeCompletedJob(180) as any,
-      )
-      vi.mocked(mockRepo.atomicDeductCredits).mockResolvedValue(
-        'deducted' as const,
-      )
+    it('throws FORBIDDEN when the user does not own the job', async () => {
+      repo.findJobForUser.mockResolvedValue(null)
 
-      await service.getJob('job-done', 'user-1')
-
-      expect(mockRepo.atomicDeductCredits).toHaveBeenCalledWith(
-        'job-done',
-        'user-1',
-        180,
-        expect.any(String),
-      )
+      await expect(service.getJob('job-1', 'other')).rejects.toMatchObject({
+        statusCode: HTTP_STATUS.FORBIDDEN,
+      })
+      expect(repo.getJobStatus).not.toHaveBeenCalled()
     })
 
-    it('should NOT deduct credits when already deducted (idempotence)', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.getJobStatus).mockResolvedValue(
-        makeCompletedJob(180) as any,
-      )
-      vi.mocked(mockRepo.atomicDeductCredits).mockResolvedValue(
-        'already_deducted',
-      )
+    it('returns a running job without billing when no duration is known', async () => {
+      repo.getJobStatus.mockResolvedValue(makeJob())
 
-      await service.getJob('job-done', 'user-1')
+      const job = await service.getJob('job-1', 'user-1')
 
-      expect(mockCreditService.deductCreditsInSeconds).not.toHaveBeenCalled()
+      expect(job.status).toBe('processing')
+      expect(repo.reserveCredits).not.toHaveBeenCalled()
+      expect(repo.settleCompletedJob).not.toHaveBeenCalled()
     })
 
-    it('should NOT deduct credits when job is still processing', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.getJobStatus).mockResolvedValue({
-        job_id: 'job-1',
-        status: 'processing' as const,
-        progress: 50,
-        current_step: 'transcription' as const,
-        created_at: '2024-01-01T00:00:00Z',
-      } as any)
+    it('reserves as soon as the backend exposes the measured duration', async () => {
+      repo.getJobStatus.mockResolvedValue(makeJob({ duration_seconds: 187.4 }))
 
       await service.getJob('job-1', 'user-1')
 
-      expect(mockRepo.atomicDeductCredits).not.toHaveBeenCalled()
-      expect(mockCreditService.deductCreditsInSeconds).not.toHaveBeenCalled()
-    })
-
-    it('should NOT deduct credits when duration_seconds is 0', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.getJobStatus).mockResolvedValue(
-        makeCompletedJob(0) as any,
-      )
-
-      await service.getJob('job-done', 'user-1')
-
-      expect(mockRepo.atomicDeductCredits).not.toHaveBeenCalled()
-      expect(mockCreditService.deductCreditsInSeconds).not.toHaveBeenCalled()
-    })
-
-    it('should NOT deduct credits when job failed', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.getJobStatus).mockResolvedValue({
-        job_id: 'job-fail',
-        status: 'failed' as const,
-        progress: 30,
-        current_step: 'preprocessing' as const,
-        created_at: '2024-01-01T00:00:00Z',
-        error: 'Processing failed',
-      } as any)
-
-      await service.getJob('job-fail', 'user-1')
-
-      expect(mockCreditService.deductCreditsInSeconds).not.toHaveBeenCalled()
-    })
-
-    it('should still return job details even after deducting credits', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.getJobStatus).mockResolvedValue(
-        makeCompletedJob(60) as any,
-      )
-      vi.mocked(mockRepo.atomicDeductCredits).mockResolvedValue(
-        'deducted' as const,
-      )
-
-      const result = await service.getJob('job-done', 'user-1')
-
-      expect(result.status).toBe('completed')
-      expect(result.results?.duration_seconds).toBe(60)
-    })
-
-    it('should pass correct duration to atomicDeductCredits', async () => {
-      vi.mocked(mockRepo.verifyJobOwner).mockResolvedValue(true)
-      vi.mocked(mockRepo.getJobStatus).mockResolvedValue(
-        makeCompletedJob(347) as any,
-      )
-      vi.mocked(mockRepo.atomicDeductCredits).mockResolvedValue(
-        'deducted' as const,
-      )
-
-      await service.getJob('job-done', 'user-1')
-
-      expect(mockRepo.atomicDeductCredits).toHaveBeenCalledWith(
-        'job-done',
+      expect(repo.reserveCredits).toHaveBeenCalledWith(
+        'job-1',
         'user-1',
-        347,
-        expect.any(String),
+        187.4,
+        'Transcription (188s)',
       )
+      expect(repo.settleCompletedJob).not.toHaveBeenCalled()
+    })
+
+    it('does not reserve again when the job is already charged', async () => {
+      repo.findJobForUser.mockResolvedValue(
+        makeLocalJob({ creditsDeducted: true }),
+      )
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({ status: 'completed', duration_seconds: 187.4 }),
+      )
+
+      await service.getJob('job-1', 'user-1')
+
+      expect(repo.reserveCredits).not.toHaveBeenCalled()
+      expect(repo.settleCompletedJob).toHaveBeenCalledWith('job-1')
+    })
+
+    it('falls back to results.duration_seconds at completion (legacy backend)', async () => {
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({
+          status: 'completed',
+          results: { partition_svg_url: '/x', duration_seconds: 90 },
+        }),
+      )
+
+      await service.getJob('job-1', 'user-1')
+
+      expect(repo.reserveCredits).toHaveBeenCalledWith(
+        'job-1',
+        'user-1',
+        90,
+        'Transcription (90s)',
+      )
+      expect(repo.settleCompletedJob).toHaveBeenCalledWith('job-1')
+    })
+
+    it('does not deliver the result and refuses the job when the reservation is insufficient', async () => {
+      repo.reserveCredits.mockResolvedValue('insufficient')
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({
+          status: 'completed',
+          results: { partition_svg_url: '/x', duration_seconds: 90 },
+        }),
+      )
+
+      await expect(service.getJob('job-1', 'user-1')).rejects.toMatchObject({
+        code: 'INSUFFICIENT_CREDITS',
+        statusCode: HTTP_STATUS.PAYMENT_REQUIRED,
+      })
+
+      expect(repo.cancelJob).toHaveBeenCalledWith('job-1')
+      expect(repo.settleUnsuccessfulJob).toHaveBeenCalledWith(
+        'job-1',
+        'user-1',
+        { status: 'refused', progress: 0 },
+      )
+      expect(repo.settleCompletedJob).not.toHaveBeenCalled()
+    })
+
+    it('never delivers the result of a refused job on later polls', async () => {
+      repo.findJobForUser.mockResolvedValue(
+        makeLocalJob({ status: LOCAL_JOB_STATUS.REFUSED }),
+      )
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({
+          status: 'completed',
+          results: { partition_svg_url: '/x', duration_seconds: 90 },
+        }),
+      )
+
+      await expect(service.getJob('job-1', 'user-1')).rejects.toMatchObject({
+        code: 'INSUFFICIENT_CREDITS',
+      })
+      expect(repo.reserveCredits).not.toHaveBeenCalled()
+    })
+
+    it('never delivers a completed backend result for a job settled as failed', async () => {
+      repo.findJobForUser.mockResolvedValue(
+        makeLocalJob({ status: LOCAL_JOB_STATUS.FAILED }),
+      )
+      repo.getJobStatus.mockResolvedValue(makeJob({ status: 'completed' }))
+
+      await expect(service.getJob('job-1', 'user-1')).rejects.toMatchObject({
+        code: 'INSUFFICIENT_CREDITS',
+      })
+    })
+
+    it('skips reconciliation for settled jobs', async () => {
+      repo.findJobForUser.mockResolvedValue(
+        makeLocalJob({ status: LOCAL_JOB_STATUS.COMPLETED }),
+      )
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({ status: 'completed', duration_seconds: 60 }),
+      )
+
+      const job = await service.getJob('job-1', 'user-1')
+
+      expect(job.status).toBe('completed')
+      expect(repo.reserveCredits).not.toHaveBeenCalled()
+      expect(repo.settleCompletedJob).not.toHaveBeenCalled()
+    })
+
+    it('does not bill exempt jobs', async () => {
+      repo.findJobForUser.mockResolvedValue(
+        makeLocalJob({ status: LOCAL_JOB_STATUS.EXEMPT }),
+      )
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({ status: 'completed', duration_seconds: 60 }),
+      )
+
+      await service.getJob('job-1', 'admin-1')
+
+      expect(repo.reserveCredits).not.toHaveBeenCalled()
+    })
+
+    it('settles a failed job with its progress (partial billing policy)', async () => {
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({ status: 'failed', progress: 40, duration_seconds: 100 }),
+      )
+
+      await service.getJob('job-1', 'user-1')
+
+      expect(repo.reserveCredits).not.toHaveBeenCalled()
+      expect(repo.settleUnsuccessfulJob).toHaveBeenCalledWith(
+        'job-1',
+        'user-1',
+        { status: 'failed', progress: 40, measuredDurationSeconds: 100 },
+      )
+    })
+
+    it('settles a failed job that never progressed with progress 0', async () => {
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({ status: 'failed', progress: 0 }),
+      )
+
+      await service.getJob('job-1', 'user-1')
+
+      expect(repo.settleUnsuccessfulJob).toHaveBeenCalledWith(
+        'job-1',
+        'user-1',
+        { status: 'failed', progress: 0, measuredDurationSeconds: undefined },
+      )
+    })
+
+    it('never charges for an audio rejected by the backend and explains why', async () => {
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({
+          status: 'failed',
+          progress: 30,
+          error: 'Audio too long',
+          error_code: 'AUDIO_TOO_LONG',
+          duration_seconds: 900,
+        }),
+      )
+
+      const job = await service.getJob('job-1', 'user-1')
+
+      expect(repo.settleUnsuccessfulJob).toHaveBeenCalledWith(
+        'job-1',
+        'user-1',
+        { status: 'failed', progress: 0, measuredDurationSeconds: 900 },
+      )
+      expect(job.error).toContain('15 min 00 s')
+    })
+
+    it('detects a rejection carried only by the error string', async () => {
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({
+          status: 'failed',
+          progress: 30,
+          error: 'AUDIO_UNREADABLE: cannot read',
+        }),
+      )
+
+      const job = await service.getJob('job-1', 'user-1')
+
+      expect(repo.settleUnsuccessfulJob).toHaveBeenCalledWith(
+        'job-1',
+        'user-1',
+        expect.objectContaining({ progress: 0 }),
+      )
+      expect(job.error).toContain('illisible')
+    })
+
+    it('settles the job as lost and throws NOT_FOUND when the backend forgot it', async () => {
+      repo.getJobStatus.mockRejectedValue(new BackendApiError(404, 'gone'))
+
+      await expect(service.getJob('job-1', 'user-1')).rejects.toMatchObject({
+        statusCode: HTTP_STATUS.NOT_FOUND,
+      })
+
+      expect(repo.settleUnsuccessfulJob).toHaveBeenCalledWith(
+        'job-1',
+        'user-1',
+        { status: 'failed', progress: 0 },
+      )
+    })
+
+    it('throws SERVICE_UNAVAILABLE when the backend is unreachable', async () => {
+      repo.getJobStatus.mockRejectedValue(new Error('network'))
+
+      await expect(service.getJob('job-1', 'user-1')).rejects.toMatchObject({
+        statusCode: HTTP_STATUS.SERVICE_UNAVAILABLE,
+      })
+      expect(repo.settleUnsuccessfulJob).not.toHaveBeenCalled()
+    })
+
+    it('concurrent polls all go through the idempotent repository operations', async () => {
+      repo.reserveCredits
+        .mockResolvedValueOnce('reserved')
+        .mockResolvedValue('already_reserved')
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({ status: 'completed', duration_seconds: 60 }),
+      )
+
+      const results = await Promise.all([
+        service.getJob('job-1', 'user-1'),
+        service.getJob('job-1', 'user-1'),
+        service.getJob('job-1', 'user-1'),
+      ])
+
+      expect(results.every((job) => job.status === 'completed')).toBe(true)
+      expect(repo.reserveCredits).toHaveBeenCalledTimes(3)
+    })
+  })
+
+  describe('cancelJob', () => {
+    it('cancels the backend job then reconciles it', async () => {
+      repo.findJobForUser.mockResolvedValue(makeLocalJob())
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({ status: 'failed', progress: 0, duration_seconds: 120 }),
+      )
+
+      await service.cancelJob('job-1', 'user-1')
+
+      expect(repo.cancelJob).toHaveBeenCalledWith('job-1')
+      expect(repo.settleUnsuccessfulJob).toHaveBeenCalledWith(
+        'job-1',
+        'user-1',
+        { status: 'failed', progress: 0, measuredDurationSeconds: 120 },
+      )
+    })
+
+    it('throws FORBIDDEN when the user does not own the job', async () => {
+      repo.findJobForUser.mockResolvedValue(null)
+
+      await expect(service.cancelJob('job-1', 'other')).rejects.toMatchObject({
+        statusCode: HTTP_STATUS.FORBIDDEN,
+      })
+      expect(repo.cancelJob).not.toHaveBeenCalled()
+    })
+
+    it('throws NOT_FOUND when the backend cancel fails', async () => {
+      repo.findJobForUser.mockResolvedValue(makeLocalJob())
+      repo.cancelJob.mockRejectedValue(new Error('nope'))
+
+      await expect(service.cancelJob('job-1', 'user-1')).rejects.toMatchObject({
+        statusCode: HTTP_STATUS.NOT_FOUND,
+      })
+    })
+
+    it('still succeeds when the reconciliation after cancel fails', async () => {
+      repo.findJobForUser.mockResolvedValue(makeLocalJob())
+      repo.getJobStatus.mockRejectedValue(new Error('backend down'))
+
+      await expect(
+        service.cancelJob('job-1', 'user-1'),
+      ).resolves.toBeUndefined()
+    })
+  })
+
+  describe('downloadPartition', () => {
+    beforeEach(() => {
+      repo.findJobForUser.mockResolvedValue(
+        makeLocalJob({ status: LOCAL_JOB_STATUS.COMPLETED }),
+      )
+    })
+
+    it('returns the blob when the job is completed and billed', async () => {
+      const blob = new Blob(['<svg/>'])
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({
+          status: 'completed',
+          results: { partition_svg_url: '/x', duration_seconds: 60 },
+        }),
+      )
+      repo.downloadPartition.mockResolvedValue(blob)
+
+      await expect(service.downloadPartition('job-1', 'user-1')).resolves.toBe(
+        blob,
+      )
+    })
+
+    it('refuses to deliver when the credit reservation is insufficient', async () => {
+      repo.findJobForUser.mockResolvedValue(makeLocalJob())
+      repo.reserveCredits.mockResolvedValue('insufficient')
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({
+          status: 'completed',
+          results: { partition_svg_url: '/x', duration_seconds: 60 },
+        }),
+      )
+
+      await expect(
+        service.downloadPartition('job-1', 'user-1'),
+      ).rejects.toMatchObject({ code: 'INSUFFICIENT_CREDITS' })
+      expect(repo.downloadPartition).not.toHaveBeenCalled()
+    })
+
+    it('throws VALIDATION_ERROR when the job is not completed yet', async () => {
+      repo.getJobStatus.mockResolvedValue(makeJob())
+
+      await expect(
+        service.downloadPartition('job-1', 'user-1'),
+      ).rejects.toMatchObject({ statusCode: HTTP_STATUS.BAD_REQUEST })
+    })
+
+    it('throws NOT_FOUND when the completed job has no SVG url', async () => {
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({ status: 'completed', results: undefined }),
+      )
+
+      await expect(
+        service.downloadPartition('job-1', 'user-1'),
+      ).rejects.toMatchObject({ statusCode: HTTP_STATUS.NOT_FOUND })
+    })
+  })
+
+  describe('reconcileOpenJobs', () => {
+    it('removes stale pending jobs and scans the open ones', async () => {
+      repo.findOpenJobs.mockResolvedValue([])
+
+      const result = await service.reconcileOpenJobs()
+
+      expect(repo.deleteStalePendingJobs).toHaveBeenCalledWith(expect.any(Date))
+      expect(result).toEqual({ scanned: 0, failed: 0 })
+    })
+
+    it('reserves and settles a completed job nobody polled', async () => {
+      repo.findOpenJobs.mockResolvedValue([makeLocalJob()])
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({ status: 'completed', duration_seconds: 60 }),
+      )
+
+      const result = await service.reconcileOpenJobs()
+
+      expect(repo.reserveCredits).toHaveBeenCalledWith(
+        'job-1',
+        'user-1',
+        60,
+        'Transcription (60s)',
+      )
+      expect(repo.settleCompletedJob).toHaveBeenCalledWith('job-1')
+      expect(result).toEqual({ scanned: 1, failed: 0 })
+    })
+
+    it('settles a failed job according to its progress', async () => {
+      repo.findOpenJobs.mockResolvedValue([makeLocalJob()])
+      repo.getJobStatus.mockResolvedValue(
+        makeJob({ status: 'failed', progress: 0 }),
+      )
+
+      await service.reconcileOpenJobs()
+
+      expect(repo.settleUnsuccessfulJob).toHaveBeenCalledWith(
+        'job-1',
+        'user-1',
+        expect.objectContaining({ status: 'failed', progress: 0 }),
+      )
+    })
+
+    it('fully refunds a job the backend lost', async () => {
+      repo.findOpenJobs.mockResolvedValue([makeLocalJob()])
+      repo.getJobStatus.mockRejectedValue(new BackendApiError(404, 'gone'))
+
+      await service.reconcileOpenJobs()
+
+      expect(repo.settleUnsuccessfulJob).toHaveBeenCalledWith(
+        'job-1',
+        'user-1',
+        { status: 'failed', progress: 0 },
+      )
+    })
+
+    it('cancels and fully refunds a job stuck for too long', async () => {
+      repo.findOpenJobs.mockResolvedValue([
+        makeLocalJob({ createdAt: new Date(Date.now() - 3 * 3600 * 1000) }),
+      ])
+      repo.getJobStatus.mockResolvedValue(makeJob({ status: 'processing' }))
+
+      await service.reconcileOpenJobs()
+
+      expect(repo.cancelJob).toHaveBeenCalledWith('job-1')
+      expect(repo.settleUnsuccessfulJob).toHaveBeenCalledWith(
+        'job-1',
+        'user-1',
+        { status: 'failed', progress: 0 },
+      )
+    })
+
+    it('leaves a recent running job alone', async () => {
+      repo.findOpenJobs.mockResolvedValue([makeLocalJob()])
+      repo.getJobStatus.mockResolvedValue(makeJob({ status: 'processing' }))
+
+      await service.reconcileOpenJobs()
+
+      expect(repo.cancelJob).not.toHaveBeenCalled()
+      expect(repo.settleUnsuccessfulJob).not.toHaveBeenCalled()
+    })
+
+    it('skips jobs that never reached the backend', async () => {
+      repo.findOpenJobs.mockResolvedValue([
+        makeLocalJob({ backendJobId: null }),
+      ])
+
+      const result = await service.reconcileOpenJobs()
+
+      expect(repo.getJobStatus).not.toHaveBeenCalled()
+      expect(result).toEqual({ scanned: 1, failed: 0 })
+    })
+
+    it('keeps going when one job fails and reports it', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      repo.findOpenJobs.mockResolvedValue([
+        makeLocalJob({ backendJobId: 'job-a' }),
+        makeLocalJob({ backendJobId: 'job-b' }),
+      ])
+      repo.getJobStatus
+        .mockRejectedValueOnce(new Error('boom'))
+        .mockResolvedValueOnce(makeJob({ status: 'completed' }))
+
+      const result = await service.reconcileOpenJobs()
+
+      expect(result).toEqual({ scanned: 2, failed: 1 })
+      expect(repo.settleCompletedJob).toHaveBeenCalledWith('job-b')
+    })
+  })
+
+  describe('validateConfiguration', () => {
+    it('returns the backend validation', async () => {
+      repo.validateConfig.mockResolvedValue({ valid: true })
+
+      await expect(
+        service.validateConfiguration(makeConfig()),
+      ).resolves.toEqual({ valid: true })
+    })
+
+    it('returns an invalid result when the backend is unreachable', async () => {
+      repo.validateConfig.mockRejectedValue(new Error('down'))
+
+      const result = await service.validateConfiguration(makeConfig())
+
+      expect(result.valid).toBe(false)
+      expect(result.errors).toHaveLength(1)
+    })
+  })
+
+  describe('validateAudioFile', () => {
+    it.each([
+      ['a.mp3', 'audio/mpeg'],
+      ['a.wav', 'audio/wav'],
+      ['a.flac', 'audio/flac'],
+      ['a.m4a', 'audio/mp4'],
+      ['a.ogg', 'audio/ogg'],
+    ])('accepts %s', (name, type) => {
+      expect(() =>
+        service.validateAudioFile(makeFile(name, type)),
+      ).not.toThrow()
+    })
+
+    it('rejects a file with no extension', () => {
+      expect(() => service.validateAudioFile(makeFile('noext'))).toThrow()
+    })
+
+    it('rejects a file exactly above the size boundary', () => {
+      const file = makeFile('a.mp3', 'audio/mpeg', 100 * 1024 * 1024 + 1)
+      expect(() => service.validateAudioFile(file)).toThrow()
+    })
+  })
+
+  describe('checkHealth', () => {
+    it('returns the backend health', async () => {
+      repo.healthCheck.mockResolvedValue({ status: 'healthy' })
+
+      await expect(service.checkHealth()).resolves.toEqual({
+        status: 'healthy',
+      })
+    })
+
+    it('propagates backend failures', async () => {
+      repo.healthCheck.mockRejectedValue(new Error('down'))
+
+      await expect(service.checkHealth()).rejects.toThrow('down')
     })
   })
 })

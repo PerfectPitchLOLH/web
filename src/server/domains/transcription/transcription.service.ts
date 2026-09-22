@@ -1,16 +1,28 @@
 import type { CreditService } from '@/server/domains/credit/credit.service'
 import { permissionService } from '@/server/domains/permission'
-import { SUBSCRIPTION_STATUS } from '@/server/domains/subscription'
-import { db } from '@/server/lib/database'
-import { HTTP_STATUS } from '@/server/shared/constants/http.constants'
+import {
+  ERROR_CODES,
+  HTTP_STATUS,
+} from '@/server/shared/constants/http.constants'
 import { ApiError } from '@/server/shared/utils/api.utils'
 
+import type { AudioRejectionCode } from './transcription.constants'
+import {
+  ACTIVE_JOB_LIMITS,
+  AUDIO_REJECTION_CODES,
+  LOCAL_JOB_STATUS,
+  OPEN_JOB_STATUSES,
+  PENDING_JOB_TTL_MS,
+  RECONCILE_BATCH_SIZE,
+  STALE_JOB_TTL_MS,
+} from './transcription.constants'
 import type { TranscriptionRepository } from './transcription.repository'
 import { BackendApiError } from './transcription.repository'
 import type {
   ConfigValidationResponse,
   HealthStatus,
   JobDetails,
+  LocalJob,
   TranscribeConfig,
   TranscribeResponse,
 } from './transcription.types'
@@ -26,6 +38,47 @@ const MAX_FILE_SIZE_MB = parseInt(
 )
 const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024
 
+type PlanTier = keyof typeof ACTIVE_JOB_LIMITS
+
+function formatDuration(seconds: number): string {
+  const total = Math.round(seconds)
+  const minutes = Math.floor(total / 60)
+  const rest = total % 60
+  return minutes > 0
+    ? `${minutes} min ${String(rest).padStart(2, '0')} s`
+    : `${rest} s`
+}
+
+function isAudioRejectionCode(code: unknown): code is AudioRejectionCode {
+  return AUDIO_REJECTION_CODES.includes(code as AudioRejectionCode)
+}
+
+function audioRejectionMessage(
+  code: AudioRejectionCode,
+  durationSeconds?: number | null,
+): string {
+  if (code === ERROR_CODES.AUDIO_UNREADABLE) {
+    return "La durée de ce fichier audio n'a pas pu être lue : le fichier semble illisible ou corrompu."
+  }
+  const measured = durationSeconds
+    ? ` (${formatDuration(durationSeconds)})`
+    : ''
+  return `Cet audio${measured} dépasse la durée autorisée pour une transcription ou vos crédits restants.`
+}
+
+function measuredDuration(job: JobDetails): number {
+  const direct = job.duration_seconds
+  if (direct && direct > 0) return direct
+  const fromResults = job.results?.duration_seconds
+  return fromResults && fromResults > 0 ? fromResults : 0
+}
+
+function rejectionCodeOf(job: JobDetails): AudioRejectionCode | null {
+  if (job.status !== 'failed') return null
+  if (isAudioRejectionCode(job.error_code)) return job.error_code
+  return AUDIO_REJECTION_CODES.find((code) => job.error?.includes(code)) ?? null
+}
+
 export class TranscriptionService {
   constructor(
     private repository: TranscriptionRepository,
@@ -36,27 +89,21 @@ export class TranscriptionService {
     file: File,
     config: TranscribeConfig,
     userId: string,
-    durationSeconds?: number,
     skipCreditCheck = false,
   ): Promise<TranscribeResponse> {
-    if (!skipCreditCheck) {
-      await this.checkCreditsAvailable(userId, durationSeconds)
-      await this.enforcePolyphonyAccess(userId, config)
-    }
     this.validateAudioFile(file)
 
-    try {
-      await this.validateConfigWithBackend(config)
-    } catch (error) {
-      console.warn(
-        '[TranscriptionService] Config validation with backend failed (non-blocking):',
-        error instanceof Error ? error.message : error,
-      )
-    }
-
-    const response = await this.repository.uploadAudio(file, config)
-    await this.repository.saveJobOwner(response.job_id, userId, durationSeconds)
-    return response
+    return this.launch(userId, config, skipCreditCheck, async (max) => {
+      try {
+        await this.validateConfigWithBackend(config)
+      } catch (error) {
+        console.warn(
+          '[TranscriptionService] Config validation with backend failed (non-blocking):',
+          error instanceof Error ? error.message : error,
+        )
+      }
+      return this.repository.uploadAudio(file, config, max)
+    })
   }
 
   async transcribeFromYoutube(
@@ -73,23 +120,13 @@ export class TranscriptionService {
       )
     }
 
-    let estimatedDuration: number | undefined
-
-    if (!skipCreditCheck) {
-      await this.enforcePolyphonyAccess(userId, config)
-      await this.checkCreditsAvailable(userId)
-      const info = await this.repository.getYoutubeInfo(url)
-      estimatedDuration = info.duration_seconds
-      await this.checkCreditsAvailable(userId, estimatedDuration)
-    }
-
-    const response = await this.repository.uploadFromYoutubeUrl(url, config)
-    await this.repository.saveJobOwner(
-      response.job_id,
+    return this.launch(
       userId,
-      estimatedDuration,
+      config,
+      skipCreditCheck,
+      (max) => this.repository.uploadFromYoutubeUrl(url, config, max),
+      async () => (await this.repository.getYoutubeInfo(url)).duration_seconds,
     )
-    return response
   }
 
   async transcribeFromSpotify(
@@ -106,46 +143,36 @@ export class TranscriptionService {
       )
     }
 
-    if (!skipCreditCheck) {
-      await this.enforcePolyphonyAccess(userId, config)
-      await this.checkCreditsAvailable(userId)
-    }
-
-    const response = await this.repository.uploadFromSpotifyUrl(url, config)
-    await this.repository.saveJobOwner(response.job_id, userId)
-    return response
+    return this.launch(userId, config, skipCreditCheck, (max) =>
+      this.repository.uploadFromSpotifyUrl(url, config, max),
+    )
   }
 
   async getJob(jobId: string, userId: string): Promise<JobDetails> {
-    const isOwner = await this.repository.verifyJobOwner(jobId, userId)
-    if (!isOwner) {
+    const local = await this.repository.findJobForUser(jobId, userId)
+    if (!local) {
       throw new ApiError('FORBIDDEN', HTTP_STATUS.FORBIDDEN, 'Access denied')
     }
+
     try {
       const job = await this.repository.getJobStatus(jobId)
 
-      const isAdmin = await this.isAdminUser(userId)
-
-      if (
-        !isAdmin &&
+      if (this.isOpen(local)) {
+        const outcome = await this.reconcileJob(local, job)
+        if (outcome === 'refused') throw this.undeliverableResultError()
+      } else if (
         job.status === 'completed' &&
-        job.results != null &&
-        job.results.duration_seconds > 0
+        (local.status === LOCAL_JOB_STATUS.REFUSED ||
+          local.status === LOCAL_JOB_STATUS.FAILED)
       ) {
-        await this.repository.atomicDeductCredits(
-          jobId,
-          userId,
-          job.results.duration_seconds,
-          `Transcription (${Math.ceil(job.results.duration_seconds)}s)`,
-        )
-      } else if (!isAdmin && job.status === 'failed' && job.progress > 0) {
-        await this.deductPartialCredits(jobId, userId, job.progress)
+        throw this.undeliverableResultError()
       }
 
-      return job
+      return this.presentJob(job)
     } catch (error) {
       if (error instanceof ApiError) throw error
       if (error instanceof BackendApiError && error.status === 404) {
+        if (this.isOpen(local)) await this.settleLostJob(local)
         throw new ApiError(
           'NOT_FOUND',
           HTTP_STATUS.NOT_FOUND,
@@ -160,31 +187,28 @@ export class TranscriptionService {
     }
   }
 
-  private async deductPartialCredits(
-    jobId: string,
-    userId: string,
-    progressPercent: number,
-  ): Promise<void> {
-    try {
-      const dbJob = await db.transcriptionJob.findUnique({
-        where: { backendJobId: jobId },
-        select: { estimatedDurationSeconds: true, creditsDeducted: true },
-      })
-      if (!dbJob || dbJob.creditsDeducted || !dbJob.estimatedDurationSeconds)
-        return
+  async reconcileOpenJobs(): Promise<{ scanned: number; failed: number }> {
+    await this.repository.deleteStalePendingJobs(
+      new Date(Date.now() - PENDING_JOB_TTL_MS),
+    )
 
-      const partial = Math.ceil(
-        (progressPercent / 100) * dbJob.estimatedDurationSeconds,
-      )
-      if (partial <= 0) return
+    const jobs = await this.repository.findOpenJobs(RECONCILE_BATCH_SIZE)
+    let failed = 0
 
-      await this.repository.atomicDeductCredits(
-        jobId,
-        userId,
-        partial,
-        `Transcription interrompue à ${progressPercent}% (${partial}s)`,
-      )
-    } catch {}
+    for (const job of jobs) {
+      try {
+        await this.reconcileOpenJob(job)
+      } catch (error) {
+        failed++
+        console.error(
+          '[TranscriptionService] Reconciliation failed for job',
+          job.backendJobId,
+          error instanceof Error ? error.message : error,
+        )
+      }
+    }
+
+    return { scanned: jobs.length, failed }
   }
 
   async downloadPartition(jobId: string, userId: string): Promise<Blob> {
@@ -223,8 +247,8 @@ export class TranscriptionService {
   }
 
   async cancelJob(jobId: string, userId: string): Promise<void> {
-    const isOwner = await this.repository.verifyJobOwner(jobId, userId)
-    if (!isOwner) {
+    const local = await this.repository.findJobForUser(jobId, userId)
+    if (!local) {
       throw new ApiError('FORBIDDEN', HTTP_STATUS.FORBIDDEN, 'Access denied')
     }
     try {
@@ -235,6 +259,10 @@ export class TranscriptionService {
         HTTP_STATUS.NOT_FOUND,
         'Job introuvable ou ne peut pas être annulé',
       )
+    }
+
+    if (this.isOpen(local)) {
+      await this.reconcileOpenJob(local).catch(() => {})
     }
   }
 
@@ -271,57 +299,294 @@ export class TranscriptionService {
     }
   }
 
-  private async isAdminUser(userId: string): Promise<boolean> {
-    const user = await db.user.findUnique({
-      where: { id: userId },
-      select: { role: true, isRootAdmin: true },
-    })
-    return user?.role === 'admin' || user?.isRootAdmin === true
+  private isOpen(job: LocalJob): boolean {
+    return OPEN_JOB_STATUSES.includes(job.status as never)
   }
 
-  private async hasPastDueSubscription(userId: string): Promise<boolean> {
-    const subscription = await db.subscription.findFirst({
-      where: { userId, status: SUBSCRIPTION_STATUS.PAST_DUE },
-      select: { id: true },
-    })
-    return subscription !== null
+  private undeliverableResultError(): ApiError {
+    return new ApiError(
+      ERROR_CODES.INSUFFICIENT_CREDITS,
+      HTTP_STATUS.PAYMENT_REQUIRED,
+      "Crédits insuffisants : le résultat de cette transcription n'est pas disponible.",
+    )
   }
 
-  private async checkCreditsAvailable(
+  private presentJob(job: JobDetails): JobDetails {
+    const code = rejectionCodeOf(job)
+    if (!code) return job
+    return {
+      ...job,
+      error: audioRejectionMessage(code, job.duration_seconds),
+    }
+  }
+
+  private async launch(
     userId: string,
-    durationSeconds?: number,
-  ): Promise<void> {
-    if (await this.isAdminUser(userId)) return
+    config: TranscribeConfig,
+    skipCreditCheck: boolean,
+    start: (maxDurationSeconds?: number) => Promise<TranscribeResponse>,
+    estimateDuration?: () => Promise<number>,
+  ): Promise<TranscribeResponse> {
+    if (!skipCreditCheck) {
+      await this.enforcePolyphonyAccess(userId, config)
+    }
 
-    if (await this.hasPastDueSubscription(userId)) {
+    const access = await this.repository.findUserAccess(userId)
+    if (skipCreditCheck || access?.isAdmin) {
+      const response = await start()
+      await this.repository.recordExemptJob(response.job_id, userId)
+      return response
+    }
+
+    const tier = await this.resolveTier(userId)
+    await this.assertMayTranscribe(userId, tier, access?.emailVerified ?? null)
+
+    const balance = await this.creditService.getUserCreditsBalance(userId)
+    const remaining = balance.remainingCredits
+    if (remaining <= 0) {
+      throw new ApiError(
+        ERROR_CODES.INSUFFICIENT_CREDITS,
+        HTTP_STATUS.PAYMENT_REQUIRED,
+        'Crédits insuffisants pour lancer une transcription',
+      )
+    }
+
+    const estimate = estimateDuration ? await estimateDuration() : undefined
+    if (estimate && estimate > remaining) {
+      throw new ApiError(
+        ERROR_CODES.INSUFFICIENT_CREDITS,
+        HTTP_STATUS.PAYMENT_REQUIRED,
+        `Crédits insuffisants : ${Math.ceil(estimate / 60)} min nécessaires, ${Math.floor(remaining / 60)} min disponibles`,
+      )
+    }
+
+    const slotId = await this.acquireSlot(userId, tier, estimate)
+
+    let response: TranscribeResponse
+    try {
+      response = await start(remaining)
+    } catch (error) {
+      await this.repository.releaseJobSlot(slotId).catch(() => {})
+      throw this.mapLaunchError(error)
+    }
+
+    await this.confirmLaunch(slotId, userId, response)
+    return response
+  }
+
+  private async resolveTier(userId: string): Promise<PlanTier> {
+    const context = await permissionService.getUserPermissionContext(userId)
+    return context.planTier === 'free' ? 'free' : 'paid'
+  }
+
+  private async assertMayTranscribe(
+    userId: string,
+    tier: PlanTier,
+    emailVerified: Date | null,
+  ): Promise<void> {
+    if (tier === 'free' && !emailVerified) {
+      throw new ApiError(
+        ERROR_CODES.EMAIL_NOT_VERIFIED,
+        HTTP_STATUS.FORBIDDEN,
+        'Confirmez votre adresse e-mail pour lancer une transcription.',
+      )
+    }
+
+    if (await this.repository.hasPastDueSubscription(userId)) {
       throw new ApiError(
         'SUBSCRIPTION_PAST_DUE',
         HTTP_STATUS.PAYMENT_REQUIRED,
         'Votre abonnement a un paiement en retard. Mettez à jour votre moyen de paiement pour continuer à transcrire.',
       )
     }
+  }
 
-    const balance = await this.creditService.getUserCreditsBalance(userId)
-    if (balance.remainingCredits <= 0) {
-      throw new ApiError(
-        'INSUFFICIENT_CREDITS',
-        HTTP_STATUS.PAYMENT_REQUIRED,
-        'Crédits insuffisants pour lancer une transcription',
-      )
+  private async acquireSlot(
+    userId: string,
+    tier: PlanTier,
+    estimate?: number,
+  ): Promise<string> {
+    const limit = ACTIVE_JOB_LIMITS[tier]
+
+    let slotId = await this.repository.acquireJobSlot(userId, limit, estimate)
+    if (slotId) return slotId
+
+    await this.reconcileUserOpenJobs(userId)
+    slotId = await this.repository.acquireJobSlot(userId, limit, estimate)
+    if (slotId) return slotId
+
+    throw new ApiError(
+      ERROR_CODES.ACTIVE_JOBS_LIMIT_REACHED,
+      HTTP_STATUS.TOO_MANY_REQUESTS,
+      limit === 1
+        ? 'Une transcription est déjà en cours. Attendez sa fin pour en lancer une autre, ou passez à un abonnement payant pour en lancer deux en parallèle.'
+        : `${limit} transcriptions sont déjà en cours. Attendez la fin de l'une d'elles pour en lancer une autre.`,
+    )
+  }
+
+  private async reconcileUserOpenJobs(userId: string): Promise<void> {
+    await this.repository.deleteStalePendingJobs(
+      new Date(Date.now() - PENDING_JOB_TTL_MS),
+      userId,
+    )
+    const jobs = await this.repository.findOpenJobsForUser(userId)
+    for (const job of jobs) {
+      await this.reconcileOpenJob(job).catch(() => {})
     }
+  }
+
+  private async confirmLaunch(
+    slotId: string,
+    userId: string,
+    response: TranscribeResponse,
+  ): Promise<void> {
+    const measured = response.duration_seconds ?? 0
+
+    try {
+      await this.repository.attachBackendJob(slotId, response.job_id, measured)
+
+      if (measured <= 0) return
+
+      const seconds = Math.ceil(measured)
+      const result = await this.repository.reserveCredits(
+        response.job_id,
+        userId,
+        measured,
+        `Transcription (${seconds}s)`,
+      )
+      if (result !== 'insufficient') return
+
+      await this.abortLaunch(slotId, response.job_id)
+      throw new ApiError(
+        ERROR_CODES.INSUFFICIENT_CREDITS,
+        HTTP_STATUS.PAYMENT_REQUIRED,
+        `Crédits insuffisants : ${Math.ceil(seconds / 60)} min nécessaires pour cet audio`,
+      )
+    } catch (error) {
+      if (!(error instanceof ApiError)) {
+        await this.abortLaunch(slotId, response.job_id)
+      }
+      throw error
+    }
+  }
+
+  private async abortLaunch(slotId: string, backendJobId: string) {
+    await this.cancelBackendJob(backendJobId)
+    await this.repository.releaseJobSlot(slotId).catch(() => {})
+  }
+
+  private async cancelBackendJob(backendJobId: string): Promise<void> {
+    try {
+      await this.repository.cancelJob(backendJobId)
+    } catch {}
+  }
+
+  private mapLaunchError(error: unknown): unknown {
     if (
-      durationSeconds &&
-      durationSeconds > 0 &&
-      balance.remainingCredits < durationSeconds
+      error instanceof BackendApiError &&
+      error.status === HTTP_STATUS.UNPROCESSABLE_ENTITY &&
+      isAudioRejectionCode(error.code)
     ) {
-      const remainingMinutes = Math.floor(balance.remainingCredits / 60)
-      const neededMinutes = Math.ceil(durationSeconds / 60)
-      throw new ApiError(
-        'INSUFFICIENT_CREDITS',
-        HTTP_STATUS.PAYMENT_REQUIRED,
-        `Crédits insuffisants : ${neededMinutes} min nécessaires, ${remainingMinutes} min disponibles`,
+      return new ApiError(
+        error.code,
+        HTTP_STATUS.UNPROCESSABLE_ENTITY,
+        audioRejectionMessage(error.code, error.durationSeconds),
       )
     }
+    return error
+  }
+
+  private async reconcileOpenJob(job: LocalJob): Promise<void> {
+    if (!job.backendJobId) return
+
+    let status: JobDetails
+    try {
+      status = await this.repository.getJobStatus(job.backendJobId)
+    } catch (error) {
+      if (error instanceof BackendApiError && error.status === 404) {
+        await this.settleLostJob(job)
+        return
+      }
+      throw error
+    }
+
+    await this.reconcileJob(job, status)
+
+    const isTerminal =
+      status.status === 'completed' || status.status === 'failed'
+    if (
+      !isTerminal &&
+      Date.now() - job.createdAt.getTime() > STALE_JOB_TTL_MS
+    ) {
+      await this.cancelBackendJob(job.backendJobId)
+      await this.repository.settleUnsuccessfulJob(
+        job.backendJobId,
+        job.userId,
+        {
+          status: 'failed',
+          progress: 0,
+        },
+      )
+    }
+  }
+
+  private async settleLostJob(job: LocalJob): Promise<void> {
+    if (!job.backendJobId) return
+    await this.repository
+      .settleUnsuccessfulJob(job.backendJobId, job.userId, {
+        status: 'failed',
+        progress: 0,
+      })
+      .catch(() => {})
+  }
+
+  private async reconcileJob(
+    local: LocalJob,
+    status: JobDetails,
+  ): Promise<'ok' | 'refused'> {
+    const backendJobId = local.backendJobId
+    if (!backendJobId) return 'ok'
+
+    const measured = measuredDuration(status)
+
+    if (status.status === 'failed') {
+      await this.repository.settleUnsuccessfulJob(backendJobId, local.userId, {
+        status: 'failed',
+        progress: rejectionCodeOf(status)
+          ? 0
+          : Number.isFinite(status.progress)
+            ? status.progress
+            : 0,
+        measuredDurationSeconds: measured > 0 ? measured : undefined,
+      })
+      return 'ok'
+    }
+
+    if (measured > 0 && !local.creditsDeducted) {
+      const result = await this.repository.reserveCredits(
+        backendJobId,
+        local.userId,
+        measured,
+        `Transcription (${Math.ceil(measured)}s)`,
+      )
+      if (result === 'insufficient') {
+        await this.cancelBackendJob(backendJobId)
+        await this.repository.settleUnsuccessfulJob(
+          backendJobId,
+          local.userId,
+          {
+            status: 'refused',
+            progress: 0,
+          },
+        )
+        return 'refused'
+      }
+    }
+
+    if (status.status === 'completed') {
+      await this.repository.settleCompletedJob(backendJobId)
+    }
+    return 'ok'
   }
 
   private async enforcePolyphonyAccess(

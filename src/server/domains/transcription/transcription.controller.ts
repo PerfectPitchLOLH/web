@@ -47,16 +47,10 @@ export class TranscriptionController {
       }
 
       const config: TranscribeConfig = JSON.parse(configStr)
-      const durationSecondsStr = formData.get('duration_seconds') as
-        | string
-        | null
-      const durationSeconds =
-        durationSecondsStr !== null ? parseFloat(durationSecondsStr) : undefined
       const response = await this.service.transcribe(
         file,
         config,
         userId,
-        durationSeconds,
         skipCreditCheck,
       )
       return createSuccessResponse(response, HTTP_STATUS.CREATED)
@@ -183,6 +177,15 @@ export class TranscriptionController {
     try {
       await this.service.cancelJob(jobId, userId)
       return createSuccessResponse({ cancelled: true })
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
+  async reconcileActiveJobs() {
+    try {
+      const result = await this.service.reconcileOpenJobs()
+      return createSuccessResponse(result)
     } catch (error) {
       return handleApiError(error)
     }

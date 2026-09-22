@@ -75,7 +75,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
+  events: {
+    // Auth.js creates OAuth users with emailVerified null; only Google reaches this hook and signIn below guarantees the address is verified
+    async createUser({ user }) {
+      if (!user.id) return
+      await db.user.update({
+        where: { id: user.id },
+        data: { emailVerified: new Date() },
+      })
+    },
+  },
   callbacks: {
+    async signIn({ account, profile }) {
+      if (account?.provider === 'google') {
+        return profile?.email_verified === true
+      }
+      return true
+    },
     async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id
