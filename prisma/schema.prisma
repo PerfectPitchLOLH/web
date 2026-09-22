@@ -317,18 +317,23 @@ model Notification {
 
 model TranscriptionJob {
   id                       String   @id @default(cuid())
-  backendJobId             String   @unique
+  backendJobId             String?  @unique
   userId                   String
   musicXmlContent          String?
   svgContent               String?
   durationSeconds          Float?
   estimatedDurationSeconds Float?
   creditsDeducted          Boolean  @default(false)
+  chargedMonthlySeconds    Int      @default(0)
+  chargedBonusSeconds      Int      @default(0)
+  status                   String   @default("active")
   createdAt                DateTime @default(now())
   user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([backendJobId])
   @@index([userId])
+  @@index([userId, status])
+  @@index([status, createdAt])
   @@map("transcription_jobs")
 }
 
