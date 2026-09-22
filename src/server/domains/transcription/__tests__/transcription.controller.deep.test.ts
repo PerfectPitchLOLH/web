@@ -63,6 +63,7 @@ describe('TranscriptionController - Deep Tests', () => {
       cancelJob: vi.fn(),
       checkHealth: vi.fn(),
       validateAudioFile: vi.fn(),
+      reconcileOpenJobs: vi.fn(),
     } as any
 
     controller = new TranscriptionController(mockService)
@@ -181,7 +182,29 @@ describe('TranscriptionController - Deep Tests', () => {
         expect.any(File),
         expect.any(Object),
         'specific-user-99',
-        undefined,
+        false,
+      )
+    })
+
+    it('should not forward a client-supplied duration to the service', async () => {
+      vi.mocked(mockService.transcribe).mockResolvedValue(
+        makeTranscribeResponse() as any,
+      )
+
+      const form = new FormData()
+      form.append('file', makeAudioFile())
+      form.append('config', JSON.stringify(makeConfig()))
+      form.append('duration_seconds', '1')
+      const req = new NextRequest('http://localhost/api/transcription', {
+        method: 'POST',
+        body: form,
+      })
+      await controller.uploadAudio('user-1', req)
+
+      expect(mockService.transcribe).toHaveBeenCalledWith(
+        expect.any(File),
+        expect.any(Object),
+        'user-1',
         false,
       )
     })
@@ -542,6 +565,31 @@ describe('TranscriptionController - Deep Tests', () => {
         },
       )
       const res = await controller.validateConfig(req)
+
+      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+    })
+  })
+
+  describe('reconcileActiveJobs', () => {
+    it('should return 200 with the reconciliation summary', async () => {
+      vi.mocked(mockService.reconcileOpenJobs).mockResolvedValue({
+        scanned: 3,
+        failed: 1,
+      })
+
+      const res = await controller.reconcileActiveJobs()
+      const body = await res.json()
+
+      expect(res.status).toBe(HTTP_STATUS.OK)
+      expect(body.data).toEqual({ scanned: 3, failed: 1 })
+    })
+
+    it('should return 500 when the reconciliation throws', async () => {
+      vi.mocked(mockService.reconcileOpenJobs).mockRejectedValue(
+        new Error('db down'),
+      )
+
+      const res = await controller.reconcileActiveJobs()
 
       expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
     })

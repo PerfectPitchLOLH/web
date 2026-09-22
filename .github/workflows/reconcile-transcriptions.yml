@@ -1,0 +1,29 @@
+name: Reconcile transcription jobs
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  reconcile:
+    name: Call reconciliation cron endpoint
+    runs-on: ubuntu-latest
+    if: github.repository == 'PerfectPitchLOLH/web'
+    steps:
+      - name: POST to /api/cron/reconcile-transcriptions
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET repository secret is not set"
+            exit 1
+          fi
+          status=$(curl -s -o /tmp/body -w '%{http_code}' \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "https://notavex.com/api/cron/reconcile-transcriptions")
+          cat /tmp/body
+          if [ "$status" -ge 300 ]; then
+            echo "::error::Reconciliation call failed with HTTP $status"
+            exit 1
+          fi

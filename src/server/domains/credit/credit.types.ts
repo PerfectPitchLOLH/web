@@ -20,6 +20,7 @@ export type CreditTransactionType =
   | 'purchase'
   | 'subscription_grant'
   | 'usage'
+  | 'refund'
   | 'bonus'
   | 'monthly_refill'
   | 'proration_adjustment'
@@ -56,6 +57,15 @@ export type UserCreditsBalance = {
     lowBalance: boolean
     outOfCredits: boolean
   }
+}
+
+export type CreditDebit = {
+  fromMonthly: number
+  fromBonus: number
+  monthlyCredits: number
+  bonusCredits: number
+  usedThisMonth: number
+  lastMonthlyRefill: Date | null
 }
 
 export type CreditBalance = {

@@ -5,7 +5,7 @@ import { TranscriptionRepository } from './transcription.repository'
 import { TranscriptionService } from './transcription.service'
 
 const transcriptionRepository = new TranscriptionRepository()
-const transcriptionService = new TranscriptionService(
+export const transcriptionService = new TranscriptionService(
   transcriptionRepository,
   creditService,
 )

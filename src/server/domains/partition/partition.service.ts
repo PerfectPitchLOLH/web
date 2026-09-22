@@ -1,3 +1,5 @@
+import type { TranscriptionService } from '@/server/domains/transcription/transcription.service'
+import type { TranscribeConfig } from '@/server/domains/transcription/transcription.types'
 import { db } from '@/server/lib/database'
 import {
   ERROR_CODES,
@@ -23,7 +25,10 @@ function backendAuthHeaders(): Record<string, string> {
 }
 
 export class PartitionService {
-  constructor(private repository: PartitionRepository) {}
+  constructor(
+    private repository: PartitionRepository,
+    private transcriptions: Pick<TranscriptionService, 'getJob'>,
+  ) {}
 
   async saveFromJob(
     userId: string,
@@ -54,17 +59,7 @@ export class PartitionService {
       )
     }
 
-    const jobRes = await fetch(`${API_BASE_URL}/jobs/${input.jobId}`, {
-      headers: backendAuthHeaders(),
-    })
-    if (!jobRes.ok) {
-      throw new ApiError(
-        ERROR_CODES.NOT_FOUND,
-        HTTP_STATUS.NOT_FOUND,
-        'Job not found',
-      )
-    }
-    const job = await jobRes.json()
+    const job = await this.transcriptions.getJob(input.jobId, userId)
 
     if (job.status !== 'completed') {
       throw new ApiError(
@@ -95,7 +90,7 @@ export class PartitionService {
       )
     }
 
-    const config = job.config || {}
+    const config = (job.config ?? {}) as Partial<TranscribeConfig>
     const instrument = config.instrument_type || 'other'
     const partitionType = config.partition_type || 'classique'
 
@@ -107,7 +102,7 @@ export class PartitionService {
       partitionType,
       tags: input.tags ?? [],
       notes: input.notes,
-      transcribeConfig: config,
+      transcribeConfig: config as TranscribeConfig,
       musicXmlContent,
       svgContent,
       sourceJobId: input.jobId,

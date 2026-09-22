@@ -1,15 +1,32 @@
+import type { Prisma } from '@prisma/client'
+
 import { db } from '@/server/lib/database'
 
 import { PAGINATION_DEFAULTS } from './credit.constants'
 import type {
   CreateCreditTransactionDTO,
   CreditBalance,
+  CreditDebit,
   CreditHistoryParams,
   CreditRefill,
   CreditRefillDTO,
   CreditTransactionEntity,
   UserCredits,
 } from './credit.types'
+
+type CreditClient = Pick<
+  Prisma.TransactionClient,
+  'userCredits' | 'creditTransaction'
+>
+
+const MAX_DEBIT_ATTEMPTS = 5
+
+export class InsufficientCreditsError extends Error {
+  constructor() {
+    super('Insufficient credits')
+    this.name = 'InsufficientCreditsError'
+  }
+}
 
 export class CreditRepository {
   async getUserCredits(userId: string): Promise<UserCredits | null> {
@@ -144,39 +161,89 @@ export class CreditRepository {
     return credits
   }
 
-  async consumeCredits(userId: string, seconds: number): Promise<UserCredits> {
-    const credits = await this.getUserCredits(userId)
-    if (!credits) {
-      throw new Error(`User credits not found for userId: ${userId}`)
+  async consumeCredits(
+    userId: string,
+    seconds: number,
+    client: CreditClient = db,
+  ): Promise<UserCredits> {
+    const debit = await this.debitCredits(userId, seconds, client)
+    return {
+      userId,
+      monthlyCredits: debit.monthlyCredits,
+      bonusCredits: debit.bonusCredits,
+      usedThisMonth: debit.usedThisMonth,
+      lastMonthlyRefill: debit.lastMonthlyRefill,
+      updatedAt: new Date(),
+    }
+  }
+
+  async debitCredits(
+    userId: string,
+    seconds: number,
+    client: CreditClient = db,
+  ): Promise<CreditDebit> {
+    for (let attempt = 0; attempt < MAX_DEBIT_ATTEMPTS; attempt++) {
+      const credits = await client.userCredits.findUnique({ where: { userId } })
+      if (!credits) {
+        throw new Error(`User credits not found for userId: ${userId}`)
+      }
+
+      if (credits.monthlyCredits + credits.bonusCredits < seconds) {
+        throw new InsufficientCreditsError()
+      }
+
+      const fromMonthly = Math.min(credits.monthlyCredits, seconds)
+      const fromBonus = seconds - fromMonthly
+
+      const updated = await client.userCredits.updateMany({
+        where: {
+          userId,
+          monthlyCredits: credits.monthlyCredits,
+          bonusCredits: credits.bonusCredits,
+        },
+        data: {
+          monthlyCredits: { decrement: fromMonthly },
+          bonusCredits: { decrement: fromBonus },
+          usedThisMonth: { increment: seconds },
+        },
+      })
+
+      if (updated.count === 1) {
+        return {
+          fromMonthly,
+          fromBonus,
+          monthlyCredits: credits.monthlyCredits - fromMonthly,
+          bonusCredits: credits.bonusCredits - fromBonus,
+          usedThisMonth: credits.usedThisMonth + seconds,
+          lastMonthlyRefill: credits.lastMonthlyRefill,
+        }
+      }
     }
 
-    const totalAvailable = credits.monthlyCredits + credits.bonusCredits
-    if (totalAvailable < seconds) {
-      throw new Error('Insufficient credits')
-    }
+    throw new Error(`Credits update contention for userId: ${userId}`)
+  }
 
-    let remainingToConsume = seconds
-    let newMonthlyCredits = credits.monthlyCredits
-    let newBonusCredits = credits.bonusCredits
+  async restoreCredits(
+    userId: string,
+    amounts: { monthly: number; bonus: number },
+    client: CreditClient = db,
+  ): Promise<UserCredits> {
+    const total = amounts.monthly + amounts.bonus
 
-    if (credits.monthlyCredits >= remainingToConsume) {
-      newMonthlyCredits = credits.monthlyCredits - remainingToConsume
-    } else {
-      remainingToConsume -= credits.monthlyCredits
-      newMonthlyCredits = 0
-      newBonusCredits = credits.bonusCredits - remainingToConsume
-    }
-
-    return await db.userCredits.update({
+    const credits = await client.userCredits.update({
       where: { userId },
       data: {
-        monthlyCredits: newMonthlyCredits,
-        bonusCredits: newBonusCredits,
-        usedThisMonth: {
-          increment: seconds,
-        },
+        monthlyCredits: { increment: amounts.monthly },
+        bonusCredits: { increment: amounts.bonus },
       },
     })
+
+    await client.userCredits.updateMany({
+      where: { userId, usedThisMonth: { gte: total } },
+      data: { usedThisMonth: { decrement: total } },
+    })
+
+    return credits
   }
 
   async checkRefillExists(invoiceId: string): Promise<boolean> {
@@ -200,8 +267,9 @@ export class CreditRepository {
 
   async createTransaction(
     data: CreateCreditTransactionDTO,
+    client: CreditClient = db,
   ): Promise<CreditTransactionEntity> {
-    const transaction = await db.creditTransaction.create({
+    const transaction = await client.creditTransaction.create({
       data: {
         userId: data.userId,
         type: data.type,

@@ -342,6 +342,34 @@ async consumeCredits(userId: string, seconds: number): Promise<UserCredits> {
 - Consommer 10 min (monthly=5) → monthly=0, bonus=45 (débordement de 5 min)
 - Consommer 30 min (monthly=0) → bonus=15
 
+## Facturation des transcriptions
+
+Un job est débité dès que sa durée **mesurée par le backend** est connue, jamais sur la durée envoyée par le client, et jamais uniquement au polling.
+
+### Cycle de vie (`TranscriptionJob.status`)
+
+`pending` (créneau réservé, backend pas encore appelé) → `active` (accepté par le backend) → `completed` | `failed` | `refused`. `exempt` = admin ou mode dev, jamais facturé. Un job `pending` ou `active` occupe un créneau.
+
+### Lancement
+
+1. Gardes : e-mail vérifié (compte gratuit uniquement, `EMAIL_NOT_VERIFIED` 403), abonnement non impayé, solde > 0, accès polyphonie.
+2. Créneau actif : 1 job simultané pour un compte gratuit, 2 pour un payant (`ACTIVE_JOBS_LIMIT_REACHED` 429). L'acquisition verrouille la ligne `users` de l'utilisateur dans une transaction, donc N requêtes parallèles ne passent pas toutes le contrôle.
+3. Le solde restant est envoyé au backend (`max_duration_seconds`). Un audio trop long ou illisible est refusé en 422 (`AUDIO_TOO_LONG`, `AUDIO_UNREADABLE`).
+4. Upload : le backend renvoie `duration_seconds` dans la réponse de création, le débit a lieu immédiatement. YouTube/Spotify : la durée n'est connue qu'après le téléchargement, le débit a lieu à la première observation de `duration_seconds` (polling, lancement suivant ou cron). Sans `duration_seconds` (ancien backend), repli sur `results.duration_seconds` à la complétion.
+
+### Débit et remboursement
+
+- `CreditRepository.debitCredits` : lecture puis `UPDATE ... WHERE monthlyCredits = x AND bonusCredits = y` (compare-and-swap, relecture si un autre débit est passé). Monthly d'abord, puis bonus. La répartition débitée est stockée sur le job (`chargedMonthlySeconds`, `chargedBonusSeconds`).
+- Idempotence : le drapeau `creditsDeducted` est basculé dans la même transaction que le débit, un job n'est débité qu'une fois quel que soit le nombre de polls, de passages du cron ou de sauvegardes en concurrence.
+- Solde insuffisant au débit : job `refused`, job annulé côté backend, résultat jamais livré (`getJob`, téléchargement et `POST /api/partitions` passent tous par `TranscriptionService.getJob`).
+- Job `failed` : débit au prorata de la progression (`progress`), le reste est remboursé (transaction `refund`, réparti bonus d'abord). Progression 0, audio refusé par le backend, job perdu (404) ou bloqué plus de 2 h : remboursement intégral.
+
+### Réconciliation
+
+`GET /api/cron/reconcile-transcriptions` (protégé par `CRON_SECRET`) parcourt les jobs ouverts, débite ceux dont la durée est connue, solde les jobs terminés ou perdus et supprime les créneaux `pending` de plus de 10 minutes. Au lancement, si la limite de jobs actifs est atteinte, les jobs ouverts de l'utilisateur sont réconciliés avant de refuser.
+
+Pas d'entrée `vercel.json` : le plan Vercel du projet plafonne les Cron Jobs à 2 (déjà `reset-credits` + `cleanup-webhooks`), une 3ᵉ entrée fait échouer le déploiement. Le déclenchement périodique passe par `.github/workflows/reconcile-transcriptions.yml` (toutes les 10 minutes, `workflow_dispatch` pour un déclenchement manuel), avec le secret de dépôt GitHub `CRON_SECRET` (même valeur que la variable d'env Vercel) — à configurer manuellement dans les settings du dépôt. À revoir si le projet passe sur un plan Vercel sans cette limite.
+
 ## Proration Stripe
 
 ### Comment Stripe Calcule
@@ -733,7 +761,7 @@ prisma/schema.prisma        # UserCredits, CreditRefill
 
 - `creditRepository.refillMonthlyCredits()` - Upsert + idempotence
 - `creditRepository.addBonusCredits()` - Increment + idempotence
-- `creditRepository.consumeCredits()` - Algorithme consommation
+- `creditRepository.consumeCredits()` / `debitCredits()` - Algorithme consommation (compare-and-swap)
 - `subscriptionService.handleSubscriptionCreated()` - Nouveau sub
 - `subscriptionService.handleSubscriptionUpdated()` - Upgrade/downgrade
 - `subscriptionService.handleInvoicePaymentSucceeded()` - Renouvellement

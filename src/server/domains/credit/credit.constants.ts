@@ -34,6 +34,7 @@ export const CREDIT_TRANSACTION_TYPES: Record<string, CreditTransactionType> = {
   PURCHASE: 'purchase',
   SUBSCRIPTION_GRANT: 'subscription_grant',
   USAGE: 'usage',
+  REFUND: 'refund',
   BONUS: 'bonus',
 } as const
 
