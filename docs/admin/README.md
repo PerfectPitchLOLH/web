@@ -339,7 +339,7 @@ UPDATE users SET role = 'admin' WHERE email = 'admin@example.com';
 ### Audit logs vides
 
 **Cause**: Table `audit_logs` non créée
-**Solution**: Exécuter `npx prisma db push`
+**Solution**: Exécuter `npx prisma migrate deploy`
 
 ## 🔮 Améliorations Futures
 

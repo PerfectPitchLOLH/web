@@ -365,39 +365,11 @@ Charge temps restant Junior = +(9.99€ × 30/31) = +9.84€
 Total = -19.70€ (CRÉDIT sur balance client)
 ```
 
-### Notre Proration Personnalisée (Non Utilisée)
+### Proration Personnalisée (Utilisée)
 
-Code existe dans `handlePlanChange` pour créer un crédit Stripe basé sur crédits RÉELS non utilisés :
+`handlePlanChange(userId, oldPlanMinutes, newPlanMinutes, oldPlanPrice, stripeCustomerId)` est appelée par `handleSubscriptionUpdated` dès que le price ID change. Elle crédite la balance Stripe du client de `(crédits mensuels restants / minutes de l'ancien plan) × prix mensuel de l'ancien plan`, puis refill au nouveau plan.
 
-```typescript
-async handlePlanChange(
-  userId: string,
-  oldPlanMinutes: number,
-  newPlanMinutes: number,
-  stripeCustomerId: string
-) {
-  const currentCredits = await this.repository.getUserCredits(userId)
-  const creditsRemaining = currentCredits.monthlyCredits / 60
-  const creditsTotal = oldPlanMinutes
-
-  // Calcul valeur non utilisée
-  const unusedValue = (creditsRemaining / creditsTotal) × oldPlanMinutes × 10
-  const creditAmount = Math.round(unusedValue × 100)  // centimes
-
-  if (creditAmount > 0) {
-    await stripe.customers.createBalanceTransaction(stripeCustomerId, {
-      amount: -creditAmount,  // Négatif = crédit
-      currency: 'eur',
-      description: `Crédit pour ${creditsRemaining.toFixed(1)} crédits non utilisés`,
-    })
-  }
-
-  // Refill au nouveau plan
-  await this.refillMonthlyCredits(userId, newPlanMinutes)
-}
-```
-
-**Note :** Stripe gère déjà la proration temporelle. Notre code custom pourrait être utilisé pour une proration basée sur l'USAGE réel, pas le temps.
+Ce crédit s'ajoute à la proration temporelle que Stripe calcule déjà (`proration_behavior: 'create_prorations'`) : les deux réduisent la prochaine facture.
 
 ## Webhooks Stripe - Tous les Cas
 
