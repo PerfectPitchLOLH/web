@@ -366,7 +366,9 @@ Un job est débité dès que sa durée **mesurée par le backend** est connue, j
 
 ### Réconciliation
 
-`GET /api/cron/reconcile-transcriptions` (protégé par `CRON_SECRET`, toutes les 5 minutes) parcourt les jobs ouverts, débite ceux dont la durée est connue, solde les jobs terminés ou perdus et supprime les créneaux `pending` de plus de 10 minutes. Au lancement, si la limite est atteinte, les jobs ouverts de l'utilisateur sont réconciliés avant de refuser.
+`GET /api/cron/reconcile-transcriptions` (protégé par `CRON_SECRET`) parcourt les jobs ouverts, débite ceux dont la durée est connue, solde les jobs terminés ou perdus et supprime les créneaux `pending` de plus de 10 minutes. Au lancement, si la limite de jobs actifs est atteinte, les jobs ouverts de l'utilisateur sont réconciliés avant de refuser.
+
+Pas d'entrée `vercel.json` : le plan Vercel du projet plafonne les Cron Jobs à 2 (déjà `reset-credits` + `cleanup-webhooks`), une 3ᵉ entrée fait échouer le déploiement. Le déclenchement périodique passe par `.github/workflows/reconcile-transcriptions.yml` (toutes les 10 minutes, `workflow_dispatch` pour un déclenchement manuel), avec le secret de dépôt GitHub `CRON_SECRET` (même valeur que la variable d'env Vercel) — à configurer manuellement dans les settings du dépôt. À revoir si le projet passe sur un plan Vercel sans cette limite.
 
 ## Proration Stripe
 
