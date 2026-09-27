@@ -56,14 +56,6 @@ export const TYPOGRAPHY = {
   },
 } as const
 
-export const STATS = {
-  musicians: '12,847',
-  songsTranscribed: '2.4M',
-  countries: '127',
-  rating: '4.8',
-  reviewCount: '2,340',
-} as const
-
 export const PRICING = {
   junior: { monthly: 9.99, yearly: 99.99 },
   basic: { monthly: 14.99, yearly: 149.99 },

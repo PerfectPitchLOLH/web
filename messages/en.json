@@ -5,7 +5,7 @@
     "titleItalic": "at the service of musicians.",
     "ctaPrimary": "Get started →",
     "ctaDemo": "See a demo",
-    "socialProof": "Join {count}+ musicians saving 5+ hours per transcription",
+    "tagline": "Sheet music and tablature generated from your audio",
     "transcribedIn": "Transcribed in"
   },
   "Pricing": {
@@ -50,53 +50,6 @@
       "polyphony": "Polyphony",
       "historyValues": ["30 days", "90 days", "Unlimited"]
     }
-  },
-  "SocialProof": {
-    "statsLabels": {
-      "musicians": "Musicians",
-      "sheets": "Sheets created",
-      "countries": "Countries"
-    },
-    "title": "Loved by musicians around the world",
-    "subtitle": "Over {count} guitarists, pianists, violinists and producers trust Notavex every day.",
-    "testimonials": [
-      {
-        "quote": "\"I saved over €400 in 3 months. Notavex made learning guitar accessible and enjoyable.\"",
-        "name": "Sarah M.",
-        "role": "Guitar Student",
-        "location": "Austin, TX"
-      },
-      {
-        "quote": "\"I used to spend 4–5 hours transcribing for clients. Now it takes minutes. Paid back in a week.\"",
-        "name": "James K.",
-        "role": "Session Musician",
-        "location": "Nashville, TN"
-      },
-      {
-        "quote": "\"I create material for 30+ students. Multi-instrument separation changes everything for teaching orchestration.\"",
-        "name": "Dr. Lisa Chen",
-        "role": "Music Educator · Berklee",
-        "location": "Boston, MA"
-      },
-      {
-        "quote": "\"The accuracy is impressive. I analyze my favorite producers' progressions. X-ray vision for music.\"",
-        "name": "Alex T.",
-        "role": "Electronic Music Producer",
-        "location": "Los Angeles, CA"
-      },
-      {
-        "quote": "\"We learned 20 songs in 2 months. Separating bass, guitar and drum tracks individually changed everything.\"",
-        "name": "The Midnight Groove",
-        "role": "Cover Band",
-        "location": "Chicago, IL"
-      },
-      {
-        "quote": "\"Notavex captured subtle dynamic nuances I didn't expect. Excellent for studying concertos.\"",
-        "name": "Maria S.",
-        "role": "Violinist · NY Philharmonic",
-        "location": "New York, NY"
-      }
-    ]
   },
   "Footer": {
     "tagline": "Raw sound. Clean sheet music. In 30 seconds.",
@@ -184,7 +137,7 @@
       },
       {
         "question": "How accurate is the AI transcription?",
-        "answer": "Our AI achieves 95%+ accuracy on most recordings. Accuracy depends on audio quality, mixing clarity, and instrumentation complexity. Clean studio recordings produce near-perfect transcriptions, while live recordings may require minor manual adjustments."
+        "answer": "Accuracy depends on audio quality, mixing clarity, and instrumentation complexity. Clean recordings give the best results, while live recordings may require some manual adjustments."
       },
       {
         "question": "Is there a free plan available?",
