@@ -1160,6 +1160,57 @@ describe('SubscriptionService - Deep Tests', () => {
 
       expect(mockCreditService.handlePlanChange).not.toHaveBeenCalled()
     })
+
+    describe('subscription without local record', () => {
+      beforeEach(() => {
+        vi.mocked(stripe.subscriptions.retrieve).mockResolvedValue({
+          id: 'sub_stripe_gone',
+          customer: 'cus_gone',
+          status: 'canceled',
+          items: {
+            data: [
+              {
+                price: { id: 'price_pro_monthly' },
+                current_period_start: Math.floor(Date.now() / 1000),
+                current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
+              } as any,
+            ],
+          },
+          cancel_at_period_end: false,
+          canceled_at: null,
+        } as any)
+        vi.mocked(mockRepository.findSubscriptionByStripeId).mockResolvedValue(
+          null,
+        )
+      })
+
+      it('should ignore the event when the customer no longer exists (deleted account)', async () => {
+        vi.mocked(mockRepository.findCustomerByStripeId).mockResolvedValue(null)
+
+        const result =
+          await service.handleSubscriptionUpdated('sub_stripe_gone')
+
+        expect(result).toBeNull()
+        expect(mockRepository.findCustomerByStripeId).toHaveBeenCalledWith(
+          'cus_gone',
+        )
+        expect(mockRepository.updateSubscription).not.toHaveBeenCalled()
+      })
+
+      it('should keep failing so Stripe retries when the customer exists but the subscription is not created yet', async () => {
+        vi.mocked(mockRepository.findCustomerByStripeId).mockResolvedValue({
+          userId: 'user_123',
+          stripeCustomerId: 'cus_gone',
+        } as any)
+        vi.mocked(mockRepository.updateSubscription).mockRejectedValue({
+          code: 'P2025',
+        })
+
+        await expect(
+          service.handleSubscriptionUpdated('sub_stripe_gone'),
+        ).rejects.toEqual({ code: 'P2025' })
+      })
+    })
   })
 
   describe('handleSubscriptionDeleted', () => {

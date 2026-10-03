@@ -242,15 +242,20 @@ export class SubscriptionRepository {
     status: SubscriptionStatus,
     additionalData?: Partial<UpdateSubscriptionDTO>,
   ): Promise<SubscriptionEntity | null> {
-    const subscription = await db.subscription.update({
-      where: { stripeSubscriptionId },
-      data: {
-        status,
-        ...additionalData,
-      },
-    })
+    try {
+      const subscription = await db.subscription.update({
+        where: { stripeSubscriptionId },
+        data: {
+          status,
+          ...additionalData,
+        },
+      })
 
-    return subscription as SubscriptionEntity
+      return subscription as SubscriptionEntity
+    } catch (error) {
+      if ((error as { code?: string } | null)?.code === 'P2025') return null
+      throw error
+    }
   }
 
   async findWebhookEventByStripeId(

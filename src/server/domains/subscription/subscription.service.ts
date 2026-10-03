@@ -275,6 +275,14 @@ export class SubscriptionService {
     const existingSubscription =
       await this.repository.findSubscriptionByStripeId(stripeSubscriptionId)
 
+    if (!existingSubscription) {
+      const customer = await this.repository.findCustomerByStripeId(
+        stripeSubscription.customer as string,
+      )
+
+      if (!customer) return null
+    }
+
     let oldPriceId: string | null = null
     if (existingSubscription) {
       const oldPlan = await this.repository.findPlanById(

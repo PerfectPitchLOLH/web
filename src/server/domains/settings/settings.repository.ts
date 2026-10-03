@@ -118,6 +118,29 @@ export class SettingsRepository {
     })
   }
 
+  async findStripeCustomerIds(userId: string): Promise<string[]> {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: {
+        stripeCustomerId: true,
+        customer: { select: { stripeCustomerId: true } },
+        subscriptions: { select: { stripeCustomerId: true } },
+      },
+    })
+
+    if (!user) return []
+
+    const ids = [
+      user.stripeCustomerId,
+      user.customer?.stripeCustomerId,
+      ...user.subscriptions.map(
+        (subscription) => subscription.stripeCustomerId,
+      ),
+    ]
+
+    return [...new Set(ids.filter((id): id is string => !!id))]
+  }
+
   async deleteUser(userId: string): Promise<void> {
     await db.user.delete({ where: { id: userId } })
   }

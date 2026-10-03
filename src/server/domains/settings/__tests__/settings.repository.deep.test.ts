@@ -610,6 +610,52 @@ describe('SettingsRepository - Deep Tests', () => {
     })
   })
 
+  describe('findStripeCustomerIds', () => {
+    it('should return an empty list when the user does not exist', async () => {
+      vi.mocked(db.user.findUnique).mockResolvedValue(null)
+
+      await expect(repository.findStripeCustomerIds('ghost')).resolves.toEqual(
+        [],
+      )
+    })
+
+    it('should return an empty list for a user without Stripe data', async () => {
+      vi.mocked(db.user.findUnique).mockResolvedValue({
+        stripeCustomerId: null,
+        customer: null,
+        subscriptions: [],
+      })
+
+      await expect(
+        repository.findStripeCustomerIds('user123'),
+      ).resolves.toEqual([])
+    })
+
+    it('should merge and deduplicate customer ids from every source', async () => {
+      vi.mocked(db.user.findUnique).mockResolvedValue({
+        stripeCustomerId: 'cus_user',
+        customer: { stripeCustomerId: 'cus_customer' },
+        subscriptions: [
+          { stripeCustomerId: 'cus_customer' },
+          { stripeCustomerId: 'cus_subscription' },
+          { stripeCustomerId: 'cus_subscription' },
+        ],
+      })
+
+      const result = await repository.findStripeCustomerIds('user123')
+
+      expect(result).toEqual(['cus_user', 'cus_customer', 'cus_subscription'])
+      expect(db.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'user123' },
+        select: {
+          stripeCustomerId: true,
+          customer: { select: { stripeCustomerId: true } },
+          subscriptions: { select: { stripeCustomerId: true } },
+        },
+      })
+    })
+  })
+
   describe('Data Type Conversions', () => {
     it('should correctly map hasPassword from truthy password', async () => {
       vi.mocked(db.user.findUnique).mockResolvedValue(
